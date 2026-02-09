@@ -1,3 +1,5 @@
+import sys
+
 try:
     import torch
     import torch.nn as nn
@@ -7,6 +9,45 @@ except ImportError:
     HAS_TORCH = False
 
 
+def print_type_check_results(type_errors):
+    
+    if type_errors:
+        print("Type errors found:")
+        for error in type_errors:
+            print(f"  ✗ {error}")
+        print(f"\n{len(type_errors)} type error(s) found.")
+        sys.exit(1)
+    else:
+        print("  ✓ No type errors found")
+
+def print_unified_ast(unified_ast, indent=0):
+    print("\n=== UNIFIED AST ===")
+    
+
+    # Print unified AST structure
+    print("\nFunctions:")
+    for name, func_def in unified_ast["functions"].items():
+        print(f"  {name}:")
+        print(f"    params: {func_def['params']}")
+        if func_def.get('statements'):
+            print(f"    statements: {func_def['statements']}")
+        print(f"    body: {func_def['body']}")
+
+    print("\nClasses:")
+    for name, class_def in unified_ast["classes"].items():
+        print(f"  {name}:")
+        print(f"    class_params: {class_def['class_params']}")
+        print(f"    lambda_params: {class_def['lambda_params']}")
+        if class_def.get('has_loop'):
+            print(f"    loop_var: {class_def['loop_var']}")
+            print(f"    loop_body: {class_def['loop_body']}")
+        print(f"    body: {class_def['body']}")
+        if class_def.get('has_loss'):
+            print(f"    loss_body: {class_def['loss_body']}")
+
+    print("\nProgram:")
+    for stmt in unified_ast["program"]:
+        print(f"  {stmt}")
 def to_torch(v):
     """Convert Python list/float to PyTorch tensor"""
     if not HAS_TORCH:

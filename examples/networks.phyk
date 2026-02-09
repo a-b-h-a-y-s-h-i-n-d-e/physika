@@ -31,11 +31,9 @@ net1([1.0, 2.0, 3.0])
 
 class FullyConnectedNetwork(f: ℝ → ℝ, W: ℝ[2,3,3], B: ℝ[2,3], w: ℝ[3], b: ℝ, n: ℕ):
     def λ(x: ℝ[3]) → ℝ:
-        for k in range(n):
+        for k:
             x = f(W[k] @ x + B[k])
-        end
         return w @ x + b
-
     def loss(y: ℝ, target: ℝ) → ℝ:
         return (y - target) ** 2.0
 
