@@ -1,11 +1,11 @@
 # Physika
 
-A differentiable programming language.
+Physika is designed to simplify the representation of equations governing diverse physical systems, and the computational methods used to approximate their solutions. Physika is a type-based differentiable language program, that checks for dimension and data type correctenss.
 
 ## Workflow
 
 ```
-example.phyk → Lexer (PLY) → Parser → AST → Type Checker → Runtime Execution (PyTorch)
+example.phyk → Lexer (PLY) → Parser → AST → Type Checker → Runtime Execution
 ```
 
 1. The **lexer** tokenizes a given `.phyk` file.
@@ -17,12 +17,6 @@ example.phyk → Lexer (PLY) → Parser → AST → Type Checker → Runtime Exe
 
 ```bash
 python -m execute examples/example_arrays.phyk
-```
-
-To inspect the generated PyTorch code:
-
-```bash
-python -m execute --print-code examples/example_arrays.phyk
 ```
 
 ## Physika Program Description
@@ -46,7 +40,14 @@ Output:
 [3.0, 7.0, 10.0] ∈ ℝ[3]
 ```
 
-The associated AST datastructure:
+
+To inspect the generated AST structure run:
+
+```bash
+python -m execute examples/example_arrays.phyk --print-ast
+```
+
+The associated AST:
 ```
 Functions:
 
@@ -141,7 +142,13 @@ Program:
   )
 ```
 
-Finally, Pytorch version for the given Physika program:
+Finally, to print the Pytorch code equivalent for the given Physika program run:
+
+
+```bash
+python -m execute examples/example_arrays.phyk --print-code
+```
+
 ```
 import torch
 import torch.nn as nn
@@ -157,3 +164,9 @@ physika_print(x)
 physika_print(y)
 physika_print(z)
 ```
+
+## Type Checker
+
+The type checker verifies that all objects defined in a Physika file (.phyk), including classes, functions, and variables, perform operations with compatible dimensions and data types. For example, matrix multiplication must follow the convention (M×N)@(N×P), and operations between types must be valid (e.g., ℝ + ℝ is valid, whereas ℝ[2] + ℝ is not).
+
+If inconsistencies are detected, Physika type checker reports error messages describing the dimension or type mismatch and indicates the line this occurs, after executing the program.
