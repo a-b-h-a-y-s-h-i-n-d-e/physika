@@ -1,0 +1,26 @@
+# For loop examples in Physika
+# Syntax: for <var>:
+#             ... use arr[var] to index arrays
+# The iteration count is inferred from array usage
+
+# Example 1: Sum of array elements (1+2+3+4+5 = 15)
+arr: R[5] = [1.0, 2.0, 3.0, 4.0, 5.0]
+total: R = 0.0
+for i:
+    total += arr[i]
+total
+
+
+# Example 2: Sum of squares (1+4+9+16 = 30)
+X: R[4] = [1.0, 2.0, 3.0, 4.0]
+sum_sq: R = 0.0
+for i:
+    sum_sq += X[i] ** 2
+sum_sq
+
+# Example 3: MSE loss ((1-2)^2 + (2-4)^2 + (3-6)^2 + (4-8)^2 = 30)
+y: R[4] = [2.0, 4.0, 6.0, 8.0]
+mse: R = 0.0
+for i:
+    mse += (X[i] - y[i]) ** 2
+mse
