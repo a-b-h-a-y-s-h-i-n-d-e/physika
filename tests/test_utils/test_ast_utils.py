@@ -12,9 +12,9 @@ VALID_TAGS = set(
     get_args(ExprTag) + get_args(StmtTag) + get_args(BodyStmtTag) + get_args(TypeTag)
 )
 
-DATA_DIR = Path(__file__).parent / "data"
-AST_DIR = DATA_DIR / "ast"
-PHYK_FILES = sorted(DATA_DIR.glob("*.phyk"))
+EXAMPLES_DIR = Path(__file__).parent.parent.parent / "examples"
+AST_DIR = EXAMPLES_DIR / "ast"
+PHYK_FILES = sorted(EXAMPLES_DIR.glob("*.phyk"))
 PHYK_IDS = [f.stem for f in PHYK_FILES]
 
 
@@ -27,7 +27,7 @@ def parse_source(source: str):
 
 
 def load_expected_ast(stem: str) -> dict:
-    """Helper function that load the expected AST dict from ``data/ast/<expected>.py``."""
+    """Load the expected AST dict from ``examples/ast/<stem>.py``."""
     ns = {}
     exec((AST_DIR / f"{stem}.py").read_text(), ns)
     return ns["EXPECTED"]

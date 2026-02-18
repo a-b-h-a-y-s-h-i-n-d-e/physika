@@ -119,13 +119,13 @@ def make_tensor_type(shape: list[int] | None) -> TypeSpec:
 def dims_compatible(d1: int | str, d2: int | str) -> bool:
     """Check if two dimension values are compatible.
 
-    Two dimensions are compatible if either is a symbolic string (unknown
-    concrete value) or if they are equal concrete integers.
+    Two dimensions are compatible if is a symbolic string (e.g. "M", "N")
+    or if they are equal integers.
 
     Parameters
     ----------
     d1 : int or str
-        First dimension (concrete integer or symbolic string like ``"M"``).
+        First dimension.
     d2 : int or str
         Second dimension.
 
