@@ -83,6 +83,17 @@ def p_dimension_invariant(p):
     """dimension_spec : NUMBER"""
     p[0] = (int(p[1]), "invariant")
 
+def p_dimension_invariant_id(p):
+    """dimension_spec : ID"""
+    # Symbolic dimension variable (e.g. M, K, hidden) — kept as string
+    p[0] = (p[1], "invariant")
+
+def p_dimension_type_as_symbol(p):
+    """dimension_spec : TYPE"""
+    # N lexes as TYPE(ℕ); map back to the ASCII letter so user intent is preserved
+    mapping = {"ℕ": "N", "ℝ": "R", "ℤ": "Z"}
+    p[0] = (mapping.get(p[1], p[1]), "invariant")
+
 
 # Statements
 def p_statement_function(p):
@@ -274,6 +285,134 @@ def p_statement_class_with_loss(p):
         "has_loop": False,
         "has_loss": True,
         "loss_params": loss_params,
+        "loss_body": loss_body
+    }
+
+    symbol_table[class_name] = {"type": "class", "value": class_def}
+    p[0] = ("class_def", class_name)
+
+def p_statement_class_with_body(p):
+    """statement : CLASS ID LPAREN params RPAREN COLON NEWLINE INDENT DEF LAMBDA LPAREN params RPAREN ARROW type_spec COLON NEWLINE INDENT func_body_stmts RETURN func_expr NEWLINE DEDENT DEDENT"""
+    # class ClassName(params):
+    #     def λ(x: type) → return_type:
+    #         stmt1
+    #         ...
+    #         return expr
+    class_name = p[2]
+    class_params = p[4]
+    lambda_params = p[12]
+    return_type = p[15]
+    body_stmts = p[19]
+    final_expr = p[21]
+
+    class_def = {
+        "class_params": class_params,
+        "lambda_params": lambda_params,
+        "return_type": return_type,
+        "body": final_expr,
+        "statements": body_stmts,
+        "has_loop": False,
+        "has_loss": False
+    }
+
+    symbol_table[class_name] = {"type": "class", "value": class_def}
+    p[0] = ("class_def", class_name)
+
+def p_statement_class_with_body_and_loss(p):
+    """statement : CLASS ID LPAREN params RPAREN COLON NEWLINE INDENT DEF LAMBDA LPAREN params RPAREN ARROW type_spec COLON NEWLINE INDENT func_body_stmts RETURN func_expr NEWLINE DEDENT DEF ID LPAREN params RPAREN ARROW type_spec COLON NEWLINE INDENT RETURN func_expr NEWLINE DEDENT DEDENT"""
+    # class ClassName(params):
+    #     def λ(x: type) → return_type:
+    #         stmt1
+    #         ...
+    #         return forward_expr
+    #     def loss(params) → R:
+    #         return loss_expr
+    class_name = p[2]
+    class_params = p[4]
+    lambda_params = p[12]
+    return_type = p[15]
+    body_stmts = p[19]
+    final_expr = p[21]
+    loss_name = p[25]
+    loss_params = p[27]
+    loss_return_type = p[30]
+    loss_body = p[35]
+
+    class_def = {
+        "class_params": class_params,
+        "lambda_params": lambda_params,
+        "return_type": return_type,
+        "body": final_expr,
+        "statements": body_stmts,
+        "has_loop": False,
+        "has_loss": True,
+        "loss_params": loss_params,
+        "loss_body": loss_body
+    }
+
+    symbol_table[class_name] = {"type": "class", "value": class_def}
+    p[0] = ("class_def", class_name)
+
+def p_statement_class_with_loss_body(p):
+    """statement : CLASS ID LPAREN params RPAREN COLON NEWLINE INDENT DEF LAMBDA LPAREN params RPAREN ARROW type_spec COLON NEWLINE INDENT RETURN func_expr NEWLINE DEDENT DEF ID LPAREN params RPAREN ARROW type_spec COLON NEWLINE INDENT func_body_stmts RETURN func_expr NEWLINE DEDENT DEDENT"""
+    # class ClassName(params):
+    #     def λ(x: type) → return_type:
+    #         return forward_expr
+    #     def loss(params) → R:
+    #         stmt1
+    #         ...
+    #         return loss_expr
+    class_name = p[2]
+    class_params = p[4]
+    lambda_params = p[12]
+    return_type = p[15]
+    body = p[20]
+    loss_params = p[26]
+    loss_stmts = p[33]
+    loss_body = p[35]
+
+    class_def = {
+        "class_params": class_params,
+        "lambda_params": lambda_params,
+        "return_type": return_type,
+        "body": body,
+        "has_loop": False,
+        "has_loss": True,
+        "loss_params": loss_params,
+        "loss_statements": loss_stmts,
+        "loss_body": loss_body
+    }
+
+    symbol_table[class_name] = {"type": "class", "value": class_def}
+    p[0] = ("class_def", class_name)
+
+def p_statement_class_with_body_and_loss_body(p):
+    """statement : CLASS ID LPAREN params RPAREN COLON NEWLINE INDENT DEF LAMBDA LPAREN params RPAREN ARROW type_spec COLON NEWLINE INDENT func_body_stmts RETURN func_expr NEWLINE DEDENT DEF ID LPAREN params RPAREN ARROW type_spec COLON NEWLINE INDENT func_body_stmts RETURN func_expr NEWLINE DEDENT DEDENT"""
+    # class ClassName(params):
+    #     def λ(x: type) → return_type:
+    #         stmt1; ...; return forward_expr
+    #     def loss(params) → R:
+    #         stmt1; ...; return loss_expr
+    class_name = p[2]
+    class_params = p[4]
+    lambda_params = p[12]
+    return_type = p[15]
+    body_stmts = p[19]
+    final_expr = p[21]
+    loss_params = p[27]
+    loss_stmts = p[34]
+    loss_body = p[36]
+
+    class_def = {
+        "class_params": class_params,
+        "lambda_params": lambda_params,
+        "return_type": return_type,
+        "body": final_expr,
+        "statements": body_stmts,
+        "has_loop": False,
+        "has_loss": True,
+        "loss_params": loss_params,
+        "loss_statements": loss_stmts,
         "loss_body": loss_body
     }
 

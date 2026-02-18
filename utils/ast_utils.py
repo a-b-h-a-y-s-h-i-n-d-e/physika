@@ -556,6 +556,7 @@ def generate_class(name: str, class_def: dict[str, ASTNode]) -> str:
     class_params = class_def["class_params"]
     lambda_params = class_def["lambda_params"]
     body = class_def["body"]
+    statements = class_def.get("statements", [])
     has_loop = class_def.get("has_loop", False)
     loop_var = class_def.get("loop_var")
     loop_body = class_def.get("loop_body", [])
@@ -592,6 +593,27 @@ def generate_class(name: str, class_def: dict[str, ASTNode]) -> str:
         if ptype == "\u211d" or ptype == "\u2115" or (isinstance(ptype, tuple) and ptype[0] == "tensor"):
             lines.append(f"        {pname} = torch.as_tensor({pname}).float()")
 
+    # Generate forward body statements (multi-statement lambda body)
+    for stmt in statements:
+        if stmt is None:
+            continue
+        stmt_op = stmt[0]
+        if stmt_op == "body_decl":
+            _, var_name, var_type, expr = stmt
+            expr_code = ast_to_torch_expr(expr)
+            expr_code = replace_class_params(expr_code, class_params)
+            lines.append(f"        {var_name} = {expr_code}")
+        elif stmt_op == "body_assign":
+            _, var_name, expr = stmt
+            expr_code = ast_to_torch_expr(expr)
+            expr_code = replace_class_params(expr_code, class_params)
+            lines.append(f"        {var_name} = {expr_code}")
+        elif stmt_op == "body_tuple_unpack":
+            _, var_names, expr = stmt
+            expr_code = ast_to_torch_expr(expr)
+            expr_code = replace_class_params(expr_code, class_params)
+            lines.append(f"        {', '.join(var_names)} = {expr_code}")
+
     # Generate loop if present
     if has_loop and loop_body:
         lines.append(f"        n = int(self.n) if hasattr(self, 'n') else self.{class_params[-1][0]}.shape[0] if hasattr(self.{class_params[-1][0]}, 'shape') else 2")
@@ -613,9 +635,15 @@ def generate_class(name: str, class_def: dict[str, ASTNode]) -> str:
     if has_loss and loss_body:
         loss_params = class_def.get("loss_params", [("y", "\u211d"), ("target", "\u211d")])
         loss_param_names = [p[0] for p in loss_params]
+        loss_stmts = class_def.get("loss_statements", [])
 
-        # Check if loss uses grad - if so, we need to also pass input x
+        # Check if loss uses grad — also scan loss body statements
         loss_uses_grad = ast_uses_func(loss_body, "grad")
+        if not loss_uses_grad:
+            for s in loss_stmts:
+                if ast_uses_func(s, "grad"):
+                    loss_uses_grad = True
+                    break
 
         if loss_uses_grad and lambda_param_names:
             # Add the input parameter (x) to loss params
@@ -626,7 +654,29 @@ def generate_class(name: str, class_def: dict[str, ASTNode]) -> str:
             lines.append(f"")
             lines.append(f"    def loss(self, {', '.join(loss_param_names)}):")
 
+        # Emit loss body statements
+        for stmt in loss_stmts:
+            if stmt is None:
+                continue
+            stmt_op = stmt[0]
+            if stmt_op == "body_decl":
+                _, var_name, var_type, expr = stmt
+                expr_code = ast_to_torch_expr(expr)
+                expr_code = replace_class_params(expr_code, class_params)
+                lines.append(f"        {var_name} = {expr_code}")
+            elif stmt_op == "body_assign":
+                _, var_name, expr = stmt
+                expr_code = ast_to_torch_expr(expr)
+                expr_code = replace_class_params(expr_code, class_params)
+                lines.append(f"        {var_name} = {expr_code}")
+            elif stmt_op == "body_tuple_unpack":
+                _, var_names, expr = stmt
+                expr_code = ast_to_torch_expr(expr)
+                expr_code = replace_class_params(expr_code, class_params)
+                lines.append(f"        {', '.join(var_names)} = {expr_code}")
+
         loss_code = ast_to_torch_expr(loss_body)
+        loss_code = replace_class_params(loss_code, class_params)
         lines.append(f"        return {loss_code}")
 
     return "\n".join(lines)

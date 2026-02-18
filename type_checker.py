@@ -277,6 +277,30 @@ class TypeChecker:
         for param_name, param_type in lambda_params:
             local_env[param_name] = param_type
 
+        # Check forward body statements (if class lambda has a multi-statement body)
+        statements = class_def.get("statements", [])
+        for stmt in statements:
+            if stmt is None:
+                continue
+            stmt_op = stmt[0]
+            if stmt_op == "body_decl":
+                _, var_name, var_type, expr = stmt
+                inferred = self.infer_type(expr, local_env)
+                if var_type and inferred and not types_compatible(var_type, inferred):
+                    self.errors.append(
+                        f"In class '{name}' forward: type mismatch for '{var_name}': "
+                        f"declared as {type_to_str(var_type)}, got {type_to_str(inferred)}"
+                    )
+                local_env[var_name] = var_type if var_type else inferred
+            elif stmt_op == "body_assign":
+                _, var_name, expr = stmt
+                inferred = self.infer_type(expr, local_env)
+                local_env[var_name] = inferred
+            elif stmt_op == "body_tuple_unpack":
+                _, var_names, expr = stmt
+                for var_name in var_names:
+                    local_env[var_name] = None  # type unknown from unpack
+
         # Check forward body
         body_type = self.infer_type(body, local_env)
         if return_type and body_type and not types_compatible(return_type, body_type):
@@ -290,6 +314,31 @@ class TypeChecker:
             loss_env = dict(local_env)
             for param_name, param_type in loss_params:
                 loss_env[param_name] = param_type
+
+            # Check loss body statements
+            loss_stmts = class_def.get("loss_statements", [])
+            for stmt in loss_stmts:
+                if stmt is None:
+                    continue
+                stmt_op = stmt[0]
+                if stmt_op == "body_decl":
+                    _, var_name, var_type, expr = stmt
+                    inferred = self.infer_type(expr, loss_env)
+                    if var_type and inferred and not types_compatible(var_type, inferred):
+                        self.errors.append(
+                            f"In class '{name}' loss: type mismatch for '{var_name}': "
+                            f"declared as {type_to_str(var_type)}, got {type_to_str(inferred)}"
+                        )
+                    loss_env[var_name] = var_type if var_type else inferred
+                elif stmt_op == "body_assign":
+                    _, var_name, expr = stmt
+                    inferred = self.infer_type(expr, loss_env)
+                    loss_env[var_name] = inferred
+                elif stmt_op == "body_tuple_unpack":
+                    _, var_names, expr = stmt
+                    for var_name in var_names:
+                        loss_env[var_name] = None
+
             self.infer_type(loss_body, loss_env)
 
 

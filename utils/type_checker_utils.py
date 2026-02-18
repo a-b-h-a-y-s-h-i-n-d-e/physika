@@ -116,6 +116,43 @@ def make_tensor_type(shape: list[int] | None) -> TypeSpec:
     return ("tensor", [(d, "invariant") for d in shape])
 
 
+def dims_compatible(d1: int | str, d2: int | str) -> bool:
+    """Check if two dimension values are compatible.
+
+    Two dimensions are compatible if either is a symbolic string (unknown
+    concrete value) or if they are equal concrete integers.
+
+    Parameters
+    ----------
+    d1 : int or str
+        First dimension (concrete integer or symbolic string like ``"M"``).
+    d2 : int or str
+        Second dimension.
+
+    Returns
+    -------
+    bool
+        ``True`` if the dimensions are compatible.
+
+    Examples
+    --------
+    >>> from utils.type_checker_utils import dims_compatible
+    >>> dims_compatible(3, 3)
+    True
+    >>> dims_compatible("M", 16)
+    True
+    >>> dims_compatible("M", "M")
+    True
+    >>> dims_compatible("M", "N")
+    True
+    >>> dims_compatible(3, 4)
+    False
+    """
+    if isinstance(d1, str) or isinstance(d2, str):
+        return True  # at least one symbolic — accept any pairing
+    return d1 == d2
+
+
 def types_compatible(t1: TypeSpec, t2: TypeSpec) -> bool:
     """Check whether two Physika types are compatible.
 
@@ -153,7 +190,13 @@ def types_compatible(t1: TypeSpec, t2: TypeSpec) -> bool:
         return True
     if t1 in ("ℝ", "ℕ") and t2 in ("ℝ", "ℕ"):
         return True
-    return get_shape(t1) == get_shape(t2)
+    s1 = get_shape(t1)
+    s2 = get_shape(t2)
+    if s1 is None or s2 is None:
+        return s1 is None and s2 is None
+    if len(s1) != len(s2):
+        return False
+    return all(dims_compatible(d1, d2) for d1, d2 in zip(s1, s2))
 
 
 def shapes_broadcast_compatible(
@@ -201,6 +244,11 @@ def shapes_broadcast_compatible(
             return s2, True
         if s2 is None:
             return s1, True
+
+    # Allow shapes that differ only in symbolic vs concrete dimensions
+    if s1 is not None and s2 is not None and len(s1) == len(s2):
+        if all(dims_compatible(d1, d2) for d1, d2 in zip(s1, s2)):
+            return s1, True  # Return first shape (may contain symbolic dims)
 
     return None, False
 
@@ -450,22 +498,22 @@ def type_infer(
             # Matrix multiplication dimension check
             if len(left_shape) == 1 and len(right_shape) == 1:
                 # Vector dot product: (n,) @ (n,) -> scalar
-                if left_shape[0] != right_shape[0]:
+                if not dims_compatible(left_shape[0], right_shape[0]):
                     add_error(f"Vector dot product dimension mismatch: {left_shape[0]} vs {right_shape[0]}")
                 return "ℝ"
             elif len(left_shape) == 2 and len(right_shape) == 1:
                 # Matrix-vector: (m,n) @ (n,) -> (m,)
-                if left_shape[1] != right_shape[0]:
+                if not dims_compatible(left_shape[1], right_shape[0]):
                     add_error(f"Matrix-vector multiplication dimension mismatch: {left_shape[1]} vs {right_shape[0]}")
                 return make_tensor_type([left_shape[0]])
             elif len(left_shape) == 1 and len(right_shape) == 2:
                 # Vector-matrix: (m,) @ (m,n) -> (n,)
-                if left_shape[0] != right_shape[0]:
+                if not dims_compatible(left_shape[0], right_shape[0]):
                     add_error(f"Vector-matrix multiplication dimension mismatch: {left_shape[0]} vs {right_shape[0]}")
                 return make_tensor_type([right_shape[1]])
             elif len(left_shape) == 2 and len(right_shape) == 2:
                 # Matrix-matrix: (m,k) @ (k,n) -> (m,n)
-                if left_shape[1] != right_shape[0]:
+                if not dims_compatible(left_shape[1], right_shape[0]):
                     add_error(f"Matrix multiplication dimension mismatch: {left_shape[1]} vs {right_shape[0]}")
                 return make_tensor_type([left_shape[0], right_shape[1]])
 
