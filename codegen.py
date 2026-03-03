@@ -115,7 +115,6 @@ def from_ast_to_torch(
     for stmt in unified_ast["program"]:
         collect_grad_targets(stmt, grad_target_vars)
 
-
     # Check for grad usage in classes and program statements
     needs_grad = False
     for class_def in unified_ast["classes"].values():
