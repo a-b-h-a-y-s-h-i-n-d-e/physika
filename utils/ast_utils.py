@@ -224,6 +224,8 @@ def replace_class_params(code: str, class_params: list[tuple[str, ASTNode]]) -> 
         code = re.sub(rf'\(({cp_name})\s', r'(self.\1 ', code)
         code = re.sub(rf'\s({cp_name})\)', r' self.\1)', code)
         code = re.sub(rf'\(({cp_name})\)', r'(self.\1)', code)
+        # Catch-all: any remaining bare word reference not already prefixed
+        code = re.sub(rf'(?<!self\.)\b{cp_name}\b', f'self.{cp_name}', code)
     return code
 
 
@@ -450,6 +452,7 @@ def emit_body_stmts(
     known_vars: list[str],
     equation_vars: set[str],
     generate_solve_call: Callable[[ASTNode], str],
+    scalar_only: bool = False,
 ) -> None:
     """Recursively emit Python code lines for a function body.
 
@@ -527,15 +530,22 @@ def emit_body_stmts(
             cond_code = condition_to_expr(cond)
             then_code = ast_to_torch_expr(then_expr)
             else_code = ast_to_torch_expr(else_expr)
-            # Use torch.where so PyTorch's tape differentiates through both branches
-            lines.append(f"{prefix}return torch.where({cond_code}, torch.as_tensor({then_code}).float(), torch.as_tensor({else_code}).float())")
+            if scalar_only:
+                # Scalar functions: use Python if/else so recursion works
+                lines.append(f"{prefix}if {cond_code}:")
+                lines.append(f"{prefix}    return {then_code}")
+                lines.append(f"{prefix}else:")
+                lines.append(f"{prefix}    return {else_code}")
+            else:
+                # Vector functions: use torch.where for elementwise differentiability
+                lines.append(f"{prefix}return torch.where(torch.as_tensor({cond_code}), {then_code}, {else_code})")
         elif stmt_op == "body_if_else":
             _, cond, then_stmts, else_stmts = stmt
             cond_code = condition_to_expr(cond)
             lines.append(f"{prefix}if {cond_code}:")
-            emit_body_stmts(then_stmts, indent_level + 1, lines, known_vars, equation_vars, generate_solve_call)
+            emit_body_stmts(then_stmts, indent_level + 1, lines, known_vars, equation_vars, generate_solve_call, scalar_only)
             lines.append(f"{prefix}else:")
-            emit_body_stmts(else_stmts, indent_level + 1, lines, known_vars, equation_vars, generate_solve_call)
+            emit_body_stmts(else_stmts, indent_level + 1, lines, known_vars, equation_vars, generate_solve_call, scalar_only)
         elif stmt_op == "body_if":
             _, cond, then_stmts = stmt
             cond_code = condition_to_expr(cond)
@@ -611,8 +621,11 @@ def generate_function(name: str, func_def: dict[str, ASTNode]) -> str:
             return f"solve({', '.join(arg_strs)}, {', '.join(kw_strs)})"
         return ast_to_torch_expr(expr)
 
+    # Use if/else (not torch.where) when all params are scalars — allows recursion
+    scalar_only = all(pt == "\u211d" for _, pt in params)
+
     # Generate body statements
-    emit_body_stmts(statements, 1, lines, known_vars, equation_vars, generate_solve_call)
+    emit_body_stmts(statements, 1, lines, known_vars, equation_vars, generate_solve_call, scalar_only)
 
     # Generate return statement only when there is a final expression
     if body is not None:
@@ -756,25 +769,14 @@ def generate_class(name: str, class_def: dict[str, ASTNode]) -> str:
             lines.append(f"        {pname} = torch.as_tensor({pname}).float()")
 
     # Generate forward body statements (multi-statement lambda body)
-    for stmt in statements:
-        if stmt is None:
-            continue
-        stmt_op = stmt[0]
-        if stmt_op == "body_decl":
-            _, var_name, var_type, expr = stmt
-            expr_code = ast_to_torch_expr(expr)
-            expr_code = replace_class_params(expr_code, class_params)
-            lines.append(f"        {var_name} = {expr_code}")
-        elif stmt_op == "body_assign":
-            _, var_name, expr = stmt
-            expr_code = ast_to_torch_expr(expr)
-            expr_code = replace_class_params(expr_code, class_params)
-            lines.append(f"        {var_name} = {expr_code}")
-        elif stmt_op == "body_tuple_unpack":
-            _, var_names, expr = stmt
-            expr_code = ast_to_torch_expr(expr)
-            expr_code = replace_class_params(expr_code, class_params)
-            lines.append(f"        {', '.join(var_names)} = {expr_code}")
+    if statements:
+        stmt_lines: list[str] = []
+        known_vars = [p[0] for p in lambda_params]
+        equation_vars: set[str] = set()
+        scalar_only = all(pt == "\u211d" for _, pt in lambda_params)
+        emit_body_stmts(statements, 2, stmt_lines, known_vars, equation_vars, ast_to_torch_expr, scalar_only)
+        for line in stmt_lines:
+            lines.append(replace_class_params(line, class_params))
 
     # Generate loop if present
     if has_loop and loop_body:

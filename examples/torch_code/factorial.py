@@ -6,8 +6,10 @@ from runtime import physika_print
 
 # === Functions ===
 def fact(n):
-    n = torch.as_tensor(n).float()
-    return torch.where(n == 0.0, torch.as_tensor(1.0).float(), torch.as_tensor((n * fact((n - 1.0)))).float())
+    if n == 0.0:
+        return 1.0
+    else:
+        return (n * fact((n - 1.0)))
 
 # === Program ===
 physika_print(fact(0.0))

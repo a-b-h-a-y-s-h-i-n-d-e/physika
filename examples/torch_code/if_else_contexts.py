@@ -7,11 +7,12 @@ from runtime import compute_grad
 
 # === Functions ===
 def f(x):
-    x = torch.as_tensor(x).float()
-    return torch.where(x > 0.0, torch.as_tensor((x * x)).float(), torch.as_tensor((-x)).float())
+    if x > 0.0:
+        return (x * x)
+    else:
+        return (-x)
 
 def clamp(x):
-    x = torch.as_tensor(x).float()
     if x > 1.0:
         y = 1.0
     else:
@@ -21,11 +22,16 @@ def clamp(x):
     return y
 
 def classify(x):
-    x = torch.as_tensor(x).float()
     if x > 0.5:
-        return torch.where(x > 1.5, torch.as_tensor(2.0).float(), torch.as_tensor(1.0).float())
+        if x > 1.5:
+            return 2.0
+        else:
+            return 1.0
     else:
-        return torch.where(x < (-0.5), torch.as_tensor((-1.0)).float(), torch.as_tensor(0.0).float())
+        if x < (-0.5):
+            return (-1.0)
+        else:
+            return 0.0
 
 # === Classes ===
 class PiecewiseNet(nn.Module):
@@ -45,12 +51,12 @@ class PiecewiseNet(nn.Module):
         return ((pred - target) ** 2.0)
 
 # === Program ===
-a = 2.0
-b = (-1.5)
+a = torch.tensor(2.0, requires_grad=True)
+b = torch.tensor((-1.5), requires_grad=True)
 physika_print(f(a))
-physika_print(compute_grad(f, a))
+physika_print(compute_grad(f(a), a))
 physika_print(f(b))
-physika_print(compute_grad(f, b))
+physika_print(compute_grad(f(b), b))
 physika_print(clamp(3.0))
 physika_print(clamp(0.5))
 physika_print(clamp((-5.0)))
@@ -58,12 +64,12 @@ physika_print(classify(2.0))
 physika_print(classify(0.0))
 physika_print(classify((-1.0)))
 net = PiecewiseNet(0.0)
-a = 2.0
+a = torch.tensor(2.0, requires_grad=True)
 physika_print(net(a))
-physika_print(compute_grad(net, a))
-b = (-1.5)
+physika_print(compute_grad(net(a), a))
+b = torch.tensor((-1.5), requires_grad=True)
 physika_print(net(b))
-physika_print(compute_grad(net, b))
+physika_print(compute_grad(net(b), b))
 x = 0.3
 if x > 0.5:
     y = (3.0 * ((x - 0.75) ** 2.0))
