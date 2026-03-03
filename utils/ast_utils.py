@@ -594,7 +594,6 @@ def generate_function(name: str, func_def: dict[str, ASTNode]) -> str:
 
     lines = [f"def {name}({', '.join(param_strs)}):"]
 
-
     # Track known variables (params + locals)
     known_vars = list(param_names)
 
