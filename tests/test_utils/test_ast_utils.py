@@ -35,7 +35,7 @@ def load_expected_ast(stem: str) -> dict:
 
 
 def _run_emit_body(stmts, indent_level=1, known_vars=None, scalar_only=False):
-    """Call emit_body_stmts and return the generated lines."""
+    """Helper function to call `emit_body_stmts` and return the generated lines."""
     lines = []
     emit_body_stmts(
         stmts,
@@ -147,27 +147,40 @@ def test_ast_matches_expected(phyk_file):
 
 
 class TestConditionToExpr:
+    """
+    Test suite for `condition_to_expr` function that converts Physika condition AST nodes.
+    Each test verifies that a specific Physika condition node is correctly converted
+    to a Python operator string.
+    """
     def test_condition_to_expr_ints(self):
+        """Verify `condition_to_expr` correctly converts Physika condition nodes with integer literals."""
+
+        # Test "equals" condition
         expected_eq = "n == 0"
         physika_expr_eq = condition_to_expr(("cond_eq", ("var", "n"), ("num", 0)))
         assert physika_expr_eq == expected_eq
 
+        # Test "not equals" condition
         expected_neq = "x != 1"
         physika_expr_neq = condition_to_expr(("cond_neq", ("var", "x"), ("num", 1)))
         assert physika_expr_neq == expected_neq
 
+        # Test "less than" condition
         expected_lt = "x < 1"
         physika_expr_lt = condition_to_expr(("cond_lt", ("var", "x"), ("num", 1)))
         assert physika_expr_lt == expected_lt
 
+        # Test "greater than" condition
         expected_gt = "x > 1"
         physika_expr_gt = condition_to_expr(("cond_gt", ("var", "x"), ("num", 1)))
         assert physika_expr_gt == expected_gt
 
+        # Test "less than or equal" condition
         expected_leq = "y <= -1"
         physika_expr_leq = condition_to_expr(("cond_leq", ("var", "y"), ("num", -1)))
         assert physika_expr_leq == expected_leq
 
+        # Test "greater than or equal" condition
         expected_geq = "z >= 2"
         physika_expr_geq = condition_to_expr(("cond_geq", ("var", "z"), ("num", 2)))
         assert physika_expr_geq == expected_geq
@@ -182,26 +195,34 @@ class TestConditionToExpr:
         assert condition_to_expr(physika_cond) == expected_cond
     
     def test_condition_to_expr_floats(self):
+        """Verify `condition_to_expr` correctly converts Physika condition nodes with float literals."""
+
+        # Test "equals" condition
         expected_eq = "n == 0.4"
         physika_expr_eq = condition_to_expr(("cond_eq", ("var", "n"), ("num", 0.4)))
         assert physika_expr_eq == expected_eq
 
+        # Test "not equals" condition
         expected_neq = "x != 1.1"
         physika_expr_neq = condition_to_expr(("cond_neq", ("var", "x"), ("num", 1.1)))
         assert physika_expr_neq == expected_neq
 
+        # Test "less than" condition
         expected_lt = "x < 1.0"
         physika_expr_lt = condition_to_expr(("cond_lt", ("var", "x"), ("num", 1.0)))
         assert physika_expr_lt == expected_lt
 
+        # Test "greater than" condition
         expected_gt = "x > 1.9"
         physika_expr_gt = condition_to_expr(("cond_gt", ("var", "x"), ("num", 1.9)))
         assert physika_expr_gt == expected_gt
 
+        # Test "less than or equal" condition
         expected_leq = "y <= -1.2"
         physika_expr_leq = condition_to_expr(("cond_leq", ("var", "y"), ("num", -1.2)))
         assert physika_expr_leq == expected_leq
 
+        # Test "greater than or equal" condition
         expected_geq = "z >= 2.5"
         physika_expr_geq = condition_to_expr(("cond_geq", ("var", "z"), ("num", 2.5)))
         assert physika_expr_geq == expected_geq
@@ -213,7 +234,9 @@ class TestConditionToExpr:
 
 
 class TestEmitBodyStmts:
-
+    """
+    Test suite for `emit_body_stmts` handling of assignment and declaration statements.
+    """ 
     def test_body_assign_decl_tuple_unpack(self):
         """
         Verify `emit_body_stmts` produce correct code lines for physika's parsed AST 
