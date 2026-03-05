@@ -1,0 +1,77 @@
+# ============================================================
+# Hamiltonian Neural Network (HNN) in Physika
+# ============================================================
+# Learning the dynamics of a mass_spring
+# H = (1/2 * p**2/m) + (1/2 * k*q**2)
+# assume m=1, k=1
+# H = (1/2 * p**2) + (1/2 * q**2)
+# calculate gradients
+# dq/dt = dH/dp = p 
+# dp/dt = -dH/dq = -q 
+
+def tanh(x: ℝ): ℝ:
+    return (exp(x) - exp(0.0 - x)) / (exp(x) + exp(0.0 - x))
+
+class HamiltonianNet(W1: ℝ[M,N], b1: ℝ[M], w2: ℝ[M], b2: ℝ):
+    def λ(x: ℝ[N]) → ℝ[2]:
+        h : ℝ = w2 @ tanh(W1 @ x + b1) + b2
+        dh_dp: R = grad(h, x)[1]
+        dh_dq: R = 0.0 - grad(h, x)[0]
+        symplectic_gradient: R[2] = [dh_dp, dh_dq]
+        return symplectic_gradient
+    def loss(symplectic_gradient: ℝ[2], target: ℝ[N]) → ℝ:
+        lo : ℝ = (symplectic_gradient[0] - target[0]) ** 2.0 + (symplectic_gradient[1] - target[1]) ** 2.0
+        return lo
+
+W1: ℝ[16,2] = [[0.5, 0.1], [0.1, 0.5], [0.3, 0.3], [0.4, 0.2],
+               [0.2, 0.4], [0.1, 0.1], [0.3, 0.1], [0.1, 0.3],
+               [0.2, 0.2], [0.4, 0.4], [0.5, 0.3], [0.3, 0.5],
+               [0.2, 0.1], [0.1, 0.2], [0.4, 0.1], [0.1, 0.4]]
+b1: ℝ[16] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+w2: ℝ[16] = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
+             0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+b2: ℝ = 0.0
+
+H_net = HamiltonianNet(W1, b1, w2, b2)
+
+# ------------------------------------------------------------
+# Training Data
+# ------------------------------------------------------------
+X: ℝ[8,2] = [[0.0, 1.0], [1.0, 0.0], [0.0, -1.0], [-1.0, 0.0],
+             [0.5, 0.5], [-0.5, -0.5], [0.7, -0.7], [-0.7, 0.7]]
+y: ℝ[8,2] = [[1.0, 0.0], [0.0, -1.0], [-1.0, 0.0], [0.0, 1.0],
+             [0.5, -0.5], [-0.5, 0.5], [-0.7, -0.7], [0.7, 0.7]]
+
+# ------------------------------------------------------------
+# Evaluate before training
+# ------------------------------------------------------------
+loss_before = evaluate(H_net, X, y)
+loss_before
+
+
+epochs : ℕ = 500
+lr : ℝ = 0.01 
+H_trained = train(H_net, X, y, epochs, lr)
+
+loss_after = evaluate(H_trained, X, y)
+loss_after
+
+
+class RK4(f: ℝ → ℝ, dt: ℝ, n: ℕ):
+    def λ(x: ℝ[2]) → ℝ[2]:
+        for k:
+            k1 = f(x)
+            k2 = f(x + 0.5 * dt * k1)
+            k3 = f(x + 0.5 * dt * k2)
+            k4 = f(x + dt * k3)
+            x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        return x
+
+dt: ℝ = 0.01
+
+solver = RK4(H_trained, dt, 1000)
+solver([0.5, 0.0])
+
+step = RK4(H_trained, dt, 1.0)
+simulate_hnn(step, [0.0, 1.0], 1000.0, dt)

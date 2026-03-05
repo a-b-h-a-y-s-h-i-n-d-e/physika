@@ -1,0 +1,51 @@
+# mass_spring with rk4 
+#
+# The hamiltonian equation is -> (p**2 / 2m) + (1/2 * k * x**2)
+# qdot -> p / m 
+# pdot -> -kx
+#
+# constant values
+# m = 1.0, k = 1.0
+# inputs -> q, p
+
+
+def damped_oscillator(x: R[2]): R[2]:
+    return [x[1] / 1.0, 0.0 - x[0] - 0.1 * x[1]]
+
+# -----------------------------
+# to test function
+# mass_spring([1.0, 2.0])
+# mass_spring([-1.0, 3.0])
+# -----------------------------
+
+# ----------------
+# RK4 ODE Solver
+# ----------------
+
+class fwd(f: ℝ → ℝ, dt: ℝ, n: ℕ):
+    def λ(x: ℝ[2]) → ℝ[2]:
+        for k:
+            x = x + dt * f(x)
+        return x 
+
+
+class RK4(f: ℝ → ℝ, dt: ℝ, n: ℕ):
+    def λ(x: ℝ[2]) → ℝ[2]:
+        for k:
+            k1 = f(x)
+            k2 = f(x + 0.5 * dt * k1)
+            k3 = f(x + 0.5 * dt * k2)
+            k4 = f(x + dt * k3)
+            x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        return x
+
+# ------------
+# Parameters
+# ------------
+dt: ℝ = 0.01
+
+
+fwd_step = fwd(damped_oscillator, dt, 1)
+rk4_step = RK4(damped_oscillator, dt, 1)
+simulate(fwd_step, [0.5, 0.0], 1000, dt)
+simulate(rk4_step, [0.5, 0.0], 1000, dt)

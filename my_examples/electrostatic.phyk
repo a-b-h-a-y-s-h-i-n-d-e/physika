@@ -1,0 +1,45 @@
+def sqrt_physika(a:R):R:
+   return a**0.5
+
+def E_single_particle(q1: ℝ, position: ℝ[m], x: ℝ[m]): ℝ[m]:
+   diff: ℝ[m] = x - position
+   norm: R = l2_norm(diff)
+   k: R = 1 / (4 * 3.14 * e0)
+   E: R[m] = k * (q1 / (norm**2)) * (diff / norm)
+   return E 
+
+
+#def E_multiple_particles(charges: ℝ[m], positions: ℝ[m, n], x: ℝ[m]): ℝ:
+#results: R = E_single_particle(charges[0], positions[0], x)
+#return results
+
+def E_multiple_particles(charges: ℝ[m], positions: ℝ[m, n], x: ℝ[m]): ℝ:
+   results : ℝ[3] = [0, 0, 0]
+   for i:
+      results += E_single_particle(charges[i], positions[i], x)
+   return 1
+
+
+#results: ℝ[m] = E_single_particle(charges[0], positions[0], x)
+#return results
+# ------------------------------------
+# test E_single_particle function
+# ------------------------------------
+# e0 : R = 8.854187817e-12
+# q1 : R = 1e-6
+# x1: R[3] = [0, 0, 0]
+# x : R[3] = [0.1, 0, 0]
+# results = E_single_particle(q1, x1, x)
+# results
+
+
+# ------------------------------------
+# test E_multiple_particles function
+# ------------------------------------
+e0 : R = 8.854187817e-12
+charges: R[3] = [1e-6, -1e-6, 1e-6]
+positions: R[3, 3] = [[0.1, 0.0, 0.0], [-0.1, 0.0, 0.0], [0.2, 0.0, 0.0]]
+x: R[3] = [0.0, 0.0, 0.0]
+
+results = E_multiple_particles(charges, positions, x)
+results
