@@ -1,0 +1,74 @@
+# assume, m=1, k=1, g=1, l0=1
+# H = (p_R**2)/(2m)
+#   + (p_theta**2)/(2 m R**2)
+#   - m g R cos(theta)
+#   + (1/2) k (R - l0)**2
+
+
+# calculate gradients
+# dR/dt      = p_R
+# dtheta/dt  = p_theta / R**2
+# dp_R/dt    = (p_theta**2)/R**3 + cos(theta) - (R - 1)
+# dp_theta/dt = - R sin(theta)
+# State x = [R, theta, p_R, p_theta] ∈ ℝ[4]
+
+
+def tanh(x: ℝ): ℝ:
+    return (exp(x) - exp(0.0 - x)) / (exp(x) + exp(0.0 - x))
+
+class HamiltonianNet(W1: ℝ[M,N], b1: ℝ[M], w2: ℝ[M], b2: ℝ):
+    def λ(x: ℝ[4]) → ℝ[4]:
+        h : ℝ = w2 @ tanh(W1 @ x + b1) + b2
+        gradients =grad(h, x)
+        gradient1 =grad(h, x)[0]
+        gradient2 =grad(h, x)[1]
+        gradient3 =grad(h, x)[2]
+        gradient4 =grad(h, x)[3]
+        symplectic_gradient: R[4] = [gradients[0], gradients[0], gradients[0], gradients[0]]
+        return symplectic_gradient
+    
+    def loss(symplectic_gradient: ℝ[4], target: ℝ[N]) → ℝ:
+        lo : ℝ = (symplectic_gradient[0] - target[0]) ** 2.0 + (symplectic_gradient[1] - target[1]) ** 2.0 + (symplectic_gradient[2] - target[2]) ** 2.0 + (symplectic_gradient[3] - target[3]) ** 2.0
+        return lo
+
+
+W1: R[8, 4] = [[0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1],
+ [0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1]]
+b1: R[8] = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+w2: R[8] = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+b2: R = 0.1
+
+H_net = HamiltonianNet(W1, b1, w2, b2)
+
+H_net([0.1, 0.1, 0.1, 0.1])
+
+
+
+X: ℝ[8,4] = [
+ [1.0,  0.0,        1.0,  0.0],
+ [1.0,  0.0,        0.0,  1.0],
+ [1.0,  1.570796,   0.0,  0.0],   
+ [1.2,  0.0,        0.5,  0.0],
+ [0.8,  0.0,       -0.5,  0.0],
+ [1.0,  0.785398,   0.0,  0.5],  
+ [1.0, -0.785398,   0.0, -0.5],  
+ [1.1,  0.1,        0.2, -0.3]
+]
+y: ℝ[8,4] = [
+ [ 1.0,   0.0,        1.0,        0.0       ],
+ [ 0.0,   1.0,        2.0,        0.0       ],
+ [ 0.0,   0.0,        0.0,       -1.0       ],
+ [ 0.5,   0.0,        0.8,        0.0       ],
+ [-0.5,   0.0,        1.2,        0.0       ],
+ [ 0.0,   0.5,        0.957107,  -0.707107  ],
+ [ 0.0,  -0.5,        0.957107,   0.707107  ],
+ [ 0.2,  -0.247934,   0.941352,  -0.109817  ]
+]
+
+
+
+# ------------------------------------------------------------
+# Evaluate before training
+# ------------------------------------------------------------
+loss_before = evaluate(H_net, X, y)
+loss_before
