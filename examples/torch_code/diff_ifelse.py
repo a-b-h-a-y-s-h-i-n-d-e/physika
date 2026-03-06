@@ -7,13 +7,15 @@ from runtime import compute_grad
 
 # === Functions ===
 def f(x):
-    x = torch.as_tensor(x).float()
-    return torch.where(x > 0.0, torch.as_tensor((x * x)).float(), torch.as_tensor((-x)).float())
+    if x > 0.0:
+        return (x * x)
+    else:
+        return (-x)
 
 # === Program ===
-a = 3.0
+a = torch.tensor(3.0, requires_grad=True)
 physika_print(f(a))
-physika_print(compute_grad(f, a))
-b = (-2.0)
+physika_print(compute_grad(f(a), a))
+b = torch.tensor((-2.0), requires_grad=True)
 physika_print(f(b))
-physika_print(compute_grad(f, b))
+physika_print(compute_grad(f(b), b))

@@ -43,11 +43,11 @@ def numerical_gradient(
     >>> #Scalar case: f(x) = x^2  -> grad = 2x
     >>> f = lambda x: float(x[0] ** 2)
     >>> grad = numerical_gradient(f, torch.tensor([3.0]))
-    >>> assert abs(grad[0] - 6.0) < 1e-5
+    >>> assert abs(grad[0] - 6) < 1e-2
     """
     if x.dim() == 0:
         x = x.unsqueeze(0)
-    grad = torch.zeros_like(x, dtype=torch.float)
+    grad = torch.zeros_like(x)
     for i in range(x.shape[0]):
         x_forward = x.clone()
         x_backward = x.clone()

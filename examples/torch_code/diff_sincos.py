@@ -7,22 +7,24 @@ from runtime import compute_grad
 
 # === Functions ===
 def f(x):
-    x = torch.as_tensor(x).float()
-    return torch.where(x > 0.0, torch.as_tensor(torch.cos(x)).float(), torch.as_tensor(torch.sin(x)).float())
+    if x > 0.0:
+        return torch.cos(x)
+    else:
+        return torch.sin(x)
 
 # === Program ===
-x0 = (-1.5)
+x0 = torch.tensor((-1.5), requires_grad=True)
 physika_print(f(x0))
-physika_print(compute_grad(f, x0))
-x1 = (-0.5)
+physika_print(compute_grad(f(x0), x0))
+x1 = torch.tensor((-0.5), requires_grad=True)
 physika_print(f(x1))
-physika_print(compute_grad(f, x1))
-x2 = 0.5
+physika_print(compute_grad(f(x1), x1))
+x2 = torch.tensor(0.5, requires_grad=True)
 physika_print(f(x2))
-physika_print(compute_grad(f, x2))
-x3 = 1.5
+physika_print(compute_grad(f(x2), x2))
+x3 = torch.tensor(1.5, requires_grad=True)
 physika_print(f(x3))
-physika_print(compute_grad(f, x3))
-x4 = 3.14
+physika_print(compute_grad(f(x3), x3))
+x4 = torch.tensor(3.14, requires_grad=True)
 physika_print(f(x4))
-physika_print(compute_grad(f, x4))
+physika_print(compute_grad(f(x4), x4))

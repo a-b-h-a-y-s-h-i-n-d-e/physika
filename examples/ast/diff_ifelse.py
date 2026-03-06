@@ -10,11 +10,7 @@ EXPECTED = {'functions': {'f': {'params': [('x', 'ℝ')],
  'program': [('func_def', 'f'),
              ('decl', 'a', 'ℝ', ('num', 3.0), 10),
              ('expr', ('call', 'f', [('var', 'a')]), 0),
-             ('expr',
-              ('call', 'grad', [('call', 'f', [('var', 'a')]), ('var', 'a')]),
-              0),
+             ('expr', ('call', 'grad', [('call', 'f', [('var', 'a')]), ('var', 'a')]), 0),
              ('decl', 'b', 'ℝ', ('neg', ('num', 2.0)), 15),
              ('expr', ('call', 'f', [('var', 'b')]), 0),
-             ('expr',
-              ('call', 'grad', [('call', 'f', [('var', 'b')]), ('var', 'b')]),
-              0)]}
+             ('expr', ('call', 'grad', [('call', 'f', [('var', 'b')]), ('var', 'b')]), 0)]}
