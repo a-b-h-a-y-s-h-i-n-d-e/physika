@@ -1,0 +1,25 @@
+#-------------------------------------------------------
+# heat equation stencil using Finite Differences method
+#-------------------------------------------------------
+x : Symbol
+t : Symbol
+dt : Symbol
+dx : Symbol
+alpha : Symbol
+u : Function
+
+lhs = (u(x, t+dt) - u(x, t)) / dt
+rhs = alpha * (u(x+dx, t) - 2.0*u(x, t) + u(x-dx, t)) / (dx**2)
+
+eq = Eq(lhs, rhs)
+stencil = sympy_solve(eq, u(x, t+dt))
+stencil
+
+u_left : Symbol
+u_center : Symbol  
+u_right : Symbol
+
+stencil_expr = subs(stencil[0], u(x+dx, t), u_right, u(x-dx, t), u_left, u(x, t), u_center)
+stencil_expr
+stencil_fn = lambdify([u_left, u_center, u_right, dx, dt, alpha], stencil_expr)
+stencil_fn(0.5, 1.0, 0.5, 0.25, 0.01, 0.1)
