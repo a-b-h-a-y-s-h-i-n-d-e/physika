@@ -21,6 +21,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
+        id: install
         run: |
           pip install --upgrade pip
           pip install -e ".[dev]"
@@ -28,17 +29,12 @@ jobs:
       - name: yapf (formatting)
         continue-on-error: true
         run: |
-          CHANGED_FILES=`git diff --name-only $COMMIT_RANGE | grep .py$ || true`
-          if [ -n "$CHANGED_FILES" ]; then
-            yapf -d $CHANGED_FILES
-          fi
+          yapf -d --recursive .
 
       - name: flake8 (code style)
-        if: ${{ (success() || failure()) && (steps.install.outcome == 'failure' || steps.install.outcome == 'success') }}
-        shell: bash -l {0}
+        if: success() || failure()
         run: flake8 .
 
       - name: mypy (type annotations)
-        if: ${{ (success() || failure()) && (steps.install.outcome == 'failure' || steps.install.outcome == 'success') }}
-        shell: bash -l {0}
+        if: success() || failure()
         run: mypy . --ignore-missing-imports --exclude examples/
