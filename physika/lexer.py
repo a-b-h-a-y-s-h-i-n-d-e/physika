@@ -59,7 +59,8 @@ t_TIMES = r"\*"
 t_INTDIV = r"//"  # must come before t_DIVIDE so // matches before /
 t_DIVIDE = r"/"
 t_MATMUL = r"@"
-# Comparison operators (longer patterns first so PLY matches them before single-char tokens)
+# Comparison operators:
+# (longer patterns first so PLY matches them before single-char tokens)
 t_EQEQ = r"=="
 t_NEQ = r"!="
 t_LEQ = r"<="
@@ -103,7 +104,7 @@ def t_IMAGINARY(t):
 
 
 def t_TYPE(t):
-    r"(ℝ|\\mathbb\{R\}|\\R|ℤ|ℕ|R(?![a-zA-Z0-9_])|Z(?![a-zA-Z0-9_])|N(?![a-zA-Z0-9_]))"
+    r"(ℝ|\\mathbb\{R\}|\\R|ℤ|ℕ|R(?![a-zA-Z0-9_])|Z(?![a-zA-Z0-9_])|N(?![a-zA-Z0-9_]))"  # noqa: E501
     if t.value in ("ℤ", "Z"):
         t.value = "ℤ"
     elif t.value in ("ℕ", "N"):

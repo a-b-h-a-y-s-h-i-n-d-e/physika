@@ -1,14 +1,19 @@
-from typing import Dict, List, Set, Any
+from typing import Dict, Set, Any
 
 from physika.utils.ast_utils import (
-    ast_uses_solve, ast_uses_func, collect_grad_targets,
-    generate_function, generate_class, generate_statement,
+    ast_uses_solve,
+    ast_uses_func,
+    collect_grad_targets,
+    generate_function,
+    generate_class,
+    generate_statement,
 )
 
 
 def from_ast_to_torch(unified_ast: Dict[str, Any],
                       print_code: bool = True) -> str:
-    """Convert a unified AST into a complete, executable Python/PyTorch source string.
+    """Convert a unified AST into a complete, executable Python/PyTorch
+    source string.
 
     This conversion is done in two passes:
 
@@ -70,7 +75,8 @@ def from_ast_to_torch(unified_ast: Dict[str, Any],
     >>> # Example #2: function definition and call
     >>> unified_ast = {
     ...     "functions": {
-    ...         "f": {"params": [("x", "ℝ")], "body": ("call", "exp", [("var", "x")]), "statements": []},
+    ...         "f": {"params": [("x", "ℝ")], "body": ("call", "exp",
+    ...         [("var", "x")]), "statements": []},
     ...     },
     ...     "classes": {},
     ...     "program": [("expr", ("call", "f", [("num", 1.0)]), 2)],
