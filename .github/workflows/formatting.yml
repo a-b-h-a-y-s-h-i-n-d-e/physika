@@ -28,11 +28,17 @@ jobs:
 
       - name: yapf (formatting)
         run: |
-          yapf -d --recursive .
+          DIFF=$(yapf -d --recursive .)
+          if [ -n "$DIFF" ]; then
+            echo "$DIFF"
+            echo "--- $(echo "$DIFF" | grep -c '^---') file(s) need reformatting"
+            exit 1
+          fi
 
       - name: flake8 (code style)
         if: success() || failure()
-        run: flake8 .
+        run: |
+          flake8 . --exclude examples,parsetab.py,parser.out,*.egg-info --statistics --count
 
       - name: mypy (type annotations)
         if: success() || failure()
