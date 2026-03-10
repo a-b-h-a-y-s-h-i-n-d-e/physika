@@ -28,7 +28,7 @@ jobs:
 
       - name: yapf (formatting)
         run: |
-          DIFF=$(yapf -d --recursive .)
+          DIFF=$(yapf -d --recursive . || true)
           if [ -n "$DIFF" ]; then
             echo "$DIFF"
             echo "--- $(echo "$DIFF" | grep -c '^---') file(s) need reformatting"
