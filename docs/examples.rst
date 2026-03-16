@@ -36,7 +36,7 @@ Tensors (contravariant / covariant)
 ----
 
 Control Flow Operators & Differentiation
-----------------------------
+----------------------------------------
 
 Conditionals
 ~~~~~~~~~~~~~~~~~~
