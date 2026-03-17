@@ -687,7 +687,7 @@ def condition_to_expr(cond: ASTNode, current_loop_var=None) -> str:
 
     Parameters
     ----------
-    cond : ASTNode
+    cond : tuple[str, ...]
         A condition tuple like ``("cond_eq", left, right)``.
     current_loop_var : str or set, optional
         Active loop variable(s) for disambiguating the imaginary token ``i``.
@@ -872,7 +872,7 @@ def emit_body_stmts(
 
     prefix = "    " * indent_level
     for stmt in stmts:
-        if stmt is None:
+        if not isinstance(stmt, tuple):
             continue
         stmt_op = stmt[0]
         if stmt_op == "body_decl":
@@ -996,7 +996,7 @@ def emit_body_stmts(
                 lines.append(f"{prefix}{tensor_name} = {inner_expr}")
 
 
-def generate_function(name: str, func_def: dict[str, ASTNode]) -> str:
+def generate_function(name: str, func_def: dict[str, Any]) -> str:
     """Generate a Python/PyTorch function definition from a function AST.
 
     Translates a Physika function (params, body statements, return
@@ -1051,7 +1051,7 @@ def generate_function(name: str, func_def: dict[str, ASTNode]) -> str:
     known_vars = list(param_names)
 
     # Track equation string variable names
-    equation_vars = set()
+    equation_vars: set[str] = set()
 
     # Helper to generate solve call with known variables
     # (kept local: it accumulates known_vars/equation_vars as statements
@@ -1156,7 +1156,7 @@ def emit_for_stmts(
     prefix = " " * indent
     result = []
     for s in stmts:
-        if s is None:
+        if not isinstance(s, tuple):
             continue
         body_op = s[0]
         if body_op == "for_assign":
@@ -1330,7 +1330,7 @@ def generate_class(name: str, class_def: dict[str, ASTNode]) -> str:
         )
         lines.append(f"        for {loop_var} in range(n):")
         for stmt in loop_body:
-            if stmt and stmt[0] == "loop_assign":
+            if isinstance(stmt, tuple) and stmt[0] == "loop_assign":
                 var_name = stmt[1]
                 expr = stmt[2]
                 expr_code = ast_to_torch_expr(expr)
@@ -1370,7 +1370,7 @@ def generate_class(name: str, class_def: dict[str, ASTNode]) -> str:
 
         # Emit loss body statements
         for stmt in loss_stmts:
-            if stmt is None:
+            if not isinstance(stmt, tuple):
                 continue
             stmt_op = stmt[0]
             if stmt_op == "body_decl":
@@ -1437,7 +1437,7 @@ def generate_statement(stmt: ASTNode,
     >>> generate_statement(("expr", ("var", "x"), 0), set())
     'physika_print(x)'
     """
-    if stmt is None:
+    if not isinstance(stmt, tuple):
         return None
 
     op = stmt[0]
@@ -1522,7 +1522,7 @@ def build_unified_ast(
     program_ast: list[ASTNode],
     symbol_table: dict[str, dict[str, Any]],
     print_ast: bool = False,
-) -> dict[str, Union[dict[str, ASTNode], list[ASTNode]]]:
+) -> dict[str, Any]:
     """Build a unified AST combining definitions and program statements.
 
     Merges the flat ``program_ast`` (list of statement tuples produced
