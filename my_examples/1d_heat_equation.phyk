@@ -1,0 +1,39 @@
+x, t, alpha, dt, dx : Symbol
+u : Function
+
+eq: Equation := diff(u(x,t), t) = alpha * diff(u(x,t), x, 2)
+eq
+
+discrete = subs(
+eq,
+diff(u(x,t), t), (u(x,t+dt)-u(x,t))/dt,
+diff(u(x,t), x,2), (u(x+dx,t)-2*u(x,t)+u(x-dx,t))/dx**2
+)
+
+stencil = symbolic_solve(discrete, u(x,t+dt))
+stencil
+
+u_left, u_center, u_right : Symbol
+
+stencil_expr = subs(
+stencil[0],
+u(x+dx,t), u_right,
+u(x,t), u_center,
+u(x-dx,t), u_left
+)
+stencil_fn = lambdify(
+[u_left, u_center, u_right, dx, dt, alpha],
+stencil_expr
+)
+
+
+alpha : R = 0.1
+dx : R = 0.25
+dt : R = 0.01
+
+
+for i:
+u_next[i] = u[i] + alpha * dt / (dx**2) * (u[i+1] - 2*u[i] + u[i-1])
+
+u_next
+
