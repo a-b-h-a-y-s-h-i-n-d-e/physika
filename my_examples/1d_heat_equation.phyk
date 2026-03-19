@@ -1,39 +1,59 @@
-x, t, alpha, dt, dx : Symbol
-u : Function
+x, t, alpha, dx : Symbol
 
-eq: Equation := diff(u(x,t), t) = alpha * diff(u(x,t), x, 2)
-eq
+u_fn : Function
+
+eq : Equation := diff(u_fn(x,t), t) = alpha * diff(u_fn(x,t), x, 2)
 
 discrete = subs(
-eq,
-diff(u(x,t), t), (u(x,t+dt)-u(x,t))/dt,
-diff(u(x,t), x,2), (u(x+dx,t)-2*u(x,t)+u(x-dx,t))/dx**2
+    eq,
+    diff(u_fn(x,t), x, 2),
+    (u_fn(x+dx,t) - 2*u_fn(x,t) + u_fn(x-dx,t)) / dx**2
 )
 
-stencil = symbolic_solve(discrete, u(x,t+dt))
-stencil
+stencil = symbolic_solve(discrete, diff(u_fn(x,t), t))
+
 
 u_left, u_center, u_right : Symbol
 
-stencil_expr = subs(
-stencil[0],
-u(x+dx,t), u_right,
-u(x,t), u_center,
-u(x-dx,t), u_left
-)
-stencil_fn = lambdify(
-[u_left, u_center, u_right, dx, dt, alpha],
-stencil_expr
+mol_expr = subs(
+    stencil[0],
+    u_fn(x+dx,t), u_right,
+    u_fn(x,t),    u_center,
+    u_fn(x-dx,t), u_left
 )
 
+mol_fn = lambdify(
+    [u_left, u_center, u_right, dx, alpha],
+    mol_expr
+)
 
-alpha : R = 0.1
-dx : R = 0.25
-dt : R = 0.01
+
+class RK4(f: ℝ → ℝ, dt: ℝ, n: ℕ):
+    def λ(x: ℝ[5]) → ℝ[5]:
+        for k:
+            k1 = f(x)
+            k2 = f(x + 0.5 * dt * k1)
+            k3 = f(x + 0.5 * dt * k2)
+            k4 = f(x + dt * k3)
+            x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        return x
 
 
-for i:
-u_next[i] = u[i] + alpha * dt / (dx**2) * (u[i+1] - 2*u[i] + u[i-1])
+# numeric part
+alpha : ℝ = 0.1
+dx    : ℝ = 0.25
+dt    : ℝ = 0.01
 
-u_next
+
+def heat(u : ℝ[5]) : ℝ[5]:
+    interior : ℝ[3] = for i : ℕ(3) -> mol_fn(u[i], u[i+1], u[i+2], dx, alpha)
+    return [0.0, interior[0], interior[1], interior[2], 0.0]
+
+u0 : ℝ[5] = [0.0, 1, 2, 1, 0.0]
+
+solver = RK4(heat, dt, 10)
+solver(u0)
+
+#step = RK4(heat, dt, 1)
+#simulate_heat(step, u0, 100, dt)
 
