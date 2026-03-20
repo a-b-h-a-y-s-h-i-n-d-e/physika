@@ -59,7 +59,6 @@ BodyStmtTag = Literal[
     "loop_pluseq",  # x += expr         inside for-loop body
     "loop_index_pluseq",  # C[i,...] += expr  nD accumulation inside for-loop
     #                                             body
-    "init_assign",  # x = expr          pre-loop initialisation
     "for_assign",  # x = expr          program-level for body
     "for_pluseq",  # x += expr         program-level for body
     "for_call",  # f(x)              program-level for body
@@ -949,24 +948,14 @@ def emit_body_stmts(
             )
             emit_func_loop_body(loop_body, indent_level + 1, lines, loop_var)
         elif stmt_op == "body_zeros_decl":
-            # Type annotation for an accumulation target. `codegen``
-            # emits nothing.
-            # Example:
-            #   C : ℝ[n, o]
+            # Type annotation for an accumulation target.
             # The paired body_for_accum emits the `torch.stack` expression that
             # defines the tensor.
             pass
 
         elif stmt_op == "body_for_accum":
             # Generates one differentiable torch.stack per += target.
-            # Example:
-            #   for i j k:
-            #       C[i, j] += A[i, k] * B[k, j]
-            #       D[i, j] += B[i, k] * A[k, j]
-            # Parameters:
-            # stmt[1] — loop variable list [i, j, k]
-            # stmt[2] — loop body statements (loop_index_pluseq nodes)
-            # Emits: one `name = torch.stack(...)`
+            # Emits one `name = torch.stack(...)`
             # line per unique += target tensor.
             _, loop_vars, loop_body = stmt
             active = set(loop_vars)
@@ -1080,6 +1069,7 @@ def generate_function(name: str, func_def: dict[str, ASTNode]) -> str:
         return ast_to_torch_expr(expr)
 
     # Use if/else (not torch.where) when all params are scalars
+    # — allows recursion
     scalar_only = all(pt == "\u211d" for _, pt in params)
 
     # Generate body statements
