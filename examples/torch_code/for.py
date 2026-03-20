@@ -236,22 +236,15 @@ for i in range(int(0), int(2.0)):
     else:
         a = a + 5.0
 physika_print(a)
-vals = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
+vals = torch.tensor([1.0, (-2.0), 3.0, 4.0, 5.0])
 flag = 1.0
-sq_or_id = torch.stack([vals[int(i)] for _fi_i in range(int(len(vals))) for i in [torch.tensor(float(_fi_i))]])
+res = torch.stack([vals[int(i)] for _fi_i in range(int(len(vals))) for i in [torch.tensor(float(_fi_i))]])
 if flag > 0.0:
-    sq_or_id = torch.stack([(vals[int(i)] ** 2.0) for _fi_i in range(int(5.0)) for i in [torch.tensor(float(_fi_i))]])
+    res = torch.stack([(vals[int(i)] ** 3.0) for _fi_i in range(int(5.0)) for i in [torch.tensor(float(_fi_i))]])
 else:
-    sq_or_id = torch.stack([vals[int(i)] for _fi_i in range(int(5.0)) for i in [torch.tensor(float(_fi_i))]])
-physika_print(sq_or_id)
-raw = torch.stack([torch.as_tensor(3.0).float(), torch.as_tensor((0.0 - 1.0)).float(), torch.as_tensor(2.0).float(), torch.as_tensor((0.0 - 4.0)).float()])
-use_sq = 1.0
-chosen = torch.stack([raw[int(i)] for _fi_i in range(int(len(raw))) for i in [torch.tensor(float(_fi_i))]])
-if use_sq > 0.0:
-    chosen = torch.stack([(raw[int(i)] ** 2.0) for _fi_i in range(int(len(raw))) for i in [torch.tensor(float(_fi_i))]])
-else:
-    chosen = torch.stack([raw[int(i)] for _fi_i in range(int(len(raw))) for i in [torch.tensor(float(_fi_i))]])
-total_c = torch.sum(torch.stack([chosen[int(i)] for _fi_i in range(int(len(chosen))) for i in [torch.tensor(float(_fi_i))]]))
+    res = torch.stack([vals[int(i)] for _fi_i in range(int(5.0)) for i in [torch.tensor(float(_fi_i))]])
+physika_print(res)
+total_c = torch.sum(torch.stack([res[int(i)] for _fi_i in range(int(len(res))) for i in [torch.tensor(float(_fi_i))]]))
 physika_print(total_c)
 scale = 2.0
 W = torch.stack([torch.stack([(i + j) for _fi_j in range(int(4.0)) for j in [torch.tensor(float(_fi_j))]]) for _fi_i in range(int(3.0)) for i in [torch.tensor(float(_fi_i))]])
