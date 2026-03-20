@@ -572,12 +572,7 @@ def ast_to_torch_expr(node: ASTNode, indent: int = 0, current_loop_var: str | No
         if func_name in torch_funcs:
             return f"{torch_funcs[func_name]}({', '.join(arg_strs)})"
         elif func_name == "grad":
-            # grad(f(x), x) → compute_grad(f, x)  — pass the callable, not the evaluated value.
-            # This lets compute_grad re-evaluate f on a fresh requires_grad leaf,
-            # which is required for both scalar and vector-output functions.
-            first_arg = args[0]
-            if isinstance(first_arg, tuple) and first_arg[0] == "call" and isinstance(first_arg[1], str):
-                return f"compute_grad({first_arg[1]}, {arg_strs[1]})"
+            # grad(output, input) -> compute_grad(output, input)
             return f"compute_grad({', '.join(arg_strs)})"
         else:
             return f"{func_name}({', '.join(arg_strs)})"
