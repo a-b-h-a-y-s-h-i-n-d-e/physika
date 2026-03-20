@@ -32,7 +32,8 @@ StmtTag = Literal[
     "expr",       # expr                  -> (tag, expr, lineno)
     "func_def",   # def f(...)            -> (tag, name)
     "class_def",  # class C(...)          -> (tag, name)
-    "for_loop",   # for i: ...            -> (tag, var, [body], [arrays], lineno)
+    "for_loop",       # for i: ...          -> (tag, var, [body], [arrays], lineno)
+    "for_loop_range", # for i: ℕ(n) / ℕ(s,e): -> (tag, var, start, end, [body], lineno)
 ]
 
 BodyStmtTag = Literal[
@@ -664,13 +665,15 @@ def ast_to_torch_expr(node: ASTNode, indent: int = 0, current_loop_var: str | No
 
 
 
-def condition_to_expr(cond: ASTNode) -> str:
+def condition_to_expr(cond: ASTNode, current_loop_var=None) -> str:
     """Convert a condition AST node to a Python boolean expression string.
 
     Parameters
     ----------
     cond : ASTNode
         A condition tuple like ``("cond_eq", left, right)``.
+    current_loop_var : str or set, optional
+        Active loop variable(s) for disambiguating the imaginary token ``i``.
 
     Returns
     -------
@@ -691,9 +694,76 @@ def condition_to_expr(cond: ASTNode) -> str:
         "cond_leq": "<=", "cond_geq": ">=",
     }
     op = cond[0]
-    left = ast_to_torch_expr(cond[1])
-    right = ast_to_torch_expr(cond[2])
+    left = ast_to_torch_expr(cond[1], current_loop_var=current_loop_var)
+    right = ast_to_torch_expr(cond[2], current_loop_var=current_loop_var)
     return f"{left} {op_map[op]} {right}"
+
+
+def emit_func_loop_body(
+    loop_body: list,
+    indent_level: int,
+    lines: list[str],
+    loop_var,
+) -> None:
+    """Emit code lines for a list of ``func_loop_stmt`` AST nodes.
+
+    Recurse for nested ``loop_for_range``, ``loop_if``, and ``loop_if_else``
+    nodes, extending ``loop_var`` with each new inner variable.
+
+    ``ast_to_torch_expr`` resolves the imaginary-unit token ``i`` to the
+    correct Python name instead of ``torch.tensor(1j)``.
+
+    Parameters
+    ----------
+    loop_body : list[ASTNode]
+        ``func_loop_stmt`` nodes. ``None`` entries are skipped.
+        Supported tags:
+        - ``loop_assign``
+        - ``loop_pluseq``
+        - ``loop_index_pluseq``
+        - ``loop_for_range``
+        - ``loop_if``
+        - ``loop_if_else``
+    indent_level : int
+        Current indentation depth. Each level adds 4 spaces.
+    lines : list[str]
+        Output list. Source lines are appended.
+    loop_var : str or set[str]
+        Active loop variable name(s).  Grows as inner loops are entered.
+    """
+    prefix = "    " * indent_level
+    active = loop_var if isinstance(loop_var, set) else ({loop_var} if loop_var else set())
+    for loop_stmt in loop_body:
+        if loop_stmt is None:
+            continue
+        tag = loop_stmt[0]
+        if tag == "loop_assign":
+            _, var_name, expr = loop_stmt
+            lines.append(f"{prefix}{var_name} = {ast_to_torch_expr(expr, current_loop_var=active)}")
+        elif tag == "loop_pluseq":
+            _, var_name, expr = loop_stmt
+            lines.append(f"{prefix}{var_name} = {var_name} + {ast_to_torch_expr(expr, current_loop_var=active)}")
+        elif tag == "loop_index_pluseq":
+            _, arr_name, idx_list, rhs = loop_stmt
+            idx_codes = [ast_to_torch_expr(e, current_loop_var=active) for e in idx_list]
+            rhs_code = ast_to_torch_expr(rhs, current_loop_var=active)
+            lines.append(f"{prefix}{arr_name}[{', '.join(f'int({c})' for c in idx_codes)}] += {rhs_code}")
+        elif tag == "loop_for_range":
+            _, inner_var, start_expr, end_expr, inner_body = loop_stmt
+            start_code = ast_to_torch_expr(start_expr, current_loop_var=active)
+            end_code = ast_to_torch_expr(end_expr, current_loop_var=active)
+            lines.append(f"{prefix}for {inner_var} in range(int({start_code}), int({end_code})):")
+            emit_func_loop_body(inner_body, indent_level + 1, lines, active | {inner_var})
+        elif tag == "loop_if":
+            _, cond, then_body = loop_stmt
+            lines.append(f"{prefix}if {condition_to_expr(cond, current_loop_var=active)}:")
+            emit_func_loop_body(then_body, indent_level + 1, lines, active)
+        elif tag == "loop_if_else":
+            _, cond, then_body, else_body = loop_stmt
+            lines.append(f"{prefix}if {condition_to_expr(cond, current_loop_var=active)}:")
+            emit_func_loop_body(then_body, indent_level + 1, lines, active)
+            lines.append(f"{prefix}else:")
+            emit_func_loop_body(else_body, indent_level + 1, lines, active)
 
 
 # Code generators (function / class / statement)
@@ -822,17 +892,13 @@ def emit_body_stmts(
                 lines.append(f"{prefix}for {loop_var} in range(len({indexed_arrays[0]})):")
             else:
                 lines.append(f"{prefix}for {loop_var} in range(n):")
-            for loop_stmt in loop_body:
-                if loop_stmt is None:
-                    continue
-                if loop_stmt[0] == "loop_assign":
-                    _, var_name, expr = loop_stmt
-                    expr_code = ast_to_torch_expr(expr, current_loop_var=loop_var)
-                    lines.append(f"{prefix}    {var_name} = {expr_code}")
-                elif loop_stmt[0] == "loop_pluseq":
-                    _, var_name, expr = loop_stmt
-                    expr_code = ast_to_torch_expr(expr, current_loop_var=loop_var)
-                    lines.append(f"{prefix}    {var_name} = {var_name} + {expr_code}")
+            emit_func_loop_body(loop_body, indent_level + 1, lines, loop_var)
+        elif stmt_op == "body_for_range":
+            _, loop_var, start_expr, end_expr, loop_body = stmt
+            start_code = ast_to_torch_expr(start_expr)
+            end_code = ast_to_torch_expr(end_expr)
+            lines.append(f"{prefix}for {loop_var} in range(int({start_code}), int({end_code})):")
+            emit_func_loop_body(loop_body, indent_level + 1, lines, loop_var)
         elif stmt_op == "body_zeros_decl":
             # Type annotation for an accumulation target. `codegen`` emits nothing.
             # Example:
@@ -1007,26 +1073,29 @@ def generate_function(name: str, func_def: dict[str, ASTNode]) -> str:
 
 def emit_for_stmts(
     stmts: list[ASTNode],
-    indent: int =4,
+    indent: int = 4,
+    loop_var: str | None = None,
 ) -> list[str]:
-    """Emit Python code for the body of a top-level physika if-else branch.
+    """Emit Python code for a top-level for-loop or if-else branch body.
 
-    Each statement in `stmts` is one of the flat ``for_assign``, ``for_pluseq``,
-    or ``for_call`` AST nodes that appear inside an ``if_else`` or ``if_only`` program statement.
-    The function converts each node into a single line of Python code
-    and returns the collected lines.
+    Handles ``for_assign``, ``for_pluseq``, ``for_index_assign``,
+    ``for_call``, and nested ``for_loop`` / ``for_loop_range`` nodes.
+    Recurses for nested loops, increasing indentation by 4 spaces per level.
 
     Parameters
     ----------
     stmts: list[ASTNode]
-        List of ``for_assign``, ``for_pluseq``, or ``for_call`` AST nodes.
+        List of ``for_assign``, ``for_pluseq``, ``for_index_assign``,
+        ``for_call``, ``for_loop`` or ``for_loop_range``  AST nodes.
     indent: int
         Integer representing the whitespace in emitted line.
+    loop_var: str or None
+        Enclosing loop variable name, forwarded to ``ast_to_torch_expr``.
 
     Returns
     -------
     list[str]
-        Python code lines.
+        Python code lines .
 
     Examples
     --------
@@ -1043,14 +1112,51 @@ def emit_for_stmts(
         body_op = s[0]
         if body_op == "for_assign":
             _, var_name, expr = s
-            result.append(f"{prefix}{var_name} = {ast_to_torch_expr(expr)}")
+            result.append(f"{prefix}{var_name} = {ast_to_torch_expr(expr, current_loop_var=loop_var)}")
         elif body_op == "for_pluseq":
             _, var_name, expr = s
-            result.append(f"{prefix}{var_name} = {var_name} + {ast_to_torch_expr(expr)}")
+            result.append(f"{prefix}{var_name} = {var_name} + {ast_to_torch_expr(expr, current_loop_var=loop_var)}")
+        elif body_op == "for_index_assign":
+            _, arr_name, idx_expr, rhs_expr = s
+            idx_code = ast_to_torch_expr(idx_expr, current_loop_var=loop_var)
+            rhs_code = ast_to_torch_expr(rhs_expr, current_loop_var=loop_var)
+            result.append(f"{prefix}{arr_name}[int({idx_code})] = {rhs_code}")
         elif body_op == "for_call":
             _, func_name, arg_asts = s
-            arg_strs = [ast_to_torch_expr(arg) for arg in arg_asts]
+            arg_strs = [ast_to_torch_expr(arg, current_loop_var=loop_var) for arg in arg_asts]
             result.append(f"{prefix}{func_name}({', '.join(arg_strs)})")
+        elif body_op == "for_loop_range":
+            inner_var = s[1]
+            start_code = ast_to_torch_expr(s[2], current_loop_var=loop_var)
+            end_code = ast_to_torch_expr(s[3], current_loop_var=loop_var)
+            inner_body = s[4]
+            result.append(f"{prefix}for {inner_var} in range(int({start_code}), int({end_code})):")
+            # Accumulate all active loop vars so inner body can reference outer vars (e.g. 'i')
+            outer_vars = loop_var if isinstance(loop_var, set) else ({loop_var} if loop_var else set())
+            inner_loop_var = outer_vars | {inner_var}
+            result.extend(emit_for_stmts(inner_body, indent + 4, inner_loop_var))
+        elif body_op == "for_loop":
+            inner_var = s[1]
+            inner_body = s[2]
+            indexed_arrays = s[3]
+            if indexed_arrays:
+                result.append(f"{prefix}for {inner_var} in range(len({indexed_arrays[0]})):")
+            else:
+                result.append(f"{prefix}for {inner_var} in range(n):")
+            outer_vars = loop_var if isinstance(loop_var, set) else ({loop_var} if loop_var else set())
+            result.extend(emit_for_stmts(inner_body, indent + 4, outer_vars | {inner_var}))
+        elif body_op == "for_if":
+            _, cond, then_body = s
+            cond_code = condition_to_expr(cond, current_loop_var=loop_var)
+            result.append(f"{prefix}if {cond_code}:")
+            result.extend(emit_for_stmts(then_body, indent + 4, loop_var))
+        elif body_op == "for_if_else":
+            _, cond, then_body, else_body = s
+            cond_code = condition_to_expr(cond, current_loop_var=loop_var)
+            result.append(f"{prefix}if {cond_code}:")
+            result.extend(emit_for_stmts(then_body, indent + 4, loop_var))
+            result.append(f"{prefix}else:")
+            result.extend(emit_for_stmts(else_body, indent + 4, loop_var))
     return result
 
 
@@ -1296,36 +1402,21 @@ def generate_statement(stmt: ASTNode, grad_target_vars: set[str]) -> str | None:
         loop_var = stmt[1]
         body_statements = stmt[2]
         indexed_arrays = stmt[3]
-        lines = []
-        # Use first indexed array to get length
         if indexed_arrays:
-            arr_name = indexed_arrays[0]
-            lines.append(f"for {loop_var} in range(len({arr_name})):")
+            header = f"for {loop_var} in range(len({indexed_arrays[0]})):"
         else:
-            lines.append(f"for {loop_var} in range(n):  # TODO: determine n")
+            header = f"for {loop_var} in range(n):  # TODO: determine n"
+        lines = [header] + emit_for_stmts(body_statements, 4, loop_var)
+        return "\n".join(lines)
 
-        for body_stmt in body_statements:
-            if body_stmt is None:
-                continue
-            body_op = body_stmt[0]
-            if body_op == "for_assign":
-                _, var_name, expr = body_stmt
-                expr_code = ast_to_torch_expr(expr, current_loop_var=loop_var)
-                lines.append(f"    {var_name} = {expr_code}")
-            elif body_op == "for_pluseq":
-                _, var_name, expr = body_stmt
-                expr_code = ast_to_torch_expr(expr, current_loop_var=loop_var)
-                lines.append(f"    {var_name} = {var_name} + {expr_code}")
-            elif body_op == "for_index_assign":
-                _, arr_name, idx_expr, rhs_expr = body_stmt
-                idx_code = ast_to_torch_expr(idx_expr, current_loop_var=loop_var)
-                rhs_code = ast_to_torch_expr(rhs_expr, current_loop_var=loop_var)
-                lines.append(f"    {arr_name}[int({idx_code})] = {rhs_code}")
-            elif body_op == "for_call":
-                _, func_name, arg_asts = body_stmt
-                arg_strs = [ast_to_torch_expr(arg, current_loop_var=loop_var) for arg in arg_asts]
-                lines.append(f"    {func_name}({', '.join(arg_strs)})")
-
+    elif op == "for_loop_range":
+        # Explicit-range for loop: ("for_loop_range", loop_var, start_expr, end_expr, body_stmts, lineno)
+        loop_var = stmt[1]
+        start_code = ast_to_torch_expr(stmt[2])
+        end_code = ast_to_torch_expr(stmt[3])
+        body_statements = stmt[4]
+        lines = [f"for {loop_var} in range(int({start_code}), int({end_code})):"]
+        lines += emit_for_stmts(body_statements, 4, loop_var)
         return "\n".join(lines)
 
     elif op in ("if_else", "if_only"):

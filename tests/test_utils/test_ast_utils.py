@@ -5,7 +5,7 @@ import pytest
 
 from physika.lexer import lexer
 from physika.parser import parser, symbol_table
-from physika.utils.ast_utils import build_unified_ast, ExprTag, StmtTag, BodyStmtTag, TypeTag, ast_to_torch_expr, condition_to_expr, emit_body_stmts, emit_for_stmts, _is_loop_var, _decompose_chain, _infer_range, _lhs_var_name
+from physika.utils.ast_utils import build_unified_ast, ExprTag, StmtTag, BodyStmtTag, TypeTag, ast_to_torch_expr, condition_to_expr, emit_body_stmts, emit_for_stmts, emit_func_loop_body, _is_loop_var, _decompose_chain, _infer_range, _lhs_var_name, emit_func_loop_body
 
 
 
@@ -465,6 +465,114 @@ class TestEmitForStmts:
         Checks that empty statement lists produce no code lines.
         """
         assert emit_for_stmts([], 4) == []
+
+
+def _run_emit_loop_body(loop_body, indent_level=1, loop_var=None):
+    """Helper that calls ``_emit_func_loop_body`` and returns the generated lines."""
+    lines = []
+    emit_func_loop_body(loop_body, indent_level, lines, loop_var)
+    return lines
+
+
+class TestEmitFuncLoopBody:
+    """
+    Verify that ``_emit_func_loop_body`` correctly emits code lines for loop body statements
+    tags and the ``loop_var`` argument of the imaginary token ``i``.
+    """
+
+    def test_loop_assign(self):
+        """Verify ``loop_assign`` emits a plain assignment line."""
+        stmts = [("loop_assign", "cur", ("var", "x"))]
+        assert _run_emit_loop_body(stmts, loop_var="k") == ["    cur = x"]
+
+    def test_loop_pluseq(self):
+        """Verify ``loop_pluseq`` emits an accumulation line."""
+        stmts = [("loop_pluseq", "total", ("var", "x"))]
+        assert _run_emit_loop_body(stmts, loop_var="k") == ["    total = total + x"]
+
+    def test_loop_index_pluseq(self):
+        """Verify ``loop_index_pluseq`` emits an indexed ``+=`` line."""
+        stmts = [("loop_index_pluseq", "C", [("var", "i"), ("var", "j")], ("var", "v"))]
+        lines = _run_emit_loop_body(stmts, loop_var={"i", "j"})
+        assert lines == ["    C[int(i), int(j)] += v"]
+
+    def test_loop_for_range(self):
+        """Verify ``loop_for_range`` emits a ``for ... in range(...):`` header."""
+        inner = [("loop_pluseq", "total", ("var", "j"))]
+        stmts = [("loop_for_range", "j", ("num", 0), ("num", 5), inner)]
+        lines = _run_emit_loop_body(stmts, indent_level=1, loop_var="k")
+        assert lines == [
+            "    for j in range(int(0), int(5)):",
+            "        total = total + j",
+        ]
+
+    def test_loop_if(self):
+        """Verify ``loop_if`` emits a one side `if` block."""
+        cond = ("cond_gt", ("var", "x"), ("num", 0))
+        then_body = [("loop_pluseq", "total", ("var", "x"))]
+        stmts = [("loop_if", cond, then_body)]
+        lines = _run_emit_loop_body(stmts, loop_var="k")
+        assert lines == [
+            "    if x > 0:",
+            "        total = total + x",
+        ]
+
+    def test_loop_if_else(self):
+        """Verify ``loop_if_else`` emits both branches."""
+        cond = ("cond_gt", ("var", "x"), ("num", 0))
+        then_body = [("loop_pluseq", "total", ("var", "x"))]
+        else_body = [("loop_pluseq", "total", ("sub", ("num", 1), ("var", "x")))]
+        stmts = [("loop_if_else", cond, then_body, else_body)]
+        lines = _run_emit_loop_body(stmts, loop_var="k")
+        assert lines == [
+            "    if x > 0:",
+            "        total = total + x",
+            "    else:",
+            "        total = total + (1 - x)",
+        ]
+
+    def test_none_entries_skipped(self):
+        """Verify ``None`` entries in the loop body are ignored."""
+        stmts = [None, ("loop_assign", "y", ("num", 1)), None]
+        assert _run_emit_loop_body(stmts, loop_var="k") == ["    y = 1"]
+
+    def test_empty_body(self):
+        """Verify an empty body produces no lines."""
+        assert _run_emit_loop_body([], loop_var="k") == []
+
+    def test_indent_level(self):
+        """Verify each indent level adds 4 spaces."""
+        stmts = [("loop_assign", "y", ("num", 0))]
+        for level in range(4):
+            lines = _run_emit_loop_body(stmts, indent_level=level, loop_var="k")
+            assert lines == [f"{'    ' * level}y = 0"]
+
+    def test_imaginary_token_resolved_as_loop_var_i(self):
+        """Verify the imaginary token ``i`` is resolved to ``i`` when ``loop_var`` includes ``i``."""
+        # ("imaginary",) inside an index expr must emit `i`, not `torch.tensor(1j)`
+        stmts = [("loop_pluseq", "total", ("index", "arr", ("imaginary",)))]
+        lines = _run_emit_loop_body(stmts, loop_var="i")
+        assert "torch.tensor(1j)" not in lines[0]
+        assert "arr[int(i)]" in lines[0]
+
+    def test_loop_var_as_set(self):
+        """Verify ``loop_var`` can be passed as a set of active variable names."""
+        stmts = [("loop_assign", "v", ("var", "j"))]
+        lines_str = _run_emit_loop_body(stmts, loop_var={"i", "j"})
+        lines_set = _run_emit_loop_body(stmts, loop_var={"j"})
+        assert lines_str == lines_set == ["    v = j"]
+
+    def test_nested_for_range_extends_loop_var(self):
+        """Verify a nested ``loop_for_range`` adds its variable to the active set,
+        so the imaginary token inside the inner body resolves correctly."""
+        # outer var is "j" and inner var is "i"
+        inner_body = [("loop_pluseq", "total", ("index", "arr", ("imaginary",)))]
+        stmts = [("loop_for_range", "i", ("num", 0), ("num", 3), inner_body)]
+        lines = _run_emit_loop_body(stmts, indent_level=1, loop_var="j")
+        assert lines == [
+            "    for i in range(int(0), int(3)):",
+            "        total = total + arr[int(i)]",
+        ]
 
 
 def test_is_loop_var():

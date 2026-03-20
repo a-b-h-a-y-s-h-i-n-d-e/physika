@@ -304,6 +304,36 @@ def p_func_body_stmt_for_accum(p):
     loop_body = p[6]
     p[0] = ("body_for_accum", loop_vars, loop_body)
 
+def p_func_body_stmt_for_range(p):
+    """func_body_stmt : FOR ID COLON TYPE LPAREN func_expr RPAREN NEWLINE INDENT func_loop_body DEDENT
+                      | FOR ID COLON TYPE LPAREN func_expr RPAREN COLON NEWLINE INDENT func_loop_body DEDENT
+                      | FOR ID COLON TYPE LPAREN func_expr COMMA func_expr RPAREN NEWLINE INDENT func_loop_body DEDENT
+                      | FOR ID COLON TYPE LPAREN func_expr COMMA func_expr RPAREN COLON NEWLINE INDENT func_loop_body DEDENT"""
+    # Explicit range for loop in a function body.
+    # for i: ℕ(end) or for i: ℕ(start, end)
+    # Example:
+    #   for i: ℕ(n): implicit start of 0.
+    #       total += i
+    #   for i: ℕ(low, high):
+    #       total += arr[i]
+    # Parameters:
+    # p[2] — loop variable name
+    # p[6] — end expression (1-arg form) or start expression (2-arg form)
+    # p[8] — end expression (2-arg form only)
+    # p[10..13] — func_loop_body statements (position shifts with each alternative)
+    # Returns:
+    #   ("body_for_range", var, start_expr, end_expr, loop_body)
+    zero = ("num", 0)
+    n = len(p)
+    if n == 12:
+        p[0] = ("body_for_range", p[2], zero, p[6],  p[10])
+    elif n == 13:
+        p[0] = ("body_for_range", p[2], zero, p[6],  p[11])
+    elif n == 14:
+        p[0] = ("body_for_range", p[2], p[6], p[8],  p[12])
+    else:
+        p[0] = ("body_for_range", p[2], p[6], p[8],  p[13])
+
 def p_func_body_stmt_for(p):
     """func_body_stmt : FOR ID COLON NEWLINE INDENT func_loop_body DEDENT"""
     # for k:
@@ -425,10 +455,27 @@ def p_func_loop_body_multi(p):
 
 def p_func_loop_stmt_assign(p):
     """func_loop_stmt : ID EQUALS func_expr NEWLINE"""
+    # Assignment inside a loop body
+    # Example:
+    # for i:
+    #   cur = arr[i]
+    # Parameters:
+    # p[1] — variable name
+    # p[3] — right hand side expression
+    # Returns:
+    #   ("loop_assign", name, rhs)
     p[0] = ("loop_assign", p[1], p[3])
 
 def p_func_loop_stmt_pluseq(p):
     """func_loop_stmt : ID PLUSEQ func_expr NEWLINE"""
+    # Accumulation inside a loop body.
+    # Example:
+    #   total += arr[i]
+    # Parameters:
+    # p[1] — variable name
+    # p[3] — right hand side expression
+    # Returns:
+    #   ("loop_pluseq", name, rhs)
     p[0] = ("loop_pluseq", p[1], p[3])
 
 def p_loop_index_list_single(p):
@@ -464,6 +511,66 @@ def p_func_loop_stmt_index_pluseq(p):
     # Returns:
     #   ("loop_index_pluseq", name, [idx_exprs], rhs)
     p[0] = ("loop_index_pluseq", p[1], p[3], p[6])
+
+def p_func_loop_stmt_if(p):
+    """func_loop_stmt : IF condition COLON NEWLINE INDENT func_loop_body DEDENT"""
+    # One side conditional inside a loop body.
+    # Example:
+    # for i:
+    #   if arr[i] > 0.0:
+    #       total += arr[i]
+    # Parameters:
+    # p[2] — condition expression
+    # p[6] — then branch in loop body
+    # Returns:
+    #   ("loop_if", condition, then_body)
+    p[0] = ("loop_if", p[2], p[6])
+
+def p_func_loop_stmt_if_else(p):
+    """func_loop_stmt : IF condition COLON NEWLINE INDENT func_loop_body DEDENT ELSE COLON NEWLINE INDENT func_loop_body DEDENT"""
+    # If-else conditional inside a loop body.
+    # Example:
+    # for i:
+    #   if arr[i] > 0.0:
+    #       total += arr[i]
+    #   else:
+    #       total += 0.0 - arr[i]
+    # Parameters:
+    # p[2]  — condition expression
+    # p[6]  — then-branch loop body
+    # p[12] — else-branch loop body
+    # Returns:
+    #   ("loop_if_else", condition, then_body, else_body)
+    p[0] = ("loop_if_else", p[2], p[6], p[12])
+
+def p_func_loop_stmt_for_range(p):
+    """func_loop_stmt : FOR ID COLON TYPE LPAREN func_expr RPAREN NEWLINE INDENT func_loop_body DEDENT
+                      | FOR ID COLON TYPE LPAREN func_expr RPAREN COLON NEWLINE INDENT func_loop_body DEDENT
+                      | FOR ID COLON TYPE LPAREN func_expr COMMA func_expr RPAREN NEWLINE INDENT func_loop_body DEDENT
+                      | FOR ID COLON TYPE LPAREN func_expr COMMA func_expr RPAREN COLON NEWLINE INDENT func_loop_body DEDENT"""
+    # Explicit range nested for loop inside a loop body.
+    # Inner loop iterates over an explicit/variable range.
+    # Example:
+    # for i: ℕ(n):
+    #   for j: ℕ(i, 10):
+    #       total += j
+    # Parameters:
+    # p[2] — loop variable name
+    # p[6] — end expression (1-arg form) or start expression (2-arg form)
+    # p[8] — end expression (2-arg form only)
+    # p[10..13] — func_loop_body statements (position shifts with each alternative)
+    # Returns:
+    #   ("loop_for_range", var, start_expr, end_expr, loop_body)
+    zero = ("num", 0)
+    n = len(p)
+    if n == 12:
+        p[0] = ("loop_for_range", p[2], zero, p[6],  p[10])
+    elif n == 13:
+        p[0] = ("loop_for_range", p[2], zero, p[6],  p[11])
+    elif n == 14:
+        p[0] = ("loop_for_range", p[2], p[6], p[8],  p[12])
+    else:
+        p[0] = ("loop_for_range", p[2], p[6], p[8],  p[13])
 
 def p_func_loop_stmt_empty(p):
     """func_loop_stmt : NEWLINE"""
@@ -790,6 +897,36 @@ def p_statement_if_only(p):
     # Program-level if without else
     p[0] = ("if_only", p[2], p[6])
 
+def p_statement_for_range(p):
+    """statement : FOR ID COLON TYPE LPAREN func_expr RPAREN NEWLINE INDENT for_body DEDENT
+                 | FOR ID COLON TYPE LPAREN func_expr RPAREN COLON NEWLINE INDENT for_body DEDENT
+                 | FOR ID COLON TYPE LPAREN func_expr COMMA func_expr RPAREN NEWLINE INDENT for_body DEDENT
+                 | FOR ID COLON TYPE LPAREN func_expr COMMA func_expr RPAREN COLON NEWLINE INDENT for_body DEDENT"""
+    # Top-level for loop with explicit range: for i: ℕ(end) or for i: ℕ(start, end).
+    # Example:
+    #   for i: ℕ(10):
+    #       total += i
+    #   for i: ℕ(start, end):
+    #       total += i
+    # Parameters:
+    # p[2]        — loop variable name
+    # p[6]        — end expression (1-arg form) or start expression (2-arg form)
+    # p[8]        — end expression (2-arg form only)
+    # p[10..13]   — for_body statements
+    # p.lineno(1) — source line number of the FOR keyword, for error reporting
+    # Returns:
+    #   ("for_loop_range", var, start_expr, end_expr, body_stmts, lineno)
+    zero = ("num", 0)
+    n = len(p)
+    if n == 12:   # ℕ(n) no colon
+        p[0] = ("for_loop_range", p[2], zero,  p[6],  p[10], p.lineno(1))
+    elif n == 13: # ℕ(n):
+        p[0] = ("for_loop_range", p[2], zero,  p[6],  p[11], p.lineno(1))
+    elif n == 14: # ℕ(start, end) no colon
+        p[0] = ("for_loop_range", p[2], p[6],  p[8],  p[12], p.lineno(1))
+    else:  # ℕ(start, end):
+        p[0] = ("for_loop_range", p[2], p[6],  p[8],  p[13], p.lineno(1))
+
 def p_statement_for(p):
     """statement : FOR ID COLON NEWLINE INDENT for_body DEDENT"""
     # Top-level for loop over a single variable.
@@ -857,6 +994,90 @@ def p_for_statement_call(p):
     """for_statement : ID LPAREN func_args RPAREN NEWLINE"""
     # Store function call as AST
     p[0] = ("for_call", p[1], p[3])
+
+def p_for_statement_for_range(p):
+    """for_statement : FOR ID COLON TYPE LPAREN func_expr RPAREN NEWLINE INDENT for_body DEDENT
+                     | FOR ID COLON TYPE LPAREN func_expr RPAREN COLON NEWLINE INDENT for_body DEDENT
+                     | FOR ID COLON TYPE LPAREN func_expr COMMA func_expr RPAREN NEWLINE INDENT for_body DEDENT
+                     | FOR ID COLON TYPE LPAREN func_expr COMMA func_expr RPAREN COLON NEWLINE INDENT for_body DEDENT"""
+    # Explicit range for loop nested inside a top level for body.
+    # Same four variants as p_statement_for_range.
+    # Example:
+    # for i: ℕ(10):
+    #   for j: ℕ(i, 10):
+    #       total += j
+    # Parameters:
+    # p[2]        — loop variable name
+    # p[6]        — end expression (1-arg form) or start expression (2-arg form)
+    # p[8]        — end expression (2-arg form only)
+    # p[10..13]   — for_body statements
+    # p.lineno(1) — source line number of the FOR keyword, for error reporting
+    # Returns:
+    #   ("for_loop_range", var, start_expr, end_expr, body_stmts, lineno)
+    zero = ("num", 0)
+    n = len(p)
+    if n == 12:
+        p[0] = ("for_loop_range", p[2], zero, p[6],  p[10], p.lineno(1))
+    elif n == 13:
+        p[0] = ("for_loop_range", p[2], zero, p[6],  p[11], p.lineno(1))
+    elif n == 14:
+        p[0] = ("for_loop_range", p[2], p[6], p[8],  p[12], p.lineno(1))
+    else:
+        p[0] = ("for_loop_range", p[2], p[6], p[8],  p[13], p.lineno(1))
+
+def p_for_statement_if_only(p):
+    """for_statement : IF condition COLON NEWLINE INDENT for_body DEDENT"""
+    # One-sided if inside a top-level for body or if branch.
+    # Example:
+    #   for i:
+    #       if arr[i] > 0.0:
+    #           total += arr[i]
+    # Parameters:
+    # p[2] — condition node
+    # p[6] — then-branch for_body statements
+    # Returns:
+    #   ("for_if", condition, then_body)
+    p[0] = ("for_if", p[2], p[6])
+
+def p_for_statement_if_else(p):
+    """for_statement : IF condition COLON NEWLINE INDENT for_body DEDENT ELSE COLON NEWLINE INDENT for_body DEDENT"""
+    # If-else inside a top-level for body or if branch.
+    # Example:
+    #   for i:
+    #       if arr[i] > 0.0:
+    #           total += arr[i]
+    #       else:
+    #           total += 0.0 - arr[i]
+    # Parameters:
+    # p[2]  — condition node
+    # p[6]  — then-branch for_body statements
+    # p[12] — else-branch for_body statements
+    # Returns:
+    #   ("for_if_else", condition, then_body, else_body)
+    p[0] = ("for_if_else", p[2], p[6], p[12])
+
+def p_for_statement_for(p):
+    """for_statement : FOR ID COLON NEWLINE INDENT for_body DEDENT"""
+    # Implicit-range for loop nested inside a for_body.
+    # Range is inferred from arrays indexed by loop_var in the body.
+    # Example:
+    #   for i:
+    #       for j:
+    #           total += arr[j]
+    # Parameters:
+    # p[2] — loop variable name
+    # p[6] — for_body statements
+    # Returns:
+    #   ("for_loop", loop_var, body_stmts, indexed_arrays, lineno)
+    loop_var = p[2]
+    body_stmts = p[6]
+    indexed_arrays = []
+    for stmt in body_stmts:
+        if stmt:
+            if stmt[0] == "for_index_assign":
+                indexed_arrays.append(stmt[1])
+            indexed_arrays.extend(find_indexed_arrays(stmt, loop_var))
+    p[0] = ("for_loop", loop_var, body_stmts, indexed_arrays, p.lineno(1))
 
 def p_for_statement_empty(p):
     """for_statement : NEWLINE"""
