@@ -42,4 +42,4 @@ jobs:
 
       - name: mypy (type annotations)
         if: success() || failure()
-        run: mypy . --ignore-missing-imports --exclude examples/
+        run: mypy . --ignore-missing-imports --exclude examples/ --exclude parsetab.py

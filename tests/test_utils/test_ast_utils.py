@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import get_args
+from typing import Any, get_args
 
 import pytest
 
@@ -42,7 +42,7 @@ def parse_source(source: str):
 
 def load_expected_ast(stem: str) -> dict:
     """Load the expected AST dict from ``examples/ast/<stem>.py``."""
-    ns = {}
+    ns: dict[str, Any] = {}
     exec((AST_DIR / f"{stem}.py").read_text(), ns)
     return ns["EXPECTED"]
 

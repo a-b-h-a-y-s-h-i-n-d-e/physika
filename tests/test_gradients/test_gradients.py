@@ -11,7 +11,6 @@ from physika.parser import parser, symbol_table
 from physika.runtime import compute_grad
 from physika.utils.ast_utils import build_unified_ast
 
-
 EXAMPLES_DIR = Path(__file__).parent.parent.parent / "examples"
 r_tol = 1e-02
 
@@ -31,22 +30,26 @@ def compile(phyk_name: str) -> dict:
 
 
 class TestDiffIfElse:
+
     @pytest.fixture()
     def name_space(self):
         """Call examples/diff_ifelse.phyk file"""
         return compile("diff_ifelse")
 
-    @pytest.mark.parametrize("x_val, expected_grad", [
-        # x > 0: f(x) = x**2  -> f'(x) = 2x
-        (3.0,  6.0),
-        (1.0,  2.0),
-        (0.5,  1.0),
-        # x <=0: f(x) = −x  -> f'(x) = −1
-        (-2.0, -1.0),
-        (-1.0, -1.0),
-        (-0.5, -1.0),
-    ])
-    def test_physika_matches_analytical(self, name_space, x_val, expected_grad):
+    @pytest.mark.parametrize(
+        "x_val, expected_grad",
+        [
+            # x > 0: f(x) = x**2  -> f'(x) = 2x
+            (3.0, 6.0),
+            (1.0, 2.0),
+            (0.5, 1.0),
+            # x <=0: f(x) = −x  -> f'(x) = −1
+            (-2.0, -1.0),
+            (-1.0, -1.0),
+            (-0.5, -1.0),
+        ])
+    def test_physika_matches_analytical(self, name_space, x_val,
+                                        expected_grad):
         """Physika grad matches the analytical derivative"""
         f = name_space["f"]
         x = torch.tensor(x_val)
@@ -77,16 +80,19 @@ class TestDiffIfCosSin:
         """Call examples/diff_sincos.phyk file"""
         return compile("diff_sincos")
 
-    @pytest.mark.parametrize("x_val, expected_grad", [
-        # x <= 0: f'(x) = cos(x)
-        (-1.5, math.cos(-1.5)),
-        (-0.5, math.cos(-0.5)),
-        # x > 0: f'(x) = -sin(x)
-        ( 0.5, -math.sin(0.5)),
-        ( 1.5, -math.sin(1.5)),
-        ( 3.14, -math.sin(3.14)),
-    ])
-    def test_physika_matches_analytical(self, name_space, x_val, expected_grad):
+    @pytest.mark.parametrize(
+        "x_val, expected_grad",
+        [
+            # x <= 0: f'(x) = cos(x)
+            (-1.5, math.cos(-1.5)),
+            (-0.5, math.cos(-0.5)),
+            # x > 0: f'(x) = -sin(x)
+            (0.5, -math.sin(0.5)),
+            (1.5, -math.sin(1.5)),
+            (3.14, -math.sin(3.14)),
+        ])
+    def test_physika_matches_analytical(self, name_space, x_val,
+                                        expected_grad):
         """physika grad matches the analytical derivative"""
         f = name_space["f"]
         x = torch.tensor(x_val)
@@ -117,17 +123,20 @@ class TestDiffThreshold:
         """Call examples/diff_threshold.phyk file"""
         return compile("diff_threshold")
 
-    @pytest.mark.parametrize("t_val, expected_grad", [
-        # t > 0.5: L'(t) = 6*(t - 0.75)
-        (0.9,  6 * (0.9  - 0.75)),
-        (0.6,  6 * (0.6  - 0.75)),
-        (0.75, 0.0),
-        # t ≤ 0.5: L'(t) = 2*t
-        (0.3,  2 * 0.3),
-        (0.1,  2 * 0.1),
-        (-0.5, 2 * -0.5),
-    ])
-    def test_physika_matches_analytical(self, name_space, t_val, expected_grad):
+    @pytest.mark.parametrize(
+        "t_val, expected_grad",
+        [
+            # t > 0.5: L'(t) = 6*(t - 0.75)
+            (0.9, 6 * (0.9 - 0.75)),
+            (0.6, 6 * (0.6 - 0.75)),
+            (0.75, 0.0),
+            # t ≤ 0.5: L'(t) = 2*t
+            (0.3, 2 * 0.3),
+            (0.1, 2 * 0.1),
+            (-0.5, 2 * -0.5),
+        ])
+    def test_physika_matches_analytical(self, name_space, t_val,
+                                        expected_grad):
         """Physika matches the analytical derivative."""
         f = name_space["L"]
         t = torch.tensor(t_val)
@@ -144,11 +153,10 @@ class TestDiffThreshold:
         assert abs(physika_grad - num_grad) < r_tol
 
 
-
 class TestDiffIfElseClasses:
     """Gradients of PiecewiseNet.
-    
-    PiecewiseNet implements 
+
+    PiecewiseNet implements
     forward(x) = x**2 if x > 0 else -x.
         x > 0:  forward'(x) = 2x
         x ≤ 0:  forward'(x) = -1
@@ -158,16 +166,18 @@ class TestDiffIfElseClasses:
     def name_space(self):
         return compile("if_else_contexts")
 
-    @pytest.mark.parametrize("x_val, expected_grad", [
-        # x > 0: forward'(x) = 2x
-        (2.0,  4.0),
-        (1.0,  2.0),
-        (0.5,  1.0),
-        # x ≤ 0: forward'(x) = -1
-        (-1.5, -1.0),
-        (-1.0, -1.0),
-        (-0.5, -1.0),
-    ])
+    @pytest.mark.parametrize(
+        "x_val, expected_grad",
+        [
+            # x > 0: forward'(x) = 2x
+            (2.0, 4.0),
+            (1.0, 2.0),
+            (0.5, 1.0),
+            # x ≤ 0: forward'(x) = -1
+            (-1.5, -1.0),
+            (-1.0, -1.0),
+            (-0.5, -1.0),
+        ])
     def test_class_matches_analytical(self, name_space, x_val, expected_grad):
         """Class ifelse gradient matches the analytical derivative."""
         net = name_space["net"]
