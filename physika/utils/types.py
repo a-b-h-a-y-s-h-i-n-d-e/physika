@@ -131,24 +131,66 @@ class TTensor:
     Each dimension entry is one of:
 
     * ``int`` — a concrete size known at inference time.
-    * ``str`` — a symbolic size from a type annotation (``"n"``).
-    * ``TDim`` — an unknown dimension variable, resolved by unification.
-    * ``TVar`` — an unknown type variable (used in generic dims).
+    * ``str`` — a symbolic size from a type annotation.
+    * ``TDim`` — a fresh unknown dimension, resolved by ``_unify_dim``.
+
+    Passing a ``TVar`` as a dimension raises ``TypeError``: ``TVar`` is a
+    type level unknown and is not handled by the dimension unification path
+    , so it would go unresolved.
 
     Parameters
     ----------
     dims : tuple
-        Sequence of ``(dim, variance)`` pairs.
+        Sequence of ``(dim, variance)`` pairs where each ``dim`` is an
+        ``int``, ``str``, or ``TDim``.
+
+    Raises
+    ------
+    TypeError
+        If any dimension entry is a ``TVar``.
 
     Examples
     --------
-    >>> from physika.utils.hindley_milner import TTensor
-    >>> TTensor(((3, "invariant"), (4, "invariant")))
+    >>> from physika.utils.types import TTensor, TDim
+    >>> # int literal size from a concrete annotation:
+    >>> TTensor(((5, "invariant"),))         # arr : ℝ[5]
+    ℝ[5]
+    >>> TTensor(((3, "invariant"), (4, "invariant")))   # mat : ℝ[3, 4]
     ℝ[3,4]
-    >>> TTensor((("n", "invariant"),))
+    >>> # str symbolic size from a generic parameter annotation:
+    >>> TTensor((("n", "invariant"),))       # u : ℝ[n]
     ℝ[n]
+    >>> TTensor((("n", "invariant"), ("m", "invariant")))  # A : ℝ[n, m]
+    ℝ[n,m]
+    >>> # TDim unknown dimension, resolved at unification step:
+    >>> TTensor(((TDim("δ0"), "invariant"),))
+    ℝ[δ0]
+    >>> TTensor(((TDim("δ0"), "invariant"), (TDim("δ1"), "invariant")))
+    ℝ[δ0,δ1]
     """
     dims: tuple
+
+    def __post_init__(self) -> None:
+        """
+        Reject TVar entries in dims for TTensor.
+
+        Raises
+        ------
+        TypeError
+            If any dimension entry is a ``TVar``.
+
+        Examples
+        --------
+        >>> from physika.utils.types import TTensor, TVar, TDim
+        >>> TTensor(((TVar("α0"), "invariant"),))
+        Traceback (most recent call last):
+            ...
+        TypeError: TTensor.dims entry α0 is a TVar type. Use TDim for unknown dimensions.  # noqa: E501
+        """
+        for dim, _ in self.dims:
+            if isinstance(dim, TVar):
+                raise TypeError(f"TTensor.dims entry {dim!r} is a TVar type. "
+                                "Use TDim for unknown dimensions.")
 
     def __repr__(self) -> str:
         """Return the tensor type in Physika notation ``ℝ[d0,d1,...,dN]``.

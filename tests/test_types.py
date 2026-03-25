@@ -2,7 +2,7 @@ import pytest
 
 import dataclasses
 
-from physika.utils.hindley_milner import (
+from physika.utils.types import (
     TScalar,
     TTensor,
     TVar,
@@ -125,17 +125,17 @@ class TestHMTypes:
             t1.dims = ()  # type: ignore[misc]
 
         assert repr(TTensor(((TDim("δ0"), "invariant"), ))) == "ℝ[δ0]"
-        assert repr(TTensor(((TVar("α0"), "invariant"), ))) == "ℝ[α0]"
         assert repr(
-            TTensor(((TVar("α0"), "invariant"), (TDim("δ0"),
-                                                 "invariant")))) == "ℝ[α0,δ0]"
-        assert repr(TTensor(
-            ((TVar("α0"), "invariant"), (3, "invariant")))) == "ℝ[α0,3]"
+            TTensor(((TDim("δ0"), "invariant"), (TDim("δ1"),
+                                                 "invariant")))) == "ℝ[δ0,δ1]"
         assert repr(TTensor(
             ((TDim("n"), "invariant"), (3, "invariant")))) == "ℝ[n,3]"
         assert repr(
             TTensor(((TDim("n"), "invariant"), (TDim("m"),
                                                 "invariant")))) == "ℝ[n,m]"
+
+        with pytest.raises(TypeError, match="TVar"):
+            TTensor(((TVar("α0"), "invariant"), ))
 
         t = TTensor(((2, "invariant"), (3, "invariant"), (4, "invariant")))
         assert repr(t) == "ℝ[2,3,4]"
