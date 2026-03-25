@@ -20,7 +20,7 @@ class TVar:
 
     Examples
     --------
-    >>> from physika.utils.hindley_milner import TVar
+    >>> from physika.utils.types import TVar
     >>> TVar("α0")
     α0
     """
@@ -36,7 +36,7 @@ class TVar:
 
         Examples
         --------
-        >>> from physika.utils.hindley_milner import TVar
+        >>> from physika.utils.types import TVar
         >>> repr(TVar("α0"))
         'α0'
         """
@@ -58,7 +58,7 @@ class TDim:
 
     Examples
     --------
-    >>> from physika.utils.hindley_milner import TDim
+    >>> from physika.utils.types import TDim
     >>> TDim("δ0")
     δ0
     """
@@ -74,7 +74,7 @@ class TDim:
 
         Examples
         --------
-        >>> from physika.utils.hindley_milner import TDim
+        >>> from physika.utils.types import TDim
         >>> repr(TDim("δ2"))
         'δ2'
         """
@@ -98,7 +98,7 @@ class TScalar:
 
     Examples
     --------
-    >>> from physika.utils.hindley_milner import TScalar
+    >>> from physika.utils.types import TScalar
     >>> TScalar("ℝ")
     ℝ
     >>> TScalar("ℝ") == TScalar("ℕ")
@@ -116,7 +116,7 @@ class TScalar:
 
         Examples
         --------
-        >>> from physika.utils.hindley_milner import TScalar
+        >>> from physika.utils.types import TScalar
         >>> repr(TScalar("ℝ"))
         'ℝ'
         """
@@ -206,7 +206,7 @@ class TTensor:
 
         Examples
         --------
-        >>> from physika.utils.hindley_milner import TTensor
+        >>> from physika.utils.types import TTensor
         >>> repr(TTensor(((3, "invariant"), (4, "invariant"))))
         'ℝ[3,4]'
         >>> repr(TTensor((("n", "invariant"),)))
@@ -234,7 +234,7 @@ class TFunc:
 
     Examples
     --------
-    >>> from physika.utils.hindley_milner import TFunc, TScalar
+    >>> from physika.utils.types import TFunc, TScalar
     >>> TFunc((TScalar("ℝ"),), TScalar("ℝ"))
     (ℝ) → ℝ
     """
@@ -255,7 +255,7 @@ class TFunc:
 
         Examples
         --------
-        >>> from physika.utils.hindley_milner import TFunc, TScalar
+        >>> from physika.utils.types import TFunc, TScalar
         >>> repr(TFunc((TScalar("ℝ"),), TScalar("ℝ")))
         '(ℝ) → ℝ'
         """
@@ -277,7 +277,7 @@ class TInstance:
 
     Examples
     --------
-    >>> from physika.utils.hindley_milner import TInstance
+    >>> from physika.utils.types import TInstance
     >>> TInstance("FullyConnectedNet")
     instance(FullyConnectedNet)
     >>> TInstance("FullyConnectedNet") == TInstance("FullyConnectedNet")
@@ -296,7 +296,7 @@ class TInstance:
 
         Examples
         --------
-        >>> from physika.utils.hindley_milner import TInstance
+        >>> from physika.utils.types import TInstance
         >>> repr(TInstance("FullyConnectedNet"))
         'instance(FullyConnectedNet)'
         """
