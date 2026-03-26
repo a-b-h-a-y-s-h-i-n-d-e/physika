@@ -1,7 +1,7 @@
 import re
 import copy
 import inspect
-from typing import Any, Sequence, Union, Callable
+from typing import Any, Sequence, Union, Callable, cast
 
 import torch
 import torch.nn as nn
@@ -82,7 +82,8 @@ def solve(*equations: str, **known_vars: float) -> tuple[torch.Tensor, ...]:
         all_rhs_vars.update(tokens)
 
     special = {'i', 'exp', 'sin', 'cos', 'sqrt'}
-    unknowns = sorted([v for v in all_rhs_vars if v not in special and v not in known_vars])
+    unknowns = sorted(
+        [v for v in all_rhs_vars if v not in special and v not in known_vars])
 
     n = len(unknowns)
     use_complex = any('i' in rhs for _, rhs in parsed)
@@ -96,7 +97,7 @@ def solve(*equations: str, **known_vars: float) -> tuple[torch.Tensor, ...]:
 
         for j, u in enumerate(unknowns):
             coeff = 0
-            pattern = rf'([+-]?\s*(?:[\d.]*\s*\*\s*)?(?:i\s*\*\s*)?(?:[a-zA-Z_][a-zA-Z0-9_]*\s*\*\s*)*)\b{u}\b'
+            pattern = rf'([+-]?\s*(?:[\d.]*\s*\*\s*)?(?:i\s*\*\s*)?(?:[a-zA-Z_][a-zA-Z0-9_]*\s*\*\s*)*)\b{u}\b'  # noqa: E501
             matches = re.finditer(pattern, rhs)
             for m in matches:
                 coeff_str = m.group(1).strip()
@@ -108,10 +109,13 @@ def solve(*equations: str, **known_vars: float) -> tuple[torch.Tensor, ...]:
                     coeff_str = coeff_str.rstrip('* ')
                     coeff_str = coeff_str.replace('i', '1j')
                     for var, val in known_vars.items():
-                        coeff_str = re.sub(rf'\b{var}\b', str(complex(val) if use_complex else float(val)), coeff_str)
+                        coeff_str = re.sub(
+                            rf'\b{var}\b',
+                            str(complex(val) if use_complex else float(val)),
+                            coeff_str)
                     try:
                         coeff += eval(coeff_str)
-                    except:
+                    except Exception:
                         coeff += 1
             A[i, j] = coeff
 
@@ -123,7 +127,7 @@ def train(
     model: nn.Module,
     X: torch.Tensor,
     y: torch.Tensor,
-    epochs: Union[int , float],
+    epochs: Union[int, float],
     lr: float,
 ) -> nn.Module:
     """Train a Physika model using SGD on per-sample loss.
@@ -169,7 +173,7 @@ def train(
 
     loss_takes_input = False
     if hasattr(trained_model, 'loss'):
-        sig = inspect.signature(trained_model.loss)
+        sig = inspect.signature(cast(Callable[..., Any], trained_model.loss))
         loss_takes_input = len(sig.parameters) == 3
 
     epochs = int(epochs)
@@ -183,12 +187,13 @@ def train(
             pred = trained_model(x_i)
 
             if hasattr(trained_model, 'loss'):
+                _loss_fn = cast(Callable[..., Any], trained_model.loss)
                 if loss_takes_input:
-                    loss_i = trained_model.loss(pred, y_i, x_i)
+                    loss_i = _loss_fn(pred, y_i, x_i)
                 else:
-                    loss_i = trained_model.loss(pred, y_i)
+                    loss_i = _loss_fn(pred, y_i)
             else:
-                loss_i = (pred - y_i) ** 2
+                loss_i = (pred - y_i)**2
 
             total_loss = total_loss + loss_i
 
@@ -229,7 +234,7 @@ def evaluate(model: nn.Module, X: torch.Tensor, y: torch.Tensor) -> float:
     """
     loss_takes_input = False
     if hasattr(model, 'loss'):
-        sig = inspect.signature(model.loss)
+        sig = inspect.signature(cast(Callable[..., Any], model.loss))
         loss_takes_input = len(sig.parameters) == 3
 
     total_loss = 0.0
@@ -241,12 +246,13 @@ def evaluate(model: nn.Module, X: torch.Tensor, y: torch.Tensor) -> float:
         pred = model(x_i)
 
         if hasattr(model, 'loss'):
+            _loss_fn = cast(Callable[..., Any], model.loss)
             if loss_takes_input:
-                loss_i = model.loss(pred, y_i, x_i)
+                loss_i = _loss_fn(pred, y_i, x_i)
             else:
-                loss_i = model.loss(pred, y_i)
+                loss_i = _loss_fn(pred, y_i)
         else:
-            loss_i = (pred - y_i) ** 2
+            loss_i = (pred - y_i)**2
 
         if isinstance(loss_i, torch.Tensor):
             loss_i = loss_i.item()
@@ -259,12 +265,13 @@ def compute_grad(
     f: Union[Callable, torch.Tensor],
     x: Union[float, torch.Tensor],
 ) -> torch.Tensor:
-    """Compute the scalar gradient of a Physika expression with respect to *x*, where
-    x is the function's argument.
+    """Compute the scalar gradient of a Physika expression with respect to *x*,
+    where x is the function's argument.
 
     The first argument is overloaded: pass a **callable** when Physika
     uses a simple ``grad(f(x), x)`` pattern, or a **pre-evaluated
-    tensor** when the expression is nested (e.g. ``grad(real(U(k,m,t,...)), t)``).
+    tensor** when the expression is nested (e.g. ``grad(real(U(k,m,t,...)),
+    t)``).
 
     Parameters
     ----------
@@ -299,7 +306,7 @@ def compute_grad(
         out = f(x_leaf)
         if not isinstance(out, torch.Tensor):
             out = torch.tensor(float(out))
-        (grad,) = torch.autograd.grad(out, x_leaf)
+        (grad, ) = torch.autograd.grad(out, x_leaf)
         return grad.detach()
     else:
         # f(x) was already evaluated with x as a requires_grad leaf.
@@ -307,8 +314,9 @@ def compute_grad(
         out = f
         if not isinstance(out, torch.Tensor):
             out = torch.tensor(float(out))
-        (grad,) = torch.autograd.grad(out, x)
+        (grad, ) = torch.autograd.grad(out, cast(torch.Tensor, x))
         return grad.detach()
+
 
 def simulate(
     model: nn.Module,
@@ -375,7 +383,11 @@ def simulate(
         ax1.set_title("Time Evolution")
         ax1.grid(True)
         ax2.plot(states[:, 1].numpy(), states[:, 0].numpy(), linewidth=0.8)
-        ax2.plot(states[0, 1].item(), states[0, 0].item(), 'ro', markersize=6, label='Start')
+        ax2.plot(states[0, 1].item(),
+                 states[0, 0].item(),
+                 'ro',
+                 markersize=6,
+                 label='Start')
         ax2.set_xlabel("x[1]")
         ax2.set_ylabel("x[0]")
         ax2.set_title("Phase Space")
@@ -423,15 +435,27 @@ def simulate(
             scene_range = max(x_range, abs(y_min), abs(y_max))
 
             plotter = pv.Plotter()
-            plotter.add_title(title_str, font_size=20, font="times", shadow=True)
+            plotter.add_title(title_str,
+                              font_size=20,
+                              font="times",
+                              shadow=True)
 
             axis_len = scene_range * 1.2
-            for axis_pt in [((axis_len, 0, 0), "X"), ((0, axis_len, 0), "Y"), ((0, 0, axis_len), "Z")]:
+            for axis_pt in [((axis_len, 0, 0), "X"), ((0, axis_len, 0), "Y"),
+                            ((0, 0, axis_len), "Z")]:
                 end, label = axis_pt
                 neg = tuple(-c for c in end)
                 line = pv.Line(neg, end, resolution=60)
-                plotter.add_mesh(line, color="gray", style="wireframe", line_width=1, opacity=0.5)
-                plotter.add_point_labels([end], [label], font_size=14, text_color="gray", shadow=False, shape=None)
+                plotter.add_mesh(line,
+                                 color="gray",
+                                 style="wireframe",
+                                 line_width=1,
+                                 opacity=0.5)
+                plotter.add_point_labels([end], [label],
+                                         font_size=14,
+                                         text_color="gray",
+                                         shadow=False,
+                                         shape=None)
 
             pivot = pv.Sphere(radius=0.025, center=(0, 0, 0))
             plotter.add_mesh(pivot, color="red")
@@ -446,27 +470,41 @@ def simulate(
             trail_pts = np.zeros((trail_len, 3))
             trail_pts[:, 0] = xs[0]
             trail_pts[:, 1] = ys[0]
-            trail_line = pv.Spline(trail_pts, n_points=trail_len)
-            trail_actor = plotter.add_mesh(trail_line, color="brown", line_width=2, opacity=0.6)
+            trail_line = pv.Spline(
+                trail_pts, n_points=trail_len)  # type: ignore[arg-type]
+            trail_actor = plotter.add_mesh(trail_line,
+                                           color="brown",
+                                           line_width=2,
+                                           opacity=0.6)
 
-            plotter.camera_position = [(0, 0, 3 * scene_range),
-                                       (0, (y_min + y_max) / 2, 0),
-                                       (0, 1, 0)]
+            plotter.camera_position = [
+                (0, 0, 3 * scene_range),  # type: ignore[assignment]
+                (0, (y_min + y_max) / 2, 0),
+                (0, 1, 0)
+            ]
 
-            anim_state = {"paused": False, "running": True, "recording": False, "request_record": False, "frames": []}
-            gif_name = "physika_pendulum.gif" if state_dim == 2 else "physika_spring_pendulum.gif"
+            anim_state: dict[str, Any] = {
+                "paused": False,
+                "running": True,
+                "recording": False,
+                "request_record": False,
+                "frames": []
+            }
+            gif_name = "physika_pendulum.gif" if state_dim == 2 else "physika_spring_pendulum.gif"  # noqa: E501
 
             def on_space():
                 anim_state["paused"] = not anim_state["paused"]
+
             def on_quit():
                 anim_state["running"] = False
+
             def on_save():
                 if not anim_state["recording"]:
                     anim_state["request_record"] = True
 
-            plotter.add_key_event("space", on_space)
-            plotter.add_key_event("q", on_quit)
-            plotter.add_key_event("s", on_save)
+            plotter.add_key_event("space", on_space)  # type: ignore[arg-type]
+            plotter.add_key_event("q", on_quit)  # type: ignore[arg-type]
+            plotter.add_key_event("s", on_save)  # type: ignore[arg-type]
 
             if state_dim == 2:
                 info = (f"t = {sub_t[0]:.3f}\n"
@@ -474,16 +512,20 @@ def simulate(
                         f"\u03c9 = {sub_states[0, 1]:.4f}\n"
                         f"[SPACE: pause | S: save GIF | Q: quit]")
             else:
-                info = (f"t = {sub_t[0]:.3f}\n"
-                        f"r = {sub_states[0, 0]:.4f}  \u03b8 = {sub_states[0, 1]:.4f}\n"
-                        f"dr = {sub_states[0, 2]:.4f}  d\u03b8 = {sub_states[0, 3]:.4f}\n"
-                        f"[SPACE: pause | S: save GIF | Q: quit]")
+                info = (
+                    f"t = {sub_t[0]:.3f}\n"
+                    f"r = {sub_states[0, 0]:.4f}  \u03b8 = {sub_states[0, 1]:.4f}\n"  # noqa: E501
+                    f"dr = {sub_states[0, 2]:.4f}  d\u03b8 = {sub_states[0, 3]:.4f}\n"  # noqa: E501
+                    f"[SPACE: pause | S: save GIF | Q: quit]")
 
-            text_actor = plotter.add_text(info, position=(10, 10), font_size=13, font="times")
+            text_actor = plotter.add_text(info,
+                                          position=(10, 10),
+                                          font_size=13,
+                                          font="times")
 
             plotter.show(auto_close=False, interactive_update=True)
 
-            trail_history = []
+            trail_history: list[list[float]] = []
             while anim_state["running"]:
                 if anim_state["request_record"]:
                     anim_state["request_record"] = False
@@ -502,20 +544,28 @@ def simulate(
                         break
 
                     bx, by = float(xs[i]), float(ys[i])
-                    bob.points = pv.Sphere(radius=bob_radius, center=(bx, by, 0)).points
+                    bob.points = pv.Sphere(radius=bob_radius,
+                                           center=(bx, by, 0)).points
 
                     new_rod = pv.Line((0, 0, 0), (bx, by, 0))
-                    plotter.remove_actor(rod_actor)
-                    rod_actor = plotter.add_mesh(new_rod, color=rod_color, line_width=3)
+                    plotter.remove_actor(rod_actor)  # type: ignore[arg-type]
+                    rod_actor = plotter.add_mesh(new_rod,
+                                                 color=rod_color,
+                                                 line_width=3)
 
                     trail_history.append([bx, by, 0.0])
                     if len(trail_history) > trail_len:
                         trail_history.pop(0)
                     if len(trail_history) >= 2:
                         tp = np.array(trail_history)
-                        new_trail = pv.Spline(tp, n_points=len(tp))
-                        plotter.remove_actor(trail_actor)
-                        trail_actor = plotter.add_mesh(new_trail, color="brown", line_width=2, opacity=0.6)
+                        new_trail = pv.Spline(
+                            tp, n_points=len(tp))  # type: ignore[arg-type]
+                        plotter.remove_actor(
+                            trail_actor)  # type: ignore[arg-type]
+                        trail_actor = plotter.add_mesh(new_trail,
+                                                       color="brown",
+                                                       line_width=2,
+                                                       opacity=0.6)
 
                     if anim_state["recording"]:
                         pause_status = f"[RECORDING {gif_name} ...]"
@@ -529,25 +579,32 @@ def simulate(
                                 f"\u03c9 = {sub_states[i, 1]:.4f}\n"
                                 f"{pause_status}")
                     else:
-                        info = (f"t = {sub_t[i]:.3f}\n"
-                                f"r = {sub_states[i, 0]:.4f}  \u03b8 = {sub_states[i, 1]:.4f}\n"
-                                f"dr = {sub_states[i, 2]:.4f}  d\u03b8 = {sub_states[i, 3]:.4f}\n"
-                                f"{pause_status}")
+                        info = (
+                            f"t = {sub_t[i]:.3f}\n"
+                            f"r = {sub_states[i, 0]:.4f}  \u03b8 = {sub_states[i, 1]:.4f}\n"  # noqa: E501
+                            f"dr = {sub_states[i, 2]:.4f}  d\u03b8 = {sub_states[i, 3]:.4f}\n"  # noqa: E501
+                            f"{pause_status}")
                     text_actor.SetInput(info)
 
                     plotter.update()
                     if anim_state["recording"]:
-                        anim_state["frames"].append(plotter.screenshot(return_img=True))
+                        anim_state["frames"].append(
+                            plotter.screenshot(return_img=True))
                     time_module.sleep(0.02)
 
                 if anim_state["recording"]:
                     anim_state["recording"] = False
                     try:
                         import imageio
-                        imageio.mimsave(gif_name, anim_state["frames"], fps=30, loop=0)
+                        imageio.mimsave(gif_name,
+                                        anim_state["frames"],
+                                        fps=30,
+                                        loop=0)
                         print(f"[simulate] GIF saved: {gif_name}")
                     except ImportError:
-                        print("[simulate] Install imageio to save GIFs: pip install imageio")
+                        print(
+                            "[simulate] Install imageio to save GIFs: pip install imageio"  # noqa: E501
+                        )
                     anim_state["frames"].clear()
 
             plotter.close()
@@ -627,7 +684,7 @@ def animate(func: Any, *args: Any) -> None:
         time_max = time_max.item()
 
     time_vals = np.linspace(float(time_min), float(time_max), n_points)
-    x_values = []
+    x_list: list[float] = []
 
     for t in time_vals:
         call_args = []
@@ -648,13 +705,13 @@ def animate(func: Any, *args: Any) -> None:
         if isinstance(result, torch.Tensor):
             if result.is_complex():
                 result = result.real
-            x_values.append(result.item())
+            x_list.append(result.item())
         elif isinstance(result, complex):
-            x_values.append(result.real)
+            x_list.append(result.real)
         else:
-            x_values.append(float(result))
+            x_list.append(float(result))
 
-    x_values = np.array(x_values)
+    x_values = np.array(x_list)
 
     dt = (float(time_max) - float(time_min)) / (n_points - 1)
     v_values = np.gradient(x_values, dt)
@@ -673,23 +730,24 @@ def animate(func: Any, *args: Any) -> None:
 
     if HAS_PYVISTA:
         plotter = pv.Plotter()
-        plotter.add_title(
-            "Physika \n\nHarmonic Oscillator Animation",
-            font_size=24,
-            font="times",
-            shadow=True
-        )
+        plotter.add_title("Physika \n\nHarmonic Oscillator Animation",
+                          font_size=24,
+                          font="times",
+                          shadow=True)
 
         sphere = pv.Sphere(radius=0.1, center=(x_values[0], 0, 0))
         plotter.add_mesh(sphere, color='blue')
-        plotter.add_mesh(pv.Line((-2, 0, 0), (2, 0, 0)), color='black', line_width=3)
+        plotter.add_mesh(pv.Line((-2, 0, 0), (2, 0, 0)),
+                         color='black',
+                         line_width=3)
 
         x0_marker = pv.Sphere(radius=0.03, center=(x_values[0], 0, 0))
         plotter.add_mesh(x0_marker, color='red')
 
-        plotter.camera_position = [(0, 5, 0), (0, 0, 0), (0, 0, 1)]
+        plotter.camera_position = [(0, 5, 0), (0, 0, 0),
+                                   (0, 0, 1)]  # type: ignore[assignment]
 
-        anim_state = {"paused": False, "running": True}
+        anim_state: dict[str, Any] = {"paused": False, "running": True}
 
         def on_key_press(key):
             if key == "space":
@@ -697,13 +755,16 @@ def animate(func: Any, *args: Any) -> None:
             elif key == "q" or key == "Escape":
                 anim_state["running"] = False
 
-        plotter.add_key_event("space", lambda: on_key_press("space"))
-        plotter.add_key_event("q", lambda: on_key_press("q"))
+        plotter.add_key_event(
+            "space", lambda: on_key_press("space"))  # type: ignore[arg-type]
+        plotter.add_key_event(
+            "q", lambda: on_key_press("q"))  # type: ignore[arg-type]
 
         text_actor = plotter.add_text(
-            f"t = {time_vals[0]:.3f}\nx = {x_values[0]:.4f}\nv = {v_values[0]:.4f}\n[SPACE: pause | Q: quit]",
-            position=(10, 10), font_size=15, font="times"
-        )
+            f"t = {time_vals[0]:.3f}\nx = {x_values[0]:.4f}\nv = {v_values[0]:.4f}\n[SPACE: pause | Q: quit]",  # noqa: E501
+            position=(10, 10),
+            font_size=15,
+            font="times")
 
         plotter.show(auto_close=False, interactive_update=True)
 
@@ -717,9 +778,10 @@ def animate(func: Any, *args: Any) -> None:
                 if not anim_state["running"]:
                     break
                 sphere.points = pv.Sphere(radius=0.1, center=(x, 0, 0)).points
-                pause_status = "[PAUSED]" if anim_state["paused"] else "[SPACE: pause | Q: quit]"
+                pause_status = "[PAUSED]" if anim_state[
+                    "paused"] else "[SPACE: pause | Q: quit]"
                 text_actor.SetInput(
-                    f"t = {time_vals[i]:.3f}\nx = {x_values[i]:.4f}\nv = {v_values[i]:.4f}\n{pause_status}"
+                    f"t = {time_vals[i]:.3f}\nx = {x_values[i]:.4f}\nv = {v_values[i]:.4f}\n{pause_status}"  # noqa: E501
                 )
                 plotter.update()
                 time_module.sleep(0.03)
@@ -734,19 +796,30 @@ def animate(func: Any, *args: Any) -> None:
         ax.set_ylim(-0.5, 0.5)
         ax.set_aspect('equal')
         ax.axhline(y=0, color='black', linewidth=2)
-        ax.set_title("Harmonic Oscillator Animation [SPACE: pause/resume | R: reset]")
+        ax.set_title(
+            "Harmonic Oscillator Animation [SPACE: pause/resume | R: reset]")
 
         mass, = ax.plot([], [], 'bo', markersize=20)
         spring, = ax.plot([], [], 'gray', linewidth=2)
 
-        ax.plot([x_values[0]], [0], 'ro', markersize=8, label=f'x0 = {x_values[0]:.2f}')
+        ax.plot([x_values[0]], [0],
+                'ro',
+                markersize=8,
+                label=f'x0 = {x_values[0]:.2f}')
 
-        info_text = ax.text(0.02, 0.98, '', transform=ax.transAxes,
-                            verticalalignment='top', fontfamily='monospace',
-                            fontsize=10, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+        info_text = ax.text(0.02,
+                            0.98,
+                            '',
+                            transform=ax.transAxes,
+                            verticalalignment='top',
+                            fontfamily='monospace',
+                            fontsize=10,
+                            bbox=dict(boxstyle='round',
+                                      facecolor='wheat',
+                                      alpha=0.8))
 
         anim_state = {"paused": False, "frame": 0}
-        ani_ref = [None]
+        ani_ref: list[Any] = [None]
 
         def init():
             mass.set_data([], [])
@@ -762,7 +835,9 @@ def animate(func: Any, *args: Any) -> None:
             mass.set_data([x_values[i]], [0])
             spring.set_data([0, x_values[i]], [0, 0])
             pause_str = " [PAUSED]" if anim_state["paused"] else ""
-            info_text.set_text(f't = {time_vals[i]:.3f}{pause_str}\nx = {x_values[i]:.4f}\nv = {v_values[i]:.4f}')
+            info_text.set_text(
+                f't = {time_vals[i]:.3f}{pause_str}\nx = {x_values[i]:.4f}\nv = {v_values[i]:.4f}'  # noqa: E501
+            )
             return mass, spring, info_text
 
         def on_key(event):
@@ -778,9 +853,16 @@ def animate(func: Any, *args: Any) -> None:
 
         fig.canvas.mpl_connect('key_press_event', on_key)
 
-        ani = FuncAnimation(fig, anim, init_func=init, frames=len(x_values),
-                            interval=30, blit=True, repeat=True)
+        ani = FuncAnimation(fig,
+                            anim,
+                            init_func=init,
+                            frames=len(x_values),
+                            interval=30,
+                            blit=True,
+                            repeat=True)
         ani_ref[0] = ani
         plt.show()
     else:
-        print("[animate] No visualization backend available (install pyvista or matplotlib)")
+        print(
+            "[animate] No visualization backend available (install pyvista or matplotlib)"  # noqa: E501
+        )

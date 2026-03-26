@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional, Dict, Union, List
+from typing import Any, Optional, Dict
 
 from physika.utils.type_checker_utils import (
     type_to_str,
@@ -11,23 +11,24 @@ from physika.utils.type_checker_utils import (
 )
 
 # Type aliases used in annotations throughout this module.
-ASTExpr = Any       # tagged tuple, scalar, or None
-TypeSpec = Any       # "ℝ", "ℕ", ("tensor", [...]), ("func_type", ...), None
-UnifiedAST = Dict[str, Union[Dict, List]]
+ASTExpr = Any  # tagged tuple, scalar, or None
+TypeSpec = Any  # "ℝ", "ℕ", ("tensor", [...]), ("func_type", ...), None
+UnifiedAST = Dict[str, Any]
 
 
 class TypeChecker:
     """Type checker for Physika unified ASTs.
 
-    Passes through each function, class, and program statement in the unified AST
-    and validates declared types against inferred types. Error messages are
-    accumulated in ``self.errors`` and returned by :meth:`run`.
+    Passes through each function, class, and program statement in the
+    unified AST and validates declared types against inferred types.
+    Error messages are accumulated in ``self.errors`` and returned by
+    :meth:`run`.
 
     The checker maintains three environments:
 
     * ``type_env`` — program variable types (populated as ``decl``
       and ``assign`` statements are processed).
-    * ``func_env`` — registered function signatures ``(param_types, return_type)``.
+    * ``func_env`` — registered function signatures ``(param_types, return_type)``.  # noqa: E501
     * ``class_env`` — registered class AST definitions (used by
       ``type_infer`` to validate constructor and instance calls).
 
@@ -73,8 +74,10 @@ class TypeChecker:
         else:
             self.errors.append(msg)
 
-
-    def infer_type(self, expr: ASTExpr, local_env: Optional[dict[str, TypeSpec]] = None) -> TypeSpec:
+    def infer_type(
+            self,
+            expr: ASTExpr,
+            local_env: Optional[dict[str, TypeSpec]] = None) -> TypeSpec:
         """Infer the Physika type of an AST expression.
 
         Scalar literals (``int``, ``float``) map to ``"ℝ"``.  Tagged
@@ -101,7 +104,7 @@ class TypeChecker:
         Examples
         --------
         >>> from physika.type_checker import TypeChecker
-        >>> checker = TypeChecker({"functions": {}, "classes": {}, "program": []})
+        >>> checker = TypeChecker({"functions": {}, "classes": {}, "program": []})  # noqa: E501
         >>> checker.infer_type(("num", 3.0))
         'ℝ'
         >>> checker.infer_type(("array", [("num", 1.0), ("num", 2.0)]))
@@ -116,8 +119,8 @@ class TypeChecker:
             return None
 
         op = expr[0]
-        return type_infer(op, expr, self.type_env, local_env, self.add_error, self.infer_type, self.func_env, self.class_env)
-
+        return type_infer(op, expr, self.type_env, local_env, self.add_error,
+                          self.infer_type, self.func_env, self.class_env)
 
     def check_statement(self, stmt: ASTExpr) -> None:
         """Check a single program-level statement for type errors.
@@ -134,7 +137,7 @@ class TypeChecker:
         Examples
         --------
         >>> from physika.type_checker import TypeChecker
-        >>> checker = TypeChecker({"functions": {}, "classes": {}, "program": []})
+        >>> checker = TypeChecker({"functions": {}, "classes": {}, "program": []})  # noqa: E501
         >>> checker.check_statement(("decl", "x", "ℝ", ("num", 3.0), 1))
         >>> checker.errors
         []
@@ -147,8 +150,8 @@ class TypeChecker:
         op = stmt[0]
         line = get_line_info(stmt)
         self.current_line[0] = line
-        statement_check(op, stmt, self.infer_type, self.add_error, self.type_env, self.check_statement)
-
+        statement_check(op, stmt, self.infer_type, self.add_error,
+                        self.type_env, self.check_statement)
 
     def check_function(self, name: str, func_def: dict[str, Any]) -> None:
         """Check a function definition for type errors.
@@ -171,7 +174,7 @@ class TypeChecker:
         Examples
         --------
         >>> from physika.type_checker import TypeChecker
-        >>> checker = TypeChecker({"functions": {}, "classes": {}, "program": []})
+        >>> checker = TypeChecker({"functions": {}, "classes": {}, "program": []})  # noqa: E501
         >>> func_def = {
         ...     "params": [("x", "ℝ")],
         ...     "body": ("var", "x"),
@@ -207,10 +210,11 @@ class TypeChecker:
             if stmt_op == "body_decl":
                 _, var_name, var_type, expr = stmt
                 inferred = self.infer_type(expr, local_env)
-                if var_type and inferred and not types_compatible(var_type, inferred):
+                if var_type and inferred and not types_compatible(
+                        var_type, inferred):
                     self.errors.append(
-                        f"In function '{name}': type mismatch for '{var_name}': "
-                        f"declared as {type_to_str(var_type)}, got {type_to_str(inferred)}"
+                        f"In function '{name}': type mismatch for '{var_name}': "  # noqa: E501
+                        f"declared as {type_to_str(var_type)}, got {type_to_str(inferred)}"  # noqa: E501
                     )
                 local_env[var_name] = var_type if var_type else inferred
             elif stmt_op == "body_assign":
@@ -224,11 +228,11 @@ class TypeChecker:
 
         # Check return expression
         body_type = self.infer_type(body, local_env)
-        if return_type and body_type and not types_compatible(return_type, body_type):
+        if return_type and body_type and not types_compatible(
+                return_type, body_type):
             self.errors.append(
-                f"Function '{name}' return type mismatch: declared {type_to_str(return_type)}, "
-                f"but body has type {type_to_str(body_type)}"
-            )
+                f"Function '{name}' return type mismatch: declared {type_to_str(return_type)}, "  # noqa: E501
+                f"but body has type {type_to_str(body_type)}")
 
     def check_class(self, name: str, class_def: dict[str, Any]) -> None:
         """Check a class definition for type errors.
@@ -250,7 +254,7 @@ class TypeChecker:
         Examples
         --------
         >>> from physika.type_checker import TypeChecker
-        >>> checker = TypeChecker({"functions": {}, "classes": {}, "program": []})
+        >>> checker = TypeChecker({"functions": {}, "classes": {}, "program": []})  # noqa: E501
         >>> class_def = {
         ...     "class_params": [("w", "ℝ")],
         ...     "lambda_params": [("x", "ℝ")],
@@ -277,7 +281,8 @@ class TypeChecker:
         for param_name, param_type in lambda_params:
             local_env[param_name] = param_type
 
-        # Check forward body statements (if class lambda has a multi-statement body)
+        # Check forward body statements
+        # (if class lambda has a multi-statement body)
         statements = class_def.get("statements", [])
         for stmt in statements:
             if stmt is None:
@@ -286,10 +291,11 @@ class TypeChecker:
             if stmt_op == "body_decl":
                 _, var_name, var_type, expr = stmt
                 inferred = self.infer_type(expr, local_env)
-                if var_type and inferred and not types_compatible(var_type, inferred):
+                if var_type and inferred and not types_compatible(
+                        var_type, inferred):
                     self.errors.append(
-                        f"In class '{name}' forward: type mismatch for '{var_name}': "
-                        f"declared as {type_to_str(var_type)}, got {type_to_str(inferred)}"
+                        f"In class '{name}' forward: type mismatch for '{var_name}': "  # noqa: E501
+                        f"declared as {type_to_str(var_type)}, got {type_to_str(inferred)}"  # noqa: E501
                     )
                 local_env[var_name] = var_type if var_type else inferred
             elif stmt_op == "body_assign":
@@ -303,11 +309,11 @@ class TypeChecker:
 
         # Check forward body
         body_type = self.infer_type(body, local_env)
-        if return_type and body_type and not types_compatible(return_type, body_type):
+        if return_type and body_type and not types_compatible(
+                return_type, body_type):
             self.errors.append(
-                f"Class '{name}' forward return type mismatch: declared {type_to_str(return_type)}, "
-                f"but body has type {type_to_str(body_type)}"
-            )
+                f"Class '{name}' forward return type mismatch: declared {type_to_str(return_type)}, "  # noqa: E501
+                f"but body has type {type_to_str(body_type)}")
 
         # Check loss body if present
         if loss_body:
@@ -324,10 +330,11 @@ class TypeChecker:
                 if stmt_op == "body_decl":
                     _, var_name, var_type, expr = stmt
                     inferred = self.infer_type(expr, loss_env)
-                    if var_type and inferred and not types_compatible(var_type, inferred):
+                    if var_type and inferred and not types_compatible(
+                            var_type, inferred):
                         self.errors.append(
-                            f"In class '{name}' loss: type mismatch for '{var_name}': "
-                            f"declared as {type_to_str(var_type)}, got {type_to_str(inferred)}"
+                            f"In class '{name}' loss: type mismatch for '{var_name}': "  # noqa: E501
+                            f"declared as {type_to_str(var_type)}, got {type_to_str(inferred)}"  # noqa: E501
                         )
                     loss_env[var_name] = var_type if var_type else inferred
                 elif stmt_op == "body_assign":
@@ -340,7 +347,6 @@ class TypeChecker:
                         loss_env[var_name] = None
 
             self.infer_type(loss_body, loss_env)
-
 
     # Main entry point
     def run(self) -> list[str]:
