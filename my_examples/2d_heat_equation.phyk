@@ -1,0 +1,38 @@
+x, y, t, alpha, dx, dy : Symbol
+u_fn : Function
+
+eq : Equation := diff(u_fn(x,y,t), t) = alpha * (diff(u_fn(x,y,t), x, 2) + diff(u_fn(x,y,t), y, 2))
+
+# -------------------------------------------
+# discretize with Finite Difference method
+# -------------------------------------------
+
+discrete = subs(
+    eq,
+    diff(u_fn(x,y,t), x, 2),
+    (u_fn(x+dx,y,t) - 2*u_fn(x,y,t) + u_fn(x-dx,y,t)) / (dx**2),
+    diff(u_fn(x,y,t), y, 2),
+    (u_fn(x,y+dy,t) - 2*u_fn(x,y,t) + u_fn(x,y-dy,t)) / (dy**2)
+)
+
+stencil = symbolic_solve(discrete, diff(u_fn(x,y,t), t))
+
+
+u_left, u_right, u_up, u_down, u_center : Symbol
+
+mol_expr = subs(
+    stencil[0],
+    u_fn(x+dx, y, t), u_right,
+    u_fn(x-dx, y, t), u_left,
+    u_fn(x,y+dy, t), u_up,
+    u_fn(x,y-dy, t), u_down,
+    u_fn(x,y, t), u_center
+)
+
+
+mol_fn_2d = lambdify(
+    [u_left, u_right, u_up, u_down, u_center, dx, dy, alpha],
+    mol_expr
+)
+
+mol_fn_2d(1.0, 1.0, 1.0, 1.0, 1.0, 0.1, 0.1, 1.0) 
