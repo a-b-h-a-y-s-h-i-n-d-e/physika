@@ -324,7 +324,7 @@ class VarCounter:
 
     Examples
     --------
-    >>> from physika.utils.hindley_milner import VarCounter, TVar, TDim
+    >>> from physika.utils.types import VarCounter, TVar, TDim
     >>> c = VarCounter()
     >>> c.new_var()
     TVar(name='α0')
@@ -358,6 +358,7 @@ class VarCounter:
 
         Examples
         --------
+        >>> from physika.utils.types import VarCounter, TVar
         >>> c = VarCounter()
         >>> c.new_var()
         TVar(name='α0')
@@ -380,6 +381,7 @@ class VarCounter:
 
         Examples
         --------
+        >>> from physika.utils.types import VarCounter, TDim, TVar
         >>> c = VarCounter()
         >>> c.new_var()
         TVar(name='α0')
