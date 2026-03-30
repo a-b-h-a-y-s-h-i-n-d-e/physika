@@ -7,7 +7,7 @@ from physika.runtime import compute_grad
 
 # === Functions ===
 def sum_for_expr(s):
-    return torch.sum(torch.stack([(s * i) for _fi_i in range(int(4.0)) for i in [torch.tensor(float(_fi_i))]]))
+    return torch.sum(torch.stack([(s * i) for _fi_i in range(int(4)) for i in [torch.tensor(float(_fi_i))]]))
 
 def dot_with_arr(s):
     a3 = torch.tensor([1.0, 2.0, 3.0, 4.0])
@@ -23,23 +23,23 @@ def matmul_scale(s):
     return torch.sum(C3)
 
 def nested_sum(s):
-    result = 0.0
-    for i in range(int(0), int(10.0)):
-        for j in range(int(i), int(10.0)):
+    result = 0
+    for i in range(int(0), int(10)):
+        for j in range(int(i), int(10)):
             result = result + (((s * i) * 1.0) + ((s * j) * 1.0))
     return result
 
 def scale_vec(x):
-    return torch.stack([(x * (i + 1.0)) for _fi_i in range(int(3.0)) for i in [torch.tensor(float(_fi_i))]])
+    return torch.stack([(x * (i + 1)) for _fi_i in range(int(3)) for i in [torch.tensor(float(_fi_i))]])
 
 def sq_vec(x):
-    return torch.stack([((x ** 2.0) * (i + 1.0)) for _fi_i in range(int(4.0)) for i in [torch.tensor(float(_fi_i))]])
+    return torch.stack([((x ** 2) * (i + 1)) for _fi_i in range(int(4)) for i in [torch.tensor(float(_fi_i))]])
 
 def cos_freqs(x):
-    return torch.stack([torch.cos((x * (i + 1.0))) for _fi_i in range(int(4.0)) for i in [torch.tensor(float(_fi_i))]])
+    return torch.stack([torch.cos((x * (i + 1))) for _fi_i in range(int(4)) for i in [torch.tensor(float(_fi_i))]])
 
 def elementwise_sq(x):
-    return torch.stack([(x[int(i)] ** 2.0) for _fi_i in range(int(len(x))) for i in [torch.tensor(float(_fi_i))]])
+    return torch.stack([(x[int(i)] ** 2) for _fi_i in range(int(len(x))) for i in [torch.tensor(float(_fi_i))]])
 
 # === Program ===
 s0 = torch.tensor(2.0, requires_grad=True)

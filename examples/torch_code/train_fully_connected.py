@@ -37,10 +37,10 @@ W = torch.tensor([[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]], [[0.2, 0.
 B = torch.tensor([[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]])
 w = torch.tensor([0.5, 0.5, 0.5])
 b = 0.1
-net = FullyConnectedNetwork(sigma, W, B, w, b, 2.0)
+net = FullyConnectedNetwork(sigma, W, B, w, b, 2)
 loss_before = evaluate(net, X, y)
 physika_print(loss_before)
-epochs = 1000.0
+epochs = 1000
 lr = 0.1
 net_trained = train(net, X, y, epochs, lr)
 loss_after = evaluate(net_trained, X, y)

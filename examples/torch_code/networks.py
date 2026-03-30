@@ -54,7 +54,7 @@ W = torch.tensor([[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]], [[0.2, 0.
 B = torch.tensor([[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]])
 w = torch.tensor([0.5, 0.5, 0.5])
 b = 0.1
-net2 = FullyConnectedNetwork(sigma, W, B, w, b, 2.0)
+net2 = FullyConnectedNetwork(sigma, W, B, w, b, 2)
 physika_print(net2(torch.tensor([1.0, 2.0, 3.0])))
 physika_print(net2(torch.tensor([0.0, 0.0, 0.0])))
 physika_print(net2(torch.tensor([1.0, 1.0, 1.0])))

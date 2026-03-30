@@ -7,11 +7,11 @@ def f(x: ℝ): ℝ:
         return - x
 
 # positive bracnh
-a : ℝ = 3
+a : ℝ = 3.0
 f(a)
 grad(f(a), a)
 
 # negative branch
-b : ℝ = - 2
+b : ℝ = - 2.0
 f(b)
 grad(f(b), b)
