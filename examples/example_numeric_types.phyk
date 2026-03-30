@@ -1,0 +1,43 @@
+# -----------------------
+# Integer type (ℤ)
+# -----------------------
+a : ℤ = 10
+b : ℤ = 3
+z_add = a + b
+z_array: Z[2] = [1, 2]
+
+a
+b
+z_add
+z_array
+
+
+# -----------------------
+# Real type (ℝ)
+# -----------------------
+x : ℝ = 3.14
+y : ℝ = 2.0
+r_mul : ℝ = x * y
+
+x
+y
+r_mul
+
+
+# ---------------------------
+# working with both ℤ and ℝ
+# ---------------------------
+z_number: Z = 1
+r_number: R = 2.0
+results = z_number + r_number
+results
+
+
+# -----------------------
+# Negative values
+# -----------------------
+neg_int : ℤ = -7
+neg_float : ℝ = -3.14
+
+neg_int
+neg_float
