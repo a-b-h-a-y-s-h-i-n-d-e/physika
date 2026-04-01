@@ -417,14 +417,14 @@ class Substitution(dict):
 
     Examples
     --------
-    >>> from physika.utils.types import Substitution, TVar, T_REAL, TScalar, TTensor  # noqa: E501
-    >>> s = Substitution({"α0": T_REAL})
+    >>> from physika.utils.types import Substitution, TVar, TDim, T_REAL, TTensor  # noqa: E501
+    >>> s = Substitution({"α0": T_REAL, "δ0": 3})
     >>> s.apply(TVar("α0"))
     ℝ
     >>> s.apply(TVar("α1"))
     α1
-    >>> s.apply(TTensor(((TVar("α0"), "invariant"),)))
-    TTensor(dims=((TScalar(name='ℝ'), 'invariant'),))
+    >>> s.apply(TTensor(((TDim("δ0"), "invariant"),)))
+    ℝ[3]
     """
 
     def apply(self, t: Type) -> Type:
