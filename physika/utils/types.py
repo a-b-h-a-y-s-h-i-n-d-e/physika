@@ -420,7 +420,7 @@ class Substitution(dict):
     >>> from physika.utils.types import Substitution, TVar, T_REAL, TScalar, TTensor  # noqa: E501
     >>> s = Substitution({"α0": T_REAL})
     >>> s.apply(TVar("α0"))
-    TScalar(name='ℝ')
+    ℝ
     >>> s.apply(TVar("α1"))
     TVar(name='α1')
     >>> s.apply(TTensor(((TVar("α0"), "invariant"),)))
@@ -454,7 +454,7 @@ class Substitution(dict):
         >>> from physika.utils.types import Substitution, TVar, T_REAL
         >>> s = Substitution({"α0": T_REAL, "α1": TVar("α0")})
         >>> s.apply(TVar("α1"))   # chain: α1 -> α0 -> ℝ
-        TScalar(name='ℝ')
+        ℝ
         """
         if isinstance(t, (TVar, TDim)):
             if t.name in self:
@@ -497,7 +497,7 @@ class Substitution(dict):
         >>> s.apply_dim(TDim("δ0"))   # chain: δ0 -> δ1 -> 4
         4
         >>> s.apply_dim(TDim("δ2"))
-        TDim(name='δ2')
+        δ2
         >>> s.apply_dim(3)
         3
         """
@@ -528,7 +528,7 @@ class Substitution(dict):
         >>> from physika.utils.types import Substitution, TVar, T_REAL
         >>> s = Substitution({"α0": T_REAL})
         >>> s.apply_env({"x": TVar("α0"), "y": None})
-        {'x': TScalar(name='ℝ'), 'y': None}
+        {'x': ℝ, 'y': None}
         """
         return {
             k: self.apply(v) if v is not None else None
@@ -562,9 +562,9 @@ class Substitution(dict):
         >>> s2 = Substitution({"α1": TVar("α0")})
         >>> composed = s1.compose(s2)
         >>> composed
-        {'α1': α0, 'α0': TScalar(name='ℝ')}
-        >>> composed.apply(TVar("α1"))   # α1 → α0 → ℝ
-        TScalar(name='ℝ')
+        {'α1': α0, 'α0': ℝ}
+        >>> composed.apply(TVar("α1"))   # α1 -> α0 -> ℝ
+        ℝ
         """
         result = Substitution({k: self.apply(v) for k, v in other.items()})
         for k, v in self.items():

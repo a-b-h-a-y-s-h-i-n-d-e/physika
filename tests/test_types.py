@@ -274,7 +274,7 @@ class TestSubstitution:
         assert set(s.keys()) == {"α0", "α1"}
 
         # applying empty substitution returns the original type unchanged
-        assert s.apply(TVar("α0")) == TVar("α0")
+        assert Substitution().apply(TVar("α0")) == TVar("α0")
         # applying empty substitution to concrete types returns the same type
         assert s.apply(T_REAL) == T_REAL
         assert s.apply(TTensor(((3, "invariant"), ))) == TTensor(
@@ -296,7 +296,7 @@ class TestSubstitution:
         # apply method follows_chaining substitutions until a concrete type or
         # unbound variable is reached.
         # α1 -> α0 -> ℝ
-        s = Substitution({"tests/test_types.pyα1": TVar("α0")})
+        s = Substitution({"α0": T_REAL, "α1": TVar("α0")})
         assert s.apply(TVar("α1")) == T_REAL
 
     def test_apply_ttensor_resolves_dims(self):
