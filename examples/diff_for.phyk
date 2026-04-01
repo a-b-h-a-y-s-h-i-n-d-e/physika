@@ -4,7 +4,7 @@
 # f'(s) = 6
 def sum_for_expr(s : ℝ): ℝ:
     return sum(for i : ℕ(4) → s * i)
-s0 : ℝ = 2
+s0 : ℝ = 2.0
 sum_for_expr(s0)
 grad(sum_for_expr(s0), s0)
 
@@ -12,12 +12,12 @@ grad(sum_for_expr(s0), s0)
 # g(s) = sum(s * arr[i] for i) = sum([1s, 2s, 3s, 4s])= s * (1+2+3+4) = 10*s
 # g'(s) = 10
 def dot_with_arr(s : ℝ): ℝ:
-    a3 : ℝ[4] = [1, 2, 3, 4]
-    result : ℝ = 0
+    a3 : ℝ[4] = [1.0, 2.0, 3.0, 4.0]
+    result : ℝ = 0.0
     for i:
         result += s * a3[i]
     return result
-s1 : ℝ = 1
+s1 : ℝ = 1.0
 dot_with_arr(s1)
 grad(dot_with_arr(s1), s1)
 
@@ -25,13 +25,13 @@ grad(dot_with_arr(s1), s1)
 # h(s) = sum(s * A @ I) = s * sum(A) = s(1+2+3+4) = 10s
 # h'(s) = 10
 def matmul_scale(s : ℝ): ℝ:
-    A3 : ℝ[2, 2] = [[1, 2], [3, 4]]
-    I : ℝ[2, 2] = [[1, 0], [0, 1]]
-    C3 : ℝ[2, 2]
+    A3 : ℝ[2, 2] = [[1.0, 2.0], [3.0, 4.0]]
+    I : ℝ[2, 2] = [[1.0, 0.0], [0.0, 1.0]]
+    C3 : ℝ[2.0, 2.0]
     for i j k:
         C3[i, j] += s * A3[i, k] * I[k, j]
     return sum(C3)
-s2 : ℝ = 1
+s2 : ℝ = 1.0
 matmul_scale(s2)
 grad(matmul_scale(s2), s2)
 
@@ -42,9 +42,9 @@ def nested_sum(s : ℝ): ℝ:
     result : ℝ = 0
     for i: ℕ(10):
         for j: ℕ(i, 10):
-            result += s * i * 1 + s * j * 1
+            result += s * i * 1.0 + s * j * 1.0
     return result
-s3 : ℝ = 1
+s3 : ℝ = 1.0
 nested_sum(s3)
 grad(nested_sum(s3), s3)
 

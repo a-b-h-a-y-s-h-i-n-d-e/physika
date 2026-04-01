@@ -88,7 +88,7 @@ class TestNDIndexing:
         3D array: T[i, j, k] on a 2x3x4 tensor with values from 1 to 24.
         """
         import torch
-        expected = torch.arange(1, 25, dtype=torch.float32).reshape(2, 3, 4)
+        expected = torch.arange(1, 25, dtype=torch.int64).reshape(2, 3, 4)
         assert arrays_ns["T"].shape == expected.shape
         assert torch.allclose(arrays_ns["T"], expected)
 

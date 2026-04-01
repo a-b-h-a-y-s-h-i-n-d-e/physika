@@ -7,7 +7,7 @@ from physika.runtime import compute_grad
 
 # === Functions ===
 def f(x):
-    if x > 0.0:
+    if x > 0:
         return torch.cos(x)
     else:
         return torch.sin(x)

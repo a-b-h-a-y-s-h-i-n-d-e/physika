@@ -8,19 +8,27 @@ with PLY.
 Types
 -----
 
-Scalar
-~~~~~~
+ℝ Real number
+~~~~~~~~~~~~~
 
 .. code-block:: text
 
    x : ℝ = 3.14
+
+ℤ Integer
+~~~~~~~~~
+
+.. code-block:: text
+
+   x : ℤ = 3
 
 1-D array
 ~~~~~~~~~
 
 .. code-block:: text
 
-   v : ℝ[6] = [1, 2, 3, 5, 6, 7]
+   v : ℝ[6] = [1, 2, 3.0, 5, 6, 7.0]
+   u : ℤ[2] = [2, 4, 1, 6, 3, 5]
 
 2-D array (matrix)
 ~~~~~~~~~~~~~~~~~~

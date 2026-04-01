@@ -26,7 +26,7 @@ class HamiltonianNet(nn.Module):
         return h
 
     def loss(self, H, target, x):
-        lo = (((compute_grad(H, x)[int(1.0)] - target[int(0.0)]) ** 2.0) + (((0.0 - compute_grad(H, x)[int(0.0)]) - target[int(1.0)]) ** 2.0))
+        lo = (((compute_grad(H, x)[int(1)] - target[int(0)]) ** 2.0) + (((0.0 - compute_grad(H, x)[int(0)]) - target[int(1)]) ** 2.0))
         return lo
 
 # === Program ===
@@ -39,7 +39,7 @@ b2 = 0.0
 H_net = HamiltonianNet(W1, b1, w2, b2)
 loss_before = evaluate(H_net, X, y)
 physika_print(loss_before)
-epochs = 500.0
+epochs = 500
 lr = 0.01
 H_trained = train(H_net, X, y, epochs, lr)
 loss_after = evaluate(H_trained, X, y)

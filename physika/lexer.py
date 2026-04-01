@@ -116,7 +116,10 @@ def t_TYPE(t):
 
 def t_NUMBER(t):
     r"\d+(\.\d+)?"
-    t.value = float(t.value)
+    if '.' in t.value:
+        t.value = float(t.value)
+    else:
+        t.value = int(t.value)
     return t
 
 

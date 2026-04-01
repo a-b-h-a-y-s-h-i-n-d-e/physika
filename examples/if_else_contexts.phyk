@@ -11,7 +11,7 @@ def f(x: ℝ): ℝ:
     else:
         return - x
 
-a : ℝ = 2
+a : ℝ = 2.0
 b : ℝ = -1.5
 f(a)
 grad(f(a), a)
@@ -64,7 +64,7 @@ class PiecewiseNet(threshold: ℝ):
         return (pred - target)**2
 
 net = PiecewiseNet(0)
-a : ℝ = 2
+a : ℝ = 2.0
 net(a)
 grad(net(a), a)
 b : ℝ = -1.5
