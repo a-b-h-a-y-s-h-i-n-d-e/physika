@@ -1,29 +1,5 @@
-from pathlib import Path
-
 import pytest
-
-from physika.lexer import lexer
-from physika.parser import parser, symbol_table
-from physika.utils.ast_utils import build_unified_ast
-from physika.codegen import from_ast_to_torch
-
-EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
-
-
-def exec_phyk(stem: str) -> dict:
-    """
-    Helper function to execute a .phyk file and return the resulting namespace
-    ``ns`` dict.
-    """
-    source = (EXAMPLES_DIR / f"{stem}.phyk").read_text()
-    symbol_table.clear()
-    lexer.lexer.lineno = 1
-    program_ast = parser.parse(source, lexer=lexer)
-    unified = build_unified_ast(program_ast, symbol_table)
-    code = from_ast_to_torch(unified, print_code=False)
-    ns: dict = {}
-    exec(code, ns)
-    return ns
+from conftest import exec_phyk
 
 
 @pytest.fixture(scope="module")
@@ -36,6 +12,7 @@ def numeric_ns():
 
 
 class TestIntegerType:
+    """Tests for integer type ℤ declarations and arithmetic."""
 
     def test_integer_value(self, numeric_ns):
         assert float(numeric_ns["a"]) == 10.0
@@ -45,15 +22,17 @@ class TestIntegerType:
 
 
 class TestRealType:
+    """Tests for integer type ℤ declarations and arithmetic."""
 
     def test_real_value(self, numeric_ns):
         assert float(numeric_ns["x"]) == 3.14
 
     def test_real_multiplication(self, numeric_ns):
-        assert float(numeric_ns["r_mul"]) == 3.14 * 2.0
+        assert float(numeric_ns["r_mul"]) == 3.14 * 2
 
 
 class TestMixedTypes:
+    """Tests for expressions mixing ℤ and ℝ types."""
 
     def test_mixed_values(self, numeric_ns):
         assert float(numeric_ns["z_number"]) == 1.0
@@ -64,9 +43,15 @@ class TestMixedTypes:
 
 
 class TestNegativeValues:
+    """Tests for negative ℤ and ℝ value declarations."""
 
     def test_negative_integer(self, numeric_ns):
         assert float(numeric_ns["neg_int"]) == -7.0
 
     def test_negative_real(self, numeric_ns):
-        assert float(numeric_ns["neg_float"]) == -3.14
+        assert abs(float(numeric_ns["neg_float"]) - (-3.14)) < 1e-5
+
+    def test_negative_array(self, numeric_ns):
+        import torch
+        assert torch.allclose(numeric_ns["neg_array"],
+                              torch.tensor([-1.0, -2.0, -3.0]))
