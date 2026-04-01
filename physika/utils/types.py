@@ -422,7 +422,7 @@ class Substitution(dict):
     >>> s.apply(TVar("α0"))
     ℝ
     >>> s.apply(TVar("α1"))
-    TVar(name='α1')
+    α1
     >>> s.apply(TTensor(((TVar("α0"), "invariant"),)))
     TTensor(dims=((TScalar(name='ℝ'), 'invariant'),))
     """
@@ -562,7 +562,7 @@ class Substitution(dict):
         >>> s2 = Substitution({"α1": TVar("α0")})
         >>> composed = s1.compose(s2)
         >>> composed
-        {'α1': α0, 'α0': ℝ}
+        {'α1': ℝ, 'α0': ℝ}
         >>> composed.apply(TVar("α1"))   # α1 -> α0 -> ℝ
         ℝ
         """
