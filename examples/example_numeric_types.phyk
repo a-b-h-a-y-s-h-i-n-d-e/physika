@@ -16,7 +16,7 @@ z_array
 # Real type (ℝ)
 # -----------------------
 x : ℝ = 3.14
-y : ℝ = 2.0
+y : ℝ = 2
 r_mul : ℝ = x * y
 
 x
@@ -38,6 +38,8 @@ result
 # -----------------------
 neg_int : ℤ = -7
 neg_float : ℝ = -3.14
+neg_array: R[3] = [-1, -2.0, -3]
 
 neg_int
 neg_float
+neg_array

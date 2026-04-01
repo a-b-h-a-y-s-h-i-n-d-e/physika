@@ -14,7 +14,7 @@ physika_print(b)
 physika_print(z_add)
 physika_print(z_array)
 x = 3.14
-y = 2.0
+y = 2
 r_mul = (x * y)
 physika_print(x)
 physika_print(y)
@@ -25,5 +25,7 @@ result = (z_number * r_number)
 physika_print(result)
 neg_int = int((-7))
 neg_float = (-3.14)
+neg_array = torch.tensor([(-1), (-2.0), (-3)])
 physika_print(neg_int)
 physika_print(neg_float)
+physika_print(neg_array)
