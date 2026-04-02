@@ -39,7 +39,9 @@ tokens = (
     "LAMBDA",
     "TANGENT",
     "IMAGINARY",
-    "SYMBOL", "FUNCTION", "EQUATION",
+    "SYMBOL",
+    "FUNCTION",
+    "EQUATION",
     "WALRUS"
 )
 

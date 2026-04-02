@@ -375,12 +375,12 @@ diff
 ~~~~
 
 .. code-block:: text
-   f = x**3 + 2*x**2 + x
+   f = x**3 + 2*(x**2) + x
    diff(f, x)
 
 Output::
 
-   8.0*x**1.0 + 3.0*x**2.0 + 1 ∈ Add
+   3*x**2 + 4*x + 1 ∈ Add
 
 lambdify
 ~~~~~~~~

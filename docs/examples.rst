@@ -145,5 +145,9 @@ Hamiltonian Neural Network (HNN)
 Symbolic support
 ----------------
 
+Physika supports symbolic math via sympy, letting you declare ``Symbol``, ``Function``,
+and ``Equation`` types and use built-ins like ``diff``, ``subs``, and ``lambdify`` to
+derive and solve expressions analytically.
+
 .. literalinclude:: ../examples/example_symbolic.phyk
    :language: text
