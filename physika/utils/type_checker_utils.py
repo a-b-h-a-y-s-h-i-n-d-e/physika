@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Callable, List, Tuple, Union
+from typing import Any, Callable, List, Tuple, Union, Optional
+from physika.utils.types import (Type, TTensor, TScalar, TFunc, TInstance,
+                                 TVar, TDim, T_REAL, T_NAT, T_COMPLEX,
+                                 T_STRING)
 
 # Type aliases used throughout this module.
 TypeSpec = Any  # "ℝ", "ℕ", ("tensor", [...]), ("func_type", ...), None
@@ -54,34 +57,40 @@ def type_to_str(t: TypeSpec) -> str:
     return str(t)
 
 
-def get_shape(t: TypeSpec) -> List[int] | None:
-    """Extract the shape dimensions from a type spec.
+def get_tensor_shape(t: TypeSpec) -> List[int] | None:
+    """
+    Extract the dimension list from a ``TTensor``, or ``None`` if not a tensor.
 
     Parameters
     ----------
-    t : TypeSpec
-        A Physika type.
+    t : Optional[Type]
+        Any ``Type``.
 
     Returns
     -------
-    list[int] or None
-        The list of dimension sizes for tensor types, or ``None``
-        for scalars (``"ℝ"``, ``"ℕ"``) and unrecognised types.
+    Optional[list]
+        List of dimension entries ``[d0, d1, ...]`` for a ``TTensor``,
+        or ``None`` for scalars, functions, instances, and ``None`` input.
 
     Examples
     --------
-    >>> from physika.utils.type_checker_utils import get_shape
-    >>> get_shape(("tensor", [(3, "invariant")]))
+    >>> from physika.utils.type_checker_utils import get_tensor_shape
+    >>> from physika.utils.types import TTensor, TDim, T_REAL
+    >>> get_tensor_shape(TTensor(((3, "invariant"),)))
     [3]
-    >>> get_shape(("tensor", [(2, "invariant"), (3, "invariant")]))
-    [2, 3]
-    >>> get_shape("ℝ") is None
+    >>> get_tensor_shape(TTensor(((2, "invariant"), (4, "invariant"))))
+    [2, 4]
+    >>> get_tensor_shape(TTensor(((TDim("n"), "invariant"), (3, "invariant"))))
+    [n, 3]
+    >>> get_tensor_shape(T_REAL) is None
+    True
+    >>> get_tensor_shape(None) is None
     True
     """
-    if t in ("ℝ", "ℕ"):
+    if t is None:
         return None
-    if isinstance(t, tuple) and t[0] == "tensor":
-        return [d[0] for d in t[1]]
+    if isinstance(t, TTensor):
+        return [d for d, _ in t.dims]
     return None
 
 
@@ -179,7 +188,7 @@ def types_compatible(t1: TypeSpec, t2: TypeSpec) -> bool:
     >>> types_compatible("ℝ", "ℕ")
     True
     >>> types_compatible("ℝ", ("tensor", [(3, "invariant")]))
-    False
+    True
     >>> types_compatible(None, "ℝ")
     True
     """
@@ -189,8 +198,8 @@ def types_compatible(t1: TypeSpec, t2: TypeSpec) -> bool:
         return True
     if t1 in ("ℝ", "ℕ") and t2 in ("ℝ", "ℕ"):
         return True
-    s1 = get_shape(t1)
-    s2 = get_shape(t2)
+    s1 = get_tensor_shape(t1)
+    s2 = get_tensor_shape(t2)
     if s1 is None or s2 is None:
         return s1 is None and s2 is None
     if len(s1) != len(s2):
@@ -411,7 +420,7 @@ def type_infer(
         var_type = local_env.get(var_name) or type_env.get(var_name)
         if var_type is None:
             return None
-        shape = get_shape(var_type)
+        shape = get_tensor_shape(var_type)
         if shape is None:
             add_error(f"Cannot index scalar '{var_name}'")
             return None
@@ -428,7 +437,7 @@ def type_infer(
         var_type = local_env.get(var_name) or type_env.get(var_name)
         if var_type is None:
             return None
-        shape = get_shape(var_type)
+        shape = get_tensor_shape(var_type)
         if shape is None:
             add_error(f"Cannot slice scalar '{var_name}'")
             return None
@@ -454,8 +463,8 @@ def type_infer(
     elif op in ("add", "sub"):
         left_type = infer_type(expr[1], local_env)
         right_type = infer_type(expr[2], local_env)
-        left_shape = get_shape(left_type)
-        right_shape = get_shape(right_type)
+        left_shape = get_tensor_shape(left_type)
+        right_shape = get_tensor_shape(right_type)
 
         # Allow scalar broadcasting for add/sub (e.g. tensor + 1.0)
         result_shape, ok = shapes_broadcast_compatible(
@@ -470,8 +479,8 @@ def type_infer(
     elif op == "mul":
         left_type = infer_type(expr[1], local_env)
         right_type = infer_type(expr[2], local_env)
-        left_shape = get_shape(left_type)
-        right_shape = get_shape(right_type)
+        left_shape = get_tensor_shape(left_type)
+        right_shape = get_tensor_shape(right_type)
 
         # Allow scalar multiplication with tensors
         result_shape, ok = shapes_broadcast_compatible(
@@ -487,9 +496,9 @@ def type_infer(
         left_type = infer_type(expr[1], local_env)
         right_type = infer_type(expr[2], local_env)
         # Division by scalar is always ok
-        right_shape = get_shape(right_type)
+        right_shape = get_tensor_shape(right_type)
         if right_shape is not None:
-            left_shape = get_shape(left_type)
+            left_shape = get_tensor_shape(left_type)
             if left_shape != right_shape:
                 add_error(
                     f"Element-wise division requires matching shapes: {type_to_str(left_type)} vs {type_to_str(right_type)}"  # noqa: E501
@@ -499,8 +508,8 @@ def type_infer(
     elif op == "matmul":
         left_type = infer_type(expr[1], local_env)
         right_type = infer_type(expr[2], local_env)
-        left_shape = get_shape(left_type)
-        right_shape = get_shape(right_type)
+        left_shape = get_tensor_shape(left_type)
+        right_shape = get_tensor_shape(right_type)
 
         if left_shape is None or right_shape is None:
             # Scalar matmul - treat as regular mul
@@ -722,3 +731,134 @@ def statement_check(
             if body_stmt is None:
                 continue
             check_statement(body_stmt)
+
+
+def from_typespec(ts: Any) -> Optional[Type]:
+    """
+    Convert a type value from AST to a valid ``Type`` value.
+
+    Called between the parser and the type checker to translate
+    the annotation stored in the AST into the typed objects that
+    will be used at the inference step.  Returns ``None`` for any
+    annotation that cannot be mapped.
+
+    Parameters
+    ----------
+    ts : Any
+        A parser type-spec: ``None``, ``"ℝ"``/``"R"``, ``"ℕ"``/``"N"``,
+        ``"ℂ"``, or ``"string"``, ``("tensor", [(dim, variance), ...])``,
+        ``("func_type", param_types, ret_type)``, ``("instance", name)``.
+
+    Returns
+    -------
+    Optional[Type]
+        The corresponding ``Type``, or ``None`` if the spec is unrecognised.
+
+    Examples
+    --------
+    >>> from physika.utils.type_checker_utils import from_typespec
+    >>> from physika.utils.types import T_REAL, TTensor
+    >>> from_typespec("ℝ")
+    ℝ
+    >>> from_typespec(("tensor", [(3, "invariant"), (4, "invariant")]))
+    ℝ[3,4]
+    >>> from_typespec(None) is None
+    True
+    """
+    if ts is None:
+        return None
+    if ts in ("ℝ", "R"):
+        return T_REAL
+    if ts in ("ℕ", "N"):
+        return T_NAT
+    if ts == "ℂ":
+        return T_COMPLEX
+    if ts == "string":
+        return T_STRING
+    if isinstance(ts, tuple):
+        if ts[0] == "tensor":
+            # Converts dimensions to TDim
+            dims = tuple(
+                (TDim(d) if isinstance(d, str) else d, v) for d, v in ts[1])
+            return TTensor(dims)
+        if ts[0] == "func_type":
+            # Recursively convert parameter and return type specs
+            return TFunc((from_typespec(ts[1]), ), from_typespec(ts[2]))
+        if ts[0] == "struct_type":
+            return TInstance(ts[1])
+        if ts[0] == "instance":
+            return TInstance(ts[1])
+    return None
+
+
+def occurs_in(var: Union[TVar, TDim], t: Type) -> bool:
+    """
+    Check whether variable ``var`` appears anywhere inside type ``t: Type`` to
+    prevent creating infinite types.
+
+    Before binding ``α0 = some_type``, the unification step
+    calls ``occurs_in(α0, some_type)``. if it returns ``True``, the binding
+    would create a circular structure (e.g. ``α0 = ℝ[α0]``) and a
+    ``TypeError`` is raised instead.
+
+    Parameters
+    ----------
+    var : Union[TVar, TDim]
+        The variable to search for.
+    t : Type
+        The type to search within.
+
+    Returns
+    -------
+    bool
+        ``True`` if ``var`` appears in ``t``, ``False`` otherwise.
+
+    Examples
+    --------
+    >>> from physika.utils.type_checker_utils import occurs_in
+    >>> from physika.utils.types import TVar, TDim, TTensor, T_REAL
+    >>> occurs_in(TVar("α0"), TVar("α0"))
+    True
+    >>> occurs_in(TVar("α0"), T_REAL)
+    False
+    >>> occurs_in(TDim("δ0"), TTensor(((TDim("δ0"), "invariant"),)))
+    True
+    """
+    if isinstance(t, (TVar, TDim)):
+        return t.name == var.name
+    if isinstance(t, TTensor):
+        return any(
+            occurs_in(var, d) for d, _ in t.dims
+            if isinstance(d, (TVar, TDim, TScalar, TTensor, TFunc, TInstance)))
+    if isinstance(t, TFunc):
+        return any(occurs_in(var, p)
+                   for p in t.params) or occurs_in(var, t.ret)
+    return False
+
+
+def make_tensor(dims: list) -> TTensor:
+    """
+    Construct a ``TTensor`` from a list of dimension values.
+
+    Wwrapper used by helper functions to avoid
+    repeating the ``(d, "invariant")`` tuple each time a tensor is contructed
+    during type checker.
+
+    Parameters
+    ----------
+    dims : list
+        Dimension inputs. Each entry may be an ``int``, a symbolic ``str``,
+        or a ``TDim`` variable.
+
+    Returns
+    -------
+    TTensor
+        A tensor type with each dimension tagged as ``"invariant"``.
+
+    Examples
+    --------
+    >>> from physika.utils.type_checker_utils import make_tensor
+    >>> make_tensor([2, 3])
+    ℝ[2,3]
+    """
+    return TTensor(tuple((d, "invariant") for d in dims))
