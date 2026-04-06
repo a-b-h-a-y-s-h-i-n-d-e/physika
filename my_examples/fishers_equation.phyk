@@ -1,0 +1,51 @@
+# https://www.sciencedirect.com/science/article/pii/S2405844022020618
+
+x, t, D, r, dx: Symbol
+u_fn: Function
+
+pde_equation: Equation := diff(u_fn(x, t), t) = D * diff(u_fn(x, t), x, 2) + r * u_fn(x, t) * (1 - u_fn(x, t))
+
+u_left, u_center, u_right : Symbol
+
+eq: Equation := diff(u_fn(x, t), t) = (
+    D * (u_left - 2*u_center + u_right) / (dx**2) + 
+    r * u_center * (1 - u_center)
+)
+
+stencil = symbolic_solve(eq, diff(u_fn(x, t), t))
+
+mol_fn = lambdify(
+    [u_left, u_center, u_right, dx, D, r],
+    stencil[0]
+)
+
+
+class RK4(f: ℝ → ℝ, dt: ℝ, n: ℕ):
+    def λ(u: ℝ[m]) → ℝ[n]:
+        for k:
+            k1 = f(u)
+            k2 = f(u + 0.5 * dt * k1)
+            k3 = f(u + 0.5 * dt * k2)
+            k4 = f(u +       dt * k3)
+            u  = u + (dt / 6.0) * (k1 + 2.0*k2 + 2.0*k3 + k4)
+        return u
+
+def fishers(u : ℝ[m]) : ℝ[n]:
+    m = len(u)
+    interior : ℝ[m] = for i : ℕ(1, m-1) -> mol_fn(u[i-1], u[i], u[i+1], dx, D, r)
+    results = prepend(interior, 0.0)
+    results = append(results, 0.0)
+    return results
+
+
+D : ℝ = 0.01
+r : ℝ = 1.0
+dx : ℝ = 0.01
+dt : ℝ = 0.4 * dx**2 / D
+steps : ℕ = 200
+
+
+u0 : ℝ[30] = for i : ℕ(30) -> 1.0 / (1.0 + exp(-(i - 15)))
+
+step = RK4(fishers, dt, 1)
+simulate_fishers(step, u0, steps, dt)
