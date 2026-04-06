@@ -1,0 +1,49 @@
+x, t, nu, dx : Symbol
+u_fn : Function
+
+pde_equation: Equation := diff(u_fn(x, t), t) = -u_fn(x, t) * diff(u_fn(x, t), x) + nu * diff(u_fn(x, t), x, 2)
+
+
+# ------------------------------------
+# Finite Difference method
+# ------------------------------------
+u_left, u_center, u_right : Symbol
+
+eq : Equation := diff(u_fn(x, t), t) = (
+    -u_center * (u_right - u_left) / (2*dx) +
+    nu * (u_left - 2*u_center + u_right) / (dx**2)
+)
+
+stencil = symbolic_solve(eq, diff(u_fn(x, t), t))
+
+mol_fn = lambdify(
+    [u_left, u_center, u_right, dx, nu],
+    stencil[0]
+)
+
+nu : ℝ = 0.005
+dx : ℝ = 0.01
+dt: R = 0.01
+steps : ℕ = 500
+
+class RK4(f: ℝ → ℝ, dt: ℝ, n: ℕ):
+    def λ(u: ℝ[m]) → ℝ[n]:
+        for k:
+            k1 = f(u)
+            k2 = f(u + 0.5 * dt * k1)
+            k3 = f(u + 0.5 * dt * k2)
+            k4 = f(u +       dt * k3)
+            u  = u + (dt / 6.0) * (k1 + 2.0*k2 + 2.0*k3 + k4)
+        return u
+
+
+def burger_equation(u0: R[m]): R[n]:
+    m = len(u0)
+    interior_array: R[m] = for i: N(1, m-1) -> mol_fn(u[i-1], u[i], u[i+1], dx, nu)    
+    results = append(prepend(interior_array, 0.0), 0.0)
+    return results
+
+u : ℝ[30] = for i : ℕ(30) -> sin(3.14 * i / 29)
+
+step = RK4(burger_equation, dt, 1)
+simulate_burgers(step, u, steps, dt)
