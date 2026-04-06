@@ -1,38 +1,66 @@
 x, y, t, alpha, dx, dy : Symbol
 u_fn : Function
 
-eq : Equation := diff(u_fn(x,y,t), t) = alpha * (diff(u_fn(x,y,t), x, 2) + diff(u_fn(x,y,t), y, 2))
+u_center, u_left, u_right, u_up, u_down : Symbol
 
-# -------------------------------------------
-# discretize with Finite Difference method
-# -------------------------------------------
-
-discrete = subs(
-    eq,
-    diff(u_fn(x,y,t), x, 2),
-    (u_fn(x+dx,y,t) - 2*u_fn(x,y,t) + u_fn(x-dx,y,t)) / (dx**2),
-    diff(u_fn(x,y,t), y, 2),
-    (u_fn(x,y+dy,t) - 2*u_fn(x,y,t) + u_fn(x,y-dy,t)) / (dy**2)
+eq : Equation := diff(u_fn(x, y, t), t) = alpha * (
+    (u_left - 2*u_center + u_right) / dx**2 +
+    (u_down - 2*u_center + u_up) / dy**2
 )
 
-stencil = symbolic_solve(discrete, diff(u_fn(x,y,t), t))
+stencil = symbolic_solve(eq, diff(u_fn(x, y, t), t))
 
 
-u_left, u_right, u_up, u_down, u_center : Symbol
-
-mol_expr = subs(
-    stencil[0],
-    u_fn(x+dx, y, t), u_right,
-    u_fn(x-dx, y, t), u_left,
-    u_fn(x,y+dy, t), u_up,
-    u_fn(x,y-dy, t), u_down,
-    u_fn(x,y, t), u_center
+mol_fn = lambdify(
+    [u_center, u_left, u_right, u_up, u_down, dx, dy, alpha],
+    stencil[0]
 )
 
+# ---------------------------------
+# Numerical part 
+# ---------------------------------
 
-mol_fn_2d = lambdify(
-    [u_left, u_right, u_up, u_down, u_center, dx, dy, alpha],
-    mol_expr
-)
+alpha: R = 0.01
+n: R = 4
+dx: R = 1 / (n - 1)
+dy: R = 1 / (n - 1)  
+dt: R = 0.25 * (dx**2 * dy**2) / (alpha * (dx**2 + dy**2))
+steps: R = 200
 
-mol_fn_2d(1.0, 1.0, 1.0, 1.0, 1.0, 0.1, 0.1, 1.0) 
+class RK4(f: ℝ → ℝ, dt: ℝ, n: ℕ):
+    def λ(x: ℝ[m, n]) → ℝ[m, n]:
+        for k:
+            k1 = f(x)
+            k2 = f(x + 0.5 * dt * k1)
+            k3 = f(x + 0.5 * dt * k2)
+            k4 = f(x + dt * k3)
+            x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        return x
+
+def heat(u: R[m,n]): R[m, n]:
+    rows: R = len(u)
+    cols: R = len(u[0])
+    results: R[rows, cols] = zeros_array(rows, cols)
+    for i: ℕ(rows):
+        for j: ℕ(cols):
+            if i>0:
+                if i<rows-1:
+                    if j>0:
+                        if j<cols-1:
+                            results[i, j] = mol_fn(u[i, j], u[i-1, j], u[i+1, j], u[i, j+1], u[i, j-1], dx, dy, alpha)
+    return results
+
+
+
+# initial condition for metal rod
+u : ℝ[10, 10] = for i : ℕ(10) -> for j : ℕ(10) -> sin(3.14 * i / 9) * sin(3.14 * j / 9)
+
+
+step = RK4(heat, dt, 1)
+simulate_heat_2d(step, u, steps, dt)
+
+
+
+# single step
+#solver = RK4(heat, dt, 10)
+#solver(u)
