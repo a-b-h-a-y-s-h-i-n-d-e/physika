@@ -1,0 +1,48 @@
+# https://demonstrations.wolfram.com/NumericalSolutionOfTheAdvectionPartialDifferentialEquationFi/
+
+x,c, t, dx: Symbol
+u_fn: Function
+
+pde_equation: Equation:= diff(u_fn(x, t), t) = - c * diff(u_fn(x, t), x)
+
+u_left, u_center, u_right: Symbol
+
+eq: Equation := diff(u_fn(x, t), t) = -c * (u_right - u_left) / (2 *dx)
+
+stencil = symbolic_solve(eq, diff(u_fn(x, t), t))
+
+
+mol_fn = lambdify(
+    [u_left, u_center, u_right, dx, c],
+    stencil[0]
+)
+
+
+class RK4(f: ℝ → ℝ, dt: ℝ, n: ℕ):
+    def λ(u: ℝ[m]) → ℝ[n]:
+        for k:
+            k1 = f(u)
+            k2 = f(u + 0.5 * dt * k1)
+            k3 = f(u + 0.5 * dt * k2)
+            k4 = f(u +       dt * k3)
+            u  = u + (dt / 6.0) * (k1 + 2.0*k2 + 2.0*k3 + k4)
+        return u
+
+def advection(u : ℝ[m]) : ℝ[n]:
+    m = len(u)
+    interior : ℝ[m] = for i : ℕ(1, m-1) -> mol_fn(u[i-1], u[i], u[i+1], dx, c)
+    # boundary conditions
+    results = append(prepend(interior, 0.0), 0.0)
+    return results
+
+
+u0 : ℝ[30] = for i : ℕ(30) -> sin(3.14 * i / 29)
+
+c : ℝ = 0.1
+dx : ℝ = 0.1
+dt : ℝ = 0.01
+steps : ℕ = 5
+
+
+step = RK4(advection, dt, 1)
+simulate_advection(step, u0, steps, dt)
