@@ -1,35 +1,30 @@
-x, t, alpha, dx : Symbol
+x, t, alpha, dx: Symbol
+u_fn: Function
 
-u_fn : Function
 
-eq : Equation := diff(u_fn(x,t), t) = alpha * diff(u_fn(x,t), x, 2)
-
-discrete = subs(
-    eq,
-    diff(u_fn(x,t), x, 2),
-    (u_fn(x+dx,t) - 2*u_fn(x,t) + u_fn(x-dx,t)) / dx**2
-)
-
-stencil = symbolic_solve(discrete, diff(u_fn(x,t), t))
+pde_equation: Equation := diff(u_fn(x, t), t) = alpha * diff(u_fn(x, t), x, 2)
 
 
 u_left, u_center, u_right : Symbol
 
-mol_expr = subs(
-    stencil[0],
-    u_fn(x+dx,t), u_right,
-    u_fn(x,t),    u_center,
-    u_fn(x-dx,t), u_left
+eq: Equation := diff(u_fn(x, t), t) = alpha * (
+    (u_right - 2 * u_center + u_left) / (dx**2)
 )
+
+stencil = symbolic_solve(eq, diff(u_fn(x, t), t))
 
 mol_fn = lambdify(
     [u_left, u_center, u_right, dx, alpha],
-    mol_expr
+    stencil[0]
 )
 
 
+# ---------------------------------
+# Numerical part 
+# ---------------------------------
+
 class RK4(f: ℝ → ℝ, dt: ℝ, n: ℕ):
-    def λ(x: ℝ[5]) → ℝ[5]:
+    def λ(x: ℝ[m]) → ℝ[n]:
         for k:
             k1 = f(x)
             k2 = f(x + 0.5 * dt * k1)
@@ -38,22 +33,18 @@ class RK4(f: ℝ → ℝ, dt: ℝ, n: ℕ):
             x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
         return x
 
+def heat_equation(u0: R[m]): R[n]:
+    m = len(u0)
+    interior_array: R[m] = for i: N(1, m-1) -> mol_fn(u[i-1], u[i], u[i+1], dx, alpha)    
+    results = append(prepend(interior_array, 0.0), 0.0)
+    return results
 
-# numeric part
-alpha : ℝ = 0.1
-dx    : ℝ = 0.25
-dt    : ℝ = 0.01
+alpha: ℝ = 0.3
+dx: ℝ = 0.25
+dt: ℝ = 0.1
 
 
-def heat(u : ℝ[5]) : ℝ[5]:
-    interior : ℝ[3] = for i : ℕ(3) -> mol_fn(u[i], u[i+1], u[i+2], dx, alpha)
-    return [0.0, interior[0], interior[1], interior[2], 0.0]
+u : ℝ[30] = for i : ℕ(30) -> sin(3.14 * i / 29)
 
-u0 : ℝ[5] = [0.0, 1, 2, 1, 0.0]
-
-solver = RK4(heat, dt, 10)
-solver(u0)
-
-#step = RK4(heat, dt, 1)
-#simulate_heat(step, u0, 100, dt)
-
+step = RK4(heat_equation, dt, 1)
+simulate_heat(step, u, 100, dt)
