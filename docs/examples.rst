@@ -150,7 +150,8 @@ and ``Equation`` types and use built-ins like ``diff``, ``subs``, ``lambdify`` a
 ``symbolic_solve`` to derive and solve expressions analytically.
 
 .. note::
-Physika uses ``SymPy`` for symbolic computation.
+
+   Physika uses ``SymPy`` for symbolic computation.
 
 Core concepts
 ~~~~~~~~~~~~~
