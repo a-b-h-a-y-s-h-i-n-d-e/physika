@@ -347,6 +347,7 @@ grows as ``unify`` discovers equalities between type variables and concrete type
    - compose(other:``Substitution``):
       Merge two substitutions. Apply self to every value in other,
       then include self's own bindings.
+
 Errors include the source line number where the mismatch was detected.
 
 
@@ -364,6 +365,7 @@ substitution
 ~~~~~~~~~~~~
 
 .. code-block:: text
+
    f = x**2 + y**2
    subs(f, x, 3.0, y, 4.0)
 
@@ -375,6 +377,7 @@ diff
 ~~~~
 
 .. code-block:: text
+
    f = x**3 + 2*(x**2) + x
    diff(f, x)
 
@@ -386,8 +389,9 @@ lambdify
 ~~~~~~~~
 
 .. code-block:: text
+
    expr = x**2 + y**2
-   f = lambdify([x, y], expr)  
+   f = lambdify([x, y], expr)
    f(3.0, 4.0)
 
 Output::
@@ -398,6 +402,7 @@ symbolic solve
 ~~~~~~~~~~~~~~
 
 .. code-block:: text
+
    eq: Equation := 2.0*x + 3.0 = 7.0
    symbolic_solve(eq, x)
 
