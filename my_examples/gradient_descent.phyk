@@ -1,0 +1,37 @@
+def cost_function(x: R): R:
+    return x**2 + 5*x + 10
+
+
+def cost_function_array(x: R[m]): R[n]:
+    y: R[10] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    for i:
+        y[i] = (x[i] ** 2) + (5 * x[i]) + 10
+    return y
+
+
+def gradient(x: R[m]): R[n]:
+    epsilon: R = 0.0001
+    grad_x: R[10] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    for i:
+        grad_x[i] = ((cost_function(x[i] + epsilon)) - (cost_function(x[i] - epsilon))) / (2 * epsilon)
+    return grad_x
+
+
+def gradient_descent(x0: R[m], steps: ℕ): R:
+    x = x0
+    lr: R = 0.1
+    for i:ℕ(steps):
+        grad = gradient(x)
+        x = x - lr * grad
+    return x 
+
+
+
+x: R[10] = [-10.0000,-7.7778,-5.5556,-3.3333,-1.1111,1.1111,3.3333,5.5556,7.7778,10.0000]
+
+
+#gradient(x)
+gradient_descent(x, 1)
+
+
+
