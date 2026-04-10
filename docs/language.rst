@@ -455,6 +455,7 @@ Scientific notation
 Physika supports scientific notation natively for numeric literals such as ``1e5``, ``2.5e-3`` or ``6.674e-11``.
 
 .. code-block:: text
+
    G: ℝ = 6.674e-11    # gravitational constant
    c: ℝ = 3e8          # speed of light
 
