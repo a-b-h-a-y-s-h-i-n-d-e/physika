@@ -1,0 +1,68 @@
+
+def zero_1d_array(len: R): R[m]:
+    results: R[len] = for i: N(len) -> i*0
+    return results
+
+def ones_1d_array(len: R): R[m]:
+    results: R[len] = for i: N(len) -> i*0 + 1
+    return results
+
+def zero_2d_array(rows: R, cols: R): R[m, n]:
+    results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+    return results
+
+
+
+m: R = 100  # number of cells
+k: R = 2    # order of accuracy
+
+
+G: ℝ[01, 102] = zero_2d_array(101, 102)
+for i:ℕ(101):
+    G[i, i]   = -1.0
+    G[i, i+1] =  1.0
+
+
+D: ℝ[102, 101] = zero_2d_array(102, 101)
+for i:ℕ(101):
+    D[i, i]   = -1.0
+    D[i+1, i] =  1.0
+
+dt: R = 0.01 / (2.0 * 3e8)
+#dt: R = 0.01
+steps: R = 100
+
+
+ex_shape: R = m+2
+hy_shape: R = m+1
+ex: R[ex_shape] = zero_1d_array(ex_shape)
+hy: R[hy_shape] = zero_1d_array(hy_shape)
+
+freq: R = 700e6
+
+kstart: R = 100
+epsilon: R = 4.0
+sigma: R = 0.04
+epsilon_zero: R = 8.854e-12
+loss: R = dt * sigma / (2.0 * epsilon_zero * epsilon)
+pi: R = 3.14159265
+
+cb: R[ex_shape] = 0.5 * ones_1d_array(ex_shape)
+ca: R[ex_shape] = ones_1d_array(ex_shape)
+
+
+for i:ℕ(kstart, 102):
+    ca[i] = (1.0 - loss) / (1.0 + loss)
+    cb[i] = (0.5 / epsilon) / (1.0 + loss)
+
+for i:ℕ(2):
+    El = ex[1]
+    Er = ex[100]
+    ex = ca * ex - cb * (D @ hy)
+    ex[5] = ex[5] + sin(2.0 * pi * freq * dt * i)
+    ex[0] = El
+    ex[101] = Er
+    hy = hy - 0.5 * (G @ ex)
+
+physika_plot(ex)
+#physika_plot(hy)
