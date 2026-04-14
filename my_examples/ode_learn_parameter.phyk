@@ -1,0 +1,104 @@
+# helper functions
+
+def zero_1d_array(len: R): R[m]:
+    results: R[len] = for i: N(len) -> i*0
+    return results
+
+def zero_2d_array(rows: R, cols: R): R[m, n]:
+    results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+    return results
+
+def append(x: R[m], var: R): R[n]:
+    new_length = len(x) + 1
+    results = zero_1d_array(new_length)
+    for i:N(new_length):
+        if i<len(x):
+            results[i] = x[i]
+        else:
+            results[i] = var
+    return results
+
+
+def get_1d_array_length(x: R[m]): R:
+    total = 0
+    temp = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+# ----------------------------------------------------------------------------------
+
+
+# dy/dt = -θy
+# here, θ is a parameter to learn
+
+timesteps: R = 10
+dt: R = 0.1
+
+def f(y: R, theta: R): R:
+    return -theta * y
+
+# sensitivity is how much solution changes when parameter changes
+def sensitivity(y: R, gs: R, theta: R): R:
+    return -theta * gs + (-y)
+
+def solver(theta: R): R[m]:
+    y: R = 1.0
+    gs: R = 0.0
+    y_array: R[1] = [1.0]
+    gs_array : R[1] = [0]
+    for i:N(timesteps):
+        dy = f(y, theta)
+        dgs = sensitivity(y, gs, theta)
+        y += dt * dy
+        gs += dt * dgs
+        y_array = append(y_array, y)
+        gs_array = append(gs_array, gs)
+    return [y_array, gs_array]
+
+
+
+true_theta: R = 2.0
+results = solver(true_theta)
+
+
+# observations / observed trajectories
+ys_true = results[0]
+gs_true = results[1]
+
+
+def calculate_loss(ys: R[m], ys_t: R[n]): R:
+    L: R = 0.0
+    m = get_1d_array_length(ys)
+    for i:N(m):
+        L += (ys[i] - ys_t[i]) ** 2
+    return L / m
+
+
+def calculate_grad(ys: R[m], gss: R[n], ys_t: R[o]): R:
+    g: R = 0.0
+    m = get_1d_array_length(ys)
+    for i:
+        g += 2.0 * (ys[i] - ys_t[i]) * gss[i]
+    return g / m
+
+
+# training loop
+
+theta: R = 1.0
+learning_rate: R = 0.01
+epochs: R = 10000
+
+for i:N(epochs):
+    results = solver(theta)
+    ys = results[0]
+    gss = results[1]
+    loss = calculate_loss(ys, ys_true)
+    g = calculate_grad(ys, gss, ys_true)
+    theta = theta - learning_rate * g
+
+
+predicted_results = solver(theta)
+ys_pred = predicted_results[0]
+
+plot_trajectories(ys_true, ys_pred)
