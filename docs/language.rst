@@ -406,6 +406,19 @@ Every handler receives an ``ExprContext`` that bundles the four environment argu
 
 Each handler returns ``(inferred_type, updated_substitution)``.
 
+**infer_expr** (Top-level dispatcher)
+
+Handles four cases before dispatching on
+``node[0]`` via ``EXPR_DISPATCH``:
+
+- ``None`` input: ``(None, s)`` with no error.
+- Bare ``int`` or ``float``: ``(ℝ, s)``.
+- Any other non-tuple: ``(None, s)`` with no error.
+- Unknown tag: ``add_error("Unknown expression type: <tag>")`` + ``(None, s)``
+
+Then, each expression type in an ASTNode is dispatched to infer the type. The substitution *s* is threaded through every recursive call so that
+unification bindings made by sub-expressions are visible to the next ones.
+
 **expr_num** (Numeric literal ``("num", value)``)
 
 Always returns ``ℝ`` regardless of value. No environment lookup needed::
@@ -417,17 +430,124 @@ Always returns ``ℝ`` regardless of value. No environment lookup needed::
 Returns ``ℂ`` at the top level, but ``ℝ`` when ``"i"`` appears in ``env`` as
 a for-expression loop variable that shadows the imaginary unit::
 
-   expr_imaginary(("imaginary",), ctx)            →  (ℂ, s)
-   expr_imaginary(("imaginary",), ctx_with_i=ℝ)   →  (ℝ, s)
+   expr_imaginary(("imaginary",), ctx)           →  (ℂ, s)
+   expr_imaginary(("imaginary",), ctx_with_i=ℝ)  →  (ℝ, s)
 
 **expr_var** (Variable reference ``("var", name)``)
 
 Looks up *name* in ``env`` and applies pending substitutions.  Returns
-``(None, s)`` when the variable is not yet in scope::
+``(None, s)`` when the variable is not in scope::
 
    # env = {"x": ℝ[3]}
    expr_var(("var", "x"), ctx)   →  (ℝ[3], s)
    expr_var(("var", "y"), ctx)   →  (None, s)   # not in scope
+
+**expr_array** (Array literal ``("array", [e0, e1, ...])``)
+
+Infers each element's type, unifies them pairwise to find a common element
+type, and returns ``ℝ[n]`` where ``n`` is the number of elements. Inconsistent element types are reported
+via ``add_error``.  When a ``TVar`` element is unified against a concrete
+type, the binding is written into the returned substitution::
+
+   expr_array(("array", [num(1), num(2), num(3)]), ctx)    →  (ℝ[3], s)
+   expr_array(("array", []), ctx)                          →  (ℝ[0], s)
+   # nested [[1,2],[3,4]]
+   expr_array(("array", [arr([1,2]), arr([3,4])]), ctx)    →  (ℝ[2,2], s)
+   # env = {"x": α0}  →  unify(α0, ℝ) writes α0→ℝ
+   expr_array(("array", [("var","x"), ("num",1.0)]), ctx)  →  (ℝ[2], s{α0→ℝ})
+
+**expr_index** (1D subscript ``("index", arr_name, idx_expr)``)
+
+Peels the leading dimension of ``arr_name``.  A 1D array returns ``ℝ`` and a
+a higher-rank array returns the remaining dims as a tensor.  When the index
+expression has type ``TDim`` or ``TVar``, ``unify_dim`` is called against
+the leading dimension, which may bind that variable (depending on ``Substitution`` context)::
+
+   # v : ℝ[5]
+   expr_index(("index","v",("num",2)), ctx)    →  (ℝ, s)
+   # v : ℝ[5],  i : δ0  →  unify_dim(δ0, 5, s) binds δ0→5
+   expr_index(("index","v",("var","i")), ctx)  →  (ℝ, s{δ0→5})
+   # A : ℝ[3,4]  →  select a row (vector)
+   expr_index(("index","A",("num",0)), ctx)    →  (ℝ[4], s)
+
+Errors:
+   - unknown variable → ``(None, s)``
+   - indexing a scalar → ``add_error``.
+
+**expr_indexN** (ND subscript ``("indexN", arr_name, [i0, i1, ...])``)
+
+Generalises ``expr_index`` to an arbitrary number of indices, each unified
+against the corresponding leading dimension.  Returns ``ℝ`` for a full
+index, a lower-rank tensor for partial indexing, or ``(None, s)`` with an
+error for over-indexing::
+
+   # T : ℝ[2,3,4]
+   expr_indexN(("indexN","T",[num(0),num(1),num(2)]), ctx)  →  (ℝ, s)        # full
+   expr_indexN(("indexN","T",[num(0)]),               ctx)  →  (ℝ[3,4], s)   # partial
+   # 4 indices on rank-3 tensor
+   expr_indexN(("indexN","T",[num(0)]*4), ctx)              →  (None, s) + "Over-indexed 'T': 4 indices for a rank-3 tensor"
+
+**expr_chain_index** (Chained subscript ``("chain_index", inner_expr)``)
+
+Infers ``inner_expr`` first, then peels one more leading dimension from the
+result::
+
+   # A : ℝ[3,4]  →  A[0][k] → ℝ
+   expr_chain_index(("chain_index", ("index","A",num(0))), ctx)  →  (ℝ, s)
+   # T : ℝ[2,3,4]  →  T[0][1] → ℝ[4]
+   expr_chain_index(("chain_index", ("index","T",num(0))), ctx)  →  (ℝ[4], s)
+   # v : ℝ[2]  →  v[0][k] is over-indexing
+   expr_chain_index(("chain_index", ("index","v",num(0))), ctx)  →  (None, s) + "Chain index applied to a scalar"
+
+**expr_slice** (Slice ``("slice", arr_name, start_expr, end_expr)``)
+
+Slices the leading dimension of ``arr_name``.  Trailing dimensions of higher-rank
+arrays are preserved unchanged.
+
+*Literal bounds*
+Length computed statically::
+
+   # v : ℝ[6]
+   expr_slice(("slice","v",num(1),num(4)), ctx)  →  (ℝ[3], s)
+   # A : ℝ[3,4]
+   expr_slice(("slice","A",num(0),num(2)), ctx)  →  (ℝ[2,4], s)
+
+Static semantic errors reported when both bounds are literals:
+
+- Negative start or end.
+- ``end < start`` (inverted range).
+- ``end == start`` (empty slice).
+- ``start ≥ leading_dim`` (start out of bounds).
+- ``end > leading_dim`` (end out of bounds).
+
+*Dynamic bounds*
+When either bound is a non-literal (a loop variable),
+a fresh ``TDim("δN")`` replaces the sliced leading dimension so rank and
+trailing dims are still preserved::
+
+   # v : ℝ[6],  i : ℝ  (value unknown at compile time)
+   expr_slice(("slice","v",("var","i"),num(4)), ctx)  →  (ℝ[δ0], s)
+   # A : ℝ[3,4],  i : ℝ
+   expr_slice(("slice","A",("var","i"),num(2)), ctx)  →  (ℝ[δ0,4], s)
+
+The ``TDim`` placeholder stays unresolved until bound information (e.g. from
+a loop binder that knows ``i ∈ [0, n)``) is propagated.
+
+**expr_add_sub** (Addition / subtraction ``("add" or "sub", left, right)``)
+
+Infers both operands (threading the substitution left-to-right) and unifies
+their shapes.  Broadcasting rules:
+
+- Tensor + Tensor → shapes must match. Mismatch calls ``add_error``.
+- Tensor + Scalar (either order) → tensor shape returned.
+- Scalar + Scalar → ``ℝ``::
+
+   # x : ℝ[3],  y : ℝ[3]
+   expr_add_sub(("add",("var","x"),("var","y")), ctx)   →  (ℝ[3], s)
+   # x : ℝ[3],  scalar 1.0  (broadcast)
+   expr_add_sub(("add",("var","x"),("num",1.0)), ctx)   →  (ℝ[3], s)
+   # x : ℝ[3],  y : ℝ[5]  →  shape mismatch error
+   expr_add_sub(("add",("var","x"),("var","y")), ctx)   →  (None, s) + "Shape mismatch in add: ℝ[3] vs ℝ[5]"
 
 
 Symbolic methods
