@@ -593,7 +593,7 @@ rules same as ``expr_add_sub``:
 
 **expr_matmul** (Matrix multiplication ``("matmul", left, right)``)
 
-Inner dimensions must agree.  Supported rank combinations:
+Inner dimensions must match.  Supported rank combinations:
 
 - Vector @ Vector (same length) → scalar ``ℝ`` (dot product).
 - Matrix @ Matrix (ℝ[m,n] @ ℝ[n,p]) → ℝ[m,p]. (And so on for higher ranks)
