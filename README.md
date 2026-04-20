@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/physika_logo.png" alt="Physika Logo" width="200"/>
+  <img src="docs/_static/logo.png" alt="Physika Logo" width="200"/>
 </p>
 
 <p align="center">
