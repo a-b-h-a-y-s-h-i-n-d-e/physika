@@ -38,6 +38,17 @@ class Z2:
         """
         self.val = int(val) % 2
 
+    def __int__(self) -> int:
+        """
+        Convert Z2 element to integer.
+
+        Returns
+        -------
+        int
+            The integer value (0 or 1).
+        """
+        return self.val
+
     def __add__(self, other: Union[int, "Z2"]) -> "Z2":
         """
         Add two Z2 elements.

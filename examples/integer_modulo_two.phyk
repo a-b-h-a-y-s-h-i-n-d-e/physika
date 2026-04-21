@@ -4,8 +4,8 @@ b: Z2 = 0
 # ----------------
 # XOR operation
 # ----------------
-xor_opposite = a + b
-xor_same = a + a
+xor_opposite: Z2 = a + b
+xor_same: Z2 = a + a
 
 xor_opposite
 xor_same
@@ -13,8 +13,8 @@ xor_same
 # ----------------
 # AND operation
 # ----------------
-and_mixed = a * b
-and_both_ones = a * a
+and_mixed: Z2 = a * b
+and_both_ones: Z2 = a * a
 
 and_mixed
 and_both_ones
