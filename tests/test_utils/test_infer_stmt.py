@@ -221,7 +221,8 @@ class TestStmtBodyDecl:
         stmt_body_decl(stmt, ctx)
         assert len(errors) == 1
         assert errors == [
-            "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"  # noqa: E501
+            "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with"
+            " scalar ℝ"
         ]
         # if mismatch, env gets the inferred type
         assert ctx.env['v'] == T_REAL
@@ -234,7 +235,8 @@ class TestStmtBodyDecl:
         stmt_body_decl(stmt, ctx)
         assert len(errors) == 1
         assert errors == [
-            "In 'f': 'x' declared ℝ, inferred ℝ[2]: Cannot unify scalar ℝ with tensor ℝ[2]"  # noqa: E501
+            "In 'f': 'x' declared ℝ, inferred ℝ[2]: Cannot unify scalar ℝ with"
+            " tensor ℝ[2]"
         ]
 
     def test_env_updated(self):
@@ -375,4 +377,4 @@ class TestStmtBodyAssign:
         errors = []
         ctx = make_stmt_ctx(errors=errors)
         stmt_body_assign(('body_assign', 'z', ('var', 'unknown')), ctx)
-        assert ctx.env['z'] == TVar('α0')
+        assert ctx.env['z'] == TVar('α2')

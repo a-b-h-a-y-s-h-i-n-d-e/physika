@@ -156,11 +156,11 @@ def stmt_body_decl(stmt: Tuple, ctx: StmtContext) -> None:
     >>> mismatch_errors = []
     >>> ctx2 = StmtContext(
     ...     env={}, s=Substitution(), func_env={}, class_env={},
-    ...     add_error=mismatch_errors.append, func_name='f', return_type=T_REAL,  # noqa: E501
+    ...     add_error=mismatch_errors.append, func_name='f', return_type=T_REAL,
     ... )
     >>> stmt_body_decl(mismatch_stmt, ctx2)
     >>> mismatch_errors
-    ["In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"]  # noqa: E501
+    ["In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"]
     """
     from physika.utils.type_checker_utils import from_typespec, unify, type_to_str  # noqa: E501
 

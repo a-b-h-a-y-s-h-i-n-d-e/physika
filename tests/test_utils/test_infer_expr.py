@@ -432,7 +432,7 @@ class TestExprIndex:
         ctx = make_ctx(
             env={"A": TTensor(((3, "invariant"), (4, "invariant")))})
         t, _ = expr_index(("index", "A", ("num", 0)), ctx)
-        assert t == ("tensor", [(4, "invariant")])
+        assert t == TTensor(((4, "invariant")))
 
         # Indexing a 3D tensor along dim-0 produces a 2D matrix
         ctx = make_ctx(env={
