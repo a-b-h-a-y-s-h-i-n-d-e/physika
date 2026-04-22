@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.optim as optim
 
 from physika.runtime import physika_print
-from physika.z2 import Z2
 
 # === Program ===
 a = Z2(1)
