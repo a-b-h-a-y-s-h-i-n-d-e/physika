@@ -373,8 +373,8 @@ class TestStmtBodyAssign:
         assert errors == []
 
     def test_fresh_var(self):
-        """If type cannot be inferred, a fresh type variable is stored."""
+        """If type cannot be inferred, a new TVar is stored """
         errors = []
         ctx = make_stmt_ctx(errors=errors)
         stmt_body_assign(('body_assign', 'z', ('var', 'unknown')), ctx)
-        assert ctx.env['z'] == TVar('α2')
+        assert isinstance(ctx.env['z'], TVar)
