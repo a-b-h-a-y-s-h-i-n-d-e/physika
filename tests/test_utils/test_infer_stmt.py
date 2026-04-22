@@ -221,8 +221,8 @@ class TestStmtBodyDecl:
         stmt_body_decl(stmt, ctx)
         assert len(errors) == 1
         assert errors == [
-            "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with"
-            " scalar ℝ"
+            "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3]"
+            " with scalar ℝ"
         ]
         # if mismatch, env gets the inferred type
         assert ctx.env['v'] == T_REAL
