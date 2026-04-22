@@ -22,6 +22,14 @@ Types
 
    x : ℤ = 3
 
+ℤ₂ integer modulo 2
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: text
+
+   x : ℤ2 = 1
+   y : ℤ2 = 0
+
 1-D array
 ~~~~~~~~~
 
