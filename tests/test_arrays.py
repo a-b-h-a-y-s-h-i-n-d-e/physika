@@ -1,29 +1,5 @@
-from pathlib import Path
-
 import pytest
-
-from physika.lexer import lexer
-from physika.parser import parser, symbol_table
-from physika.utils.ast_utils import build_unified_ast
-from physika.codegen import from_ast_to_torch
-
-EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
-
-
-def exec_phyk(stem: str) -> dict:
-    """
-    Helper function to execute a .phyk file and return the resulting namespace
-    ``ns`` dict.
-    """
-    source = (EXAMPLES_DIR / f"{stem}.phyk").read_text()
-    symbol_table.clear()
-    lexer.lexer.lineno = 1
-    program_ast = parser.parse(source, lexer=lexer)
-    unified = build_unified_ast(program_ast, symbol_table)
-    code = from_ast_to_torch(unified, print_code=False)
-    ns: dict = {}
-    exec(code, ns)
-    return ns
+from conftest import exec_phyk
 
 
 @pytest.fixture(scope="module")
@@ -106,3 +82,57 @@ class TestNDIndexing:
         assert float(arrays_ns["T000"]) == 1.0
         assert float(arrays_ns["T123"]) == 24.0
         assert float(arrays_ns["T012"]) == 7.0
+
+
+class TestNdIndexAssign:
+    """
+    Correctness test for Nd array index assignment
+    """
+
+    # Program level
+    def test_1d_program_level(self, arrays_ns):
+        assert arrays_ns["prog_1d"].shape == (2, )
+        assert int(arrays_ns["prog_1d"][0]) == 1
+        assert int(arrays_ns["prog_1d"][1]) == 2
+
+    def test_2d_program_level(self, arrays_ns):
+        assert arrays_ns["prog_2d"].shape == (2, 2)
+        assert int(arrays_ns["prog_2d"][0, 0]) == 1
+        assert int(arrays_ns["prog_2d"][0, 1]) == 1
+        assert int(arrays_ns["prog_2d"][1, 0]) == 1
+        assert int(arrays_ns["prog_2d"][1, 1]) == 2
+
+    def test_3d_program_level(self, arrays_ns):
+        assert arrays_ns["prog_3d"].shape == (2, 2, 2)
+        assert int(arrays_ns["prog_3d"][0, 0, 0]) == 1
+        assert int(arrays_ns["prog_3d"][0, 0, 1]) == 1
+        assert int(arrays_ns["prog_3d"][0, 1, 0]) == 1
+        assert int(arrays_ns["prog_3d"][0, 1, 1]) == 1
+        assert int(arrays_ns["prog_3d"][1, 0, 0]) == 1
+        assert int(arrays_ns["prog_3d"][1, 0, 1]) == 1
+        assert int(arrays_ns["prog_3d"][1, 1, 0]) == 1
+        assert int(arrays_ns["prog_3d"][1, 1, 1]) == 2
+
+    # Function level
+    def test_1d_function_level(self, arrays_ns):
+        assert arrays_ns["func_1d"].shape == (2, )
+        assert int(arrays_ns["func_1d"][0]) == 1
+        assert int(arrays_ns["func_1d"][1]) == 3
+
+    def test_2d_function_level(self, arrays_ns):
+        assert arrays_ns["func_2d"].shape == (2, 2)
+        assert int(arrays_ns["func_2d"][0, 0]) == 1
+        assert int(arrays_ns["func_2d"][0, 1]) == 1
+        assert int(arrays_ns["func_2d"][1, 0]) == 1
+        assert int(arrays_ns["func_2d"][1, 1]) == 3
+
+    def test_3d_function_level(self, arrays_ns):
+        assert arrays_ns["func_3d"].shape == (2, 2, 2)
+        assert int(arrays_ns["func_3d"][0, 0, 0]) == 1
+        assert int(arrays_ns["func_3d"][0, 0, 1]) == 1
+        assert int(arrays_ns["func_3d"][0, 1, 0]) == 1
+        assert int(arrays_ns["func_3d"][0, 1, 1]) == 1
+        assert int(arrays_ns["func_3d"][1, 0, 0]) == 1
+        assert int(arrays_ns["func_3d"][1, 0, 1]) == 1
+        assert int(arrays_ns["func_3d"][1, 1, 0]) == 1
+        assert int(arrays_ns["func_3d"][1, 1, 1]) == 3
