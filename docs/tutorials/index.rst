@@ -4,4 +4,4 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
-   parameter_ode
+   learn_parameter_ode
