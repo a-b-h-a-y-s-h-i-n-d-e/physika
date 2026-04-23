@@ -54,3 +54,58 @@ T000 : ℝ = T[0, 0, 0]
 T123 : ℝ = T[1, 2, 3]
 T012 : ℝ = T[0, 1, 2]
 
+
+# -------------------------------------------------------
+# Examples of updating arrays through indexing
+# -------------------------------------------------------
+
+arr1d: R[2] = [1, 1]
+
+arr2d: R[2, 2] = [
+    [1, 1],
+    [1, 1]
+]
+
+arr3d: R[2, 2, 2] = [
+    [
+        [1, 1],
+        [1, 1]
+    ],
+    [
+        [1, 1],
+        [1, 1]
+    ]
+]
+
+
+# -----------------------
+# Program level
+# -----------------------
+arr1d[1] = 2
+arr2d[1, 1] = 2
+arr3d[1, 1, 1] = 2
+
+arr1d
+arr2d
+arr3d
+
+
+# -----------------------
+# Function level
+# -----------------------
+def update_1d_array(x: R[m]): R:
+    x[1] = 3
+    return x
+
+def update_3d_array(x: R[m, n, o]): R[m, n, o]:
+    x[1, 1, 1] = 3
+    return x
+
+def update_2d_array(x: R[m, n]): R[m, n]:
+    x[1, 1] = 3
+    return x
+
+
+update_1d_array(arr1d)
+update_2d_array(arr2d)
+update_3d_array(arr3d)
