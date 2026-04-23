@@ -6,19 +6,16 @@ from physika.runtime import physika_print
 
 # === Functions ===
 def update_1d_array(x):
-    results = x
-    results[int(1)] = 3
-    return results
+    x[int(1)] = 3
+    return x
 
 def update_3d_array(x):
-    results = x
-    results[int(1), int(1), int(1)] = 3
-    return results
+    x[int(1), int(1), int(1)] = 3
+    return x
 
 def update_2d_array(x):
-    results = x
-    results[int(1), int(1)] = 3
-    return results
+    x[int(1), int(1)] = 3
+    return x
 
 # === Program ===
 x = torch.tensor([1, 2, 3, 5, 6, 7])
