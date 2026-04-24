@@ -1463,7 +1463,7 @@ class TestExprCond:
     """
 
     conds = ("cond_eq", "cond_neq", "cond_lt", "cond_gt", "cond_leq",
-               "cond_geq")
+             "cond_geq")
 
     def test_operators_return_real(self):
         """
@@ -1487,18 +1487,20 @@ class TestExprCond:
         """ℝ compared with ℝ[n] reports a type error"""
         errors = []
         ctx = make_ctx(
-            env={"x": T_REAL, "v": TTensor(((3, "invariant"), ))},
+            env={
+                "x": T_REAL,
+                "v": TTensor(((3, "invariant"), ))
+            },
             errors=errors,
         )
         t, _ = expr_cond(("cond_gt", ("var", "x"), ("var", "v")), ctx)
         assert t == T_REAL
         assert len(errors) == 1
-        assert errors[0] == "ℝ is not comparable with ℝ[3] at 'cond_gt' expression"
-
-
+        assert errors[
+            0] == "ℝ is not comparable with ℝ[3] at 'cond_gt' expression"
 
     def test_different_tensor_shapes(self):
-        """ℝ[3] compared with ℝ[5] reports a type error."""
+        """ℝ[3] compared with ℝ[5] reports a type error."""  # noqa: E501
         errors = []
         ctx = make_ctx(
             env={
@@ -1511,7 +1513,9 @@ class TestExprCond:
         assert t == TTensor(((3, "invariant"), ))
         print(errors)
         assert len(errors) == 2
-        assert errors == ["ℝ[3] is not comparable with ℝ[5] at 'cond_neq' expression"]
+        assert errors == [
+            "ℝ[3] is not comparable with ℝ[5] at 'cond_neq' expression"
+        ]  # noqa: E501
 
     def test_tensor_equal_shape(self):
         """ℝ[3] compared with ℝ[3] equal types"""

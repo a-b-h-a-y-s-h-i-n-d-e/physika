@@ -1,9 +1,13 @@
 from typing import Any, Callable, Optional, Tuple
 <<<<<<< HEAD
+<<<<<<< HEAD
 from physika.utils.types import Substitution, Type, new_var
 =======
 from physika.utils.types import Substitution, Type, new_var, T_NAT, new_dim, TVar, TDim
 >>>>>>> 0c07a63 (add if-else infer-stmt hanlders and cond exprs)
+=======
+from physika.utils.types import Substitution, Type, new_var
+>>>>>>> 8f746c7 (fix formatting and doctests)
 
 
 class StmtContext:
@@ -249,12 +253,13 @@ def stmt_body_assign(stmt: Any, ctx: StmtContext) -> None:
 <<<<<<< HEAD
 =======
 
+
 def stmt_body_if_return(stmt: Any, ctx: StmtContext) -> None:
     """
     Infer and check the return expression of an ``if`` return statement.
 
     The general form of an body if-return node looks like:
-    - ``("body_if_return", cond_expr, ret_expr)`` 
+    - ``("body_if_return", cond_expr, ret_expr)``
 
     Correspoinding to a phyiska source code of the form::
     def func(x: ℝ) -> ℝ:
@@ -287,8 +292,11 @@ def stmt_body_if_return(stmt: Any, ctx: StmtContext) -> None:
     >>> errors = []
     >>> ctx = StmtContext(env={'x': T_REAL},
     ...                        func_name='f',
+    ...                        s=Substitution(),
+    ...                        func_env={},
+    ...                        class_env={},
     ...                        return_type=T_REAL,
-    ...                        errors=errors)
+    ...                        add_error=errors.append)
     >>> cond = ('cond_gt', ('var', 'x'), ('num', 0.0))
     >>> stmt_body_if_return(('body_if_return', cond, ('var', 'x')), ctx)
     >>> errors
@@ -303,11 +311,9 @@ def stmt_body_if_return(stmt: Any, ctx: StmtContext) -> None:
         try:
             ctx.s = unify(ctx.return_type, ctx.s.apply(ret_t), ctx.s)
         except TypeError as e:
-            ctx.add_error(
-                f"if-return type mismatch: "
-                f"declared {type_to_str(ctx.return_type)}, "
-                f"got {type_to_str(ctx.s.apply(ret_t))}: {e}"
-            )
+            ctx.add_error(f"if-return type mismatch: "
+                          f"declared {type_to_str(ctx.return_type)}, "
+                          f"got {type_to_str(ctx.s.apply(ret_t))}: {e}")
 
 
 def stmt_body_if_else_return(stmt: Any, ctx: StmtContext) -> None:
@@ -325,8 +331,8 @@ def stmt_body_if_else_return(stmt: Any, ctx: StmtContext) -> None:
 
     Type inference checks for ``then_expr`` and ``else_expr`` types, which are unified
     against each other.  A mismatch here means the two branches disagree on
-    what the function returns. Both errors are independent. Then the unified branch (with the inferred type) is 
-    unified with the declared type.
+    what the function returns. Both errors are independent. Then the unified branch
+    (with the inferred type) is  unified with the declared type.
 
     Parameters
     ----------
@@ -345,14 +351,17 @@ def stmt_body_if_else_return(stmt: Any, ctx: StmtContext) -> None:
 
     Examples
     --------
-    >>> from physika.utils.infer_stmts import stmt_body_if_else_return, StmtContext
+    >>> from physika.utils.infer_stmts import stmt_body_if_else_return, StmtContext  # noqa: E501
     >>> from physika.utils.types import Substitution, T_REAL, TTensor
     >>> errors = []
     >>> ctx = StmtContext(env={'x': T_REAL},
     ...                        func_name='f',
+    ...                        s=Substitution(),
+    ...                        func_env={},
+    ...                        class_env={},
     ...                        return_type=T_REAL,
-    ...                        errors=errors)
-    >>> cond = ("gt", ("var", "x"), ("num", 0.0))
+    ...                        add_error=errors.append)
+    >>> cond = ("cond_gt", ("var", "x"), ("num", 0.0))
     >>> stmt = ("body_if_else_return", cond, ("var", "x"),
     ...         ("num", 0.0))
     >>> stmt_body_if_else_return(stmt, ctx)
@@ -371,23 +380,26 @@ def stmt_body_if_else_return(stmt: Any, ctx: StmtContext) -> None:
         try:
             ctx.s = unify(ctx.s.apply(then_t), ctx.s.apply(else_t), ctx.s)
         except TypeError as e:
-            ctx.add_error(
-                f"if/else branch type mismatch: "
-                f"then={type_to_str(ctx.s.apply(then_t))}, "
-                f"else={type_to_str(ctx.s.apply(else_t))}: {e}"
-            )
+            ctx.add_error(f"if/else branch type mismatch: "
+                          f"then={type_to_str(ctx.s.apply(then_t))}, "
+                          f"else={type_to_str(ctx.s.apply(else_t))}: {e}")
 
     # Phase 2: unified branch type must match declared return type
     unified_branch = ctx.s.apply(then_t) if then_t is not None else (
-        ctx.s.apply(else_t) if else_t is not None else None
-    )
+        ctx.s.apply(else_t) if else_t is not None else None)
     if ctx.return_type is not None and unified_branch is not None:
         try:
             ctx.s = unify(ctx.return_type, unified_branch, ctx.s)
         except TypeError as e:
+<<<<<<< HEAD
             ctx.add_error(
                 f"if/else return type mismatch: "
                 f"declared {type_to_str(ctx.return_type)}, "
                 f"got {type_to_str(unified_branch)}: {e}"
             )
 >>>>>>> 0c07a63 (add if-else infer-stmt hanlders and cond exprs)
+=======
+            ctx.add_error(f"if/else return type mismatch: "
+                          f"declared {type_to_str(ctx.return_type)}, "
+                          f"got {type_to_str(unified_branch)}: {e}")
+>>>>>>> 8f746c7 (fix formatting and doctests)

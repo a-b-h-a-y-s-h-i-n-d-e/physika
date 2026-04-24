@@ -14,8 +14,11 @@ from physika.utils.infer_stmts import (
 =======
     stmt_body_if_return,
     stmt_body_if_else_return,
+<<<<<<< HEAD
     stmt_body_if_else,
 >>>>>>> 0c07a63 (add if-else infer-stmt hanlders and cond exprs)
+=======
+>>>>>>> 8f746c7 (fix formatting and doctests)
 )
 
 
@@ -405,9 +408,11 @@ class TestStmtBodyIfReturn:
     def test_return_type_mismatch(self):
         """Return type ℝ[3] does not match declared ℝ."""
         errors = []
-        vec = TTensor(((3, 'invariant'),))
-        ctx = make_stmt_ctx(env={'v': vec}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        vec = TTensor(((3, 'invariant'), ))
+        ctx = make_stmt_ctx(env={'v': vec},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ('cond_gt', ('num', 1.0), ('num', 0.0))
         stmt_body_if_return(('body_if_return', cond, ('var', 'v')), ctx)
         vec_type = type(vec)
@@ -416,7 +421,9 @@ class TestStmtBodyIfReturn:
         assert ret_type == T_REAL
         assert vec_type != ret_type
         assert len(errors) == 1
-        assert errors == ['if-return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]']
+        assert errors == [
+            'if-return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]'  # noqa: E501
+        ]
 
     def test_return_cond_type_mismatch(self):
         """
@@ -425,9 +432,11 @@ class TestStmtBodyIfReturn:
           TTensor!=T_REAL
         """
         errors = []
-        vec = TTensor(((3, 'invariant'),))
-        ctx = make_stmt_ctx(env={'v': vec}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        vec = TTensor(((3, 'invariant'), ))
+        ctx = make_stmt_ctx(env={'v': vec},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ('cond_gt', ('var', 'v'), ('num', 0.0))
         stmt_body_if_return(('body_if_return', cond, ('var', 'v')), ctx)
         vec_type = type(vec)
@@ -436,8 +445,10 @@ class TestStmtBodyIfReturn:
         assert ret_type == T_REAL
         assert vec_type != ret_type
         assert len(errors) == 2
-        assert errors[0] == "ℝ[3] is not comparable with ℝ at 'cond_gt' expression"
-        assert errors[1] == 'if-return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]'
+        assert errors[
+            0] == "ℝ[3] is not comparable with ℝ at 'cond_gt' expression"  # noqa: E501
+        assert errors[
+            1] == 'if-return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]'  # noqa: E501
 
 
 class TestStmtBodyIfElseReturn:
@@ -446,8 +457,10 @@ class TestStmtBodyIfElseReturn:
     def test_both_branches_match_declared(self):
         """Both branches return ℝ matching declared ℝ"""
         errors = []
-        ctx = make_stmt_ctx(env={'x': T_REAL}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        ctx = make_stmt_ctx(env={'x': T_REAL},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ('cond_gt', ('var', 'x'), ('num', 0.0))
         stmt = ('body_if_else_return', cond, ('var', 'x'), ('num', 0.0))
         stmt_body_if_else_return(stmt, ctx)
@@ -456,28 +469,35 @@ class TestStmtBodyIfElseReturn:
     def test_branchs_types_mismatch(self):
         """If branch returns ℝ[3], else returns ℝ"""
         errors = []
-        vec = TTensor(((3, 'invariant'),))
-        ctx = make_stmt_ctx(env={'v': vec}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        vec = TTensor(((3, 'invariant'), ))
+        ctx = make_stmt_ctx(env={'v': vec},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ('cond_gt', ('num', 1.0), ('num', 0.0))
         stmt = ('body_if_else_return', cond, ('var', 'v'), ('num', 0.0))
         stmt_body_if_else_return(stmt, ctx)
         print(errors)
         assert len(errors) == 2
-        assert errors[0] == "if/else branch type mismatch: then=ℝ[3], else=ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"
-        assert errors[1] == 'if/else return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]'
+        assert errors[
+            0] == "if/else branch type mismatch: then=ℝ[3], else=ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"  # noqa: E501
+        assert errors[
+            1] == 'if/else return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]'  # noqa: E501
 
     def test_return_type_mismatch(self):
         """Both branches return ℝ but declared return type is ℝ[3]"""
         errors = []
-        vec = TTensor(((3, 'invariant'),))
-        ctx = make_stmt_ctx(env={'x': T_REAL}, func_name='f',
-                            return_type=vec, errors=errors)
+        vec = TTensor(((3, 'invariant'), ))
+        ctx = make_stmt_ctx(env={'x': T_REAL},
+                            func_name='f',
+                            return_type=vec,
+                            errors=errors)
         cond = ('cond_gt', ('var', 'x'), ('num', 0.0))
         stmt = ('body_if_else_return', cond, ('var', 'x'), ('num', 0.0))
         stmt_body_if_else_return(stmt, ctx)
         assert len(errors) == 1
-        assert errors[0] == 'if/else return type mismatch: declared ℝ[3], got ℝ: Cannot unify tensor ℝ[3] with scalar ℝ'
+        assert errors[
+            0] == 'if/else return type mismatch: declared ℝ[3], got ℝ: Cannot unify tensor ℝ[3] with scalar ℝ'  # noqa: E501
 
     def test_branchs_types_cond_mismatch(self):
         """
@@ -486,15 +506,26 @@ class TestStmtBodyIfElseReturn:
           TTensor!=T_REAL
         """
         errors = []
-        vec = TTensor(((3, 'invariant'),))
-        ctx = make_stmt_ctx(env={'v': vec}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        vec = TTensor(((3, 'invariant'), ))
+        ctx = make_stmt_ctx(env={'v': vec},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ('cond_gt', ('var', 'v'), ('num', 0.0))
         stmt = ('body_if_else_return', cond, ('var', 'v'), ('num', 0.0))
         stmt_body_if_else_return(stmt, ctx)
         print(errors)
         assert len(errors) == 3
+<<<<<<< HEAD
         assert errors[0] == "ℝ[3] is not comparable with ℝ at 'cond_gt' expression"
         assert errors[1] == "if/else branch type mismatch: then=ℝ[3], else=ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"
         assert errors[2] == 'if/else return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]'
 >>>>>>> 0c07a63 (add if-else infer-stmt hanlders and cond exprs)
+=======
+        assert errors[
+            0] == "ℝ[3] is not comparable with ℝ at 'cond_gt' expression"
+        assert errors[
+            1] == "if/else branch type mismatch: then=ℝ[3], else=ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"  # noqa: E501
+        assert errors[
+            2] == 'if/else return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]'  # noqa: E501
+>>>>>>> 8f746c7 (fix formatting and doctests)
