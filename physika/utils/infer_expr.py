@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union, cast
 from physika.utils.types import Substitution, Type, TVar, TDim, TTensor, TInstance, TFunc, TScalar, T_NAT, T_REAL, T_COMPLEX, new_dim  # noqa: E501
 from physika.utils.ast_utils import ASTNode
 
@@ -1191,6 +1191,60 @@ def expr_for_expr_range(
     return make_tensor([outer_dim]), s
 
 
+def expr_cond(node, ctx):
+    """
+    Infer the type of a comparison condition expression.
+
+    Handles six comparison elements:
+        - ``cond_eq``
+        - ``cond_neq``
+        - ``cond_lt``
+        - ``cond_gt``
+        - ``cond_leq``
+        - ``cond_geq``
+
+    Condition expression nodes have the form:
+        ``("cond_gt", left_expr, right_expr)``
+
+    Parameters
+    ----------
+    node : tuple
+        AST node of the form ``(op, left, right)`` where *op* is one of
+        the six comparison tags.
+    ctx : ExprContext
+        Current inference context.
+
+    Returns
+    -------
+    tuple[Type | None, Substitution]
+        ``(t, s)`` where *t* is the inferred type of operand
+        (``T_REAL`` as a safe fallback).  Reports an error when the two
+        operand types differ so type checker can continue.
+    """
+    from physika.utils.type_checker_utils import type_to_str
+
+    op, left, right = node
+    t1, s = infer_expr(left,  ctx.env, ctx.s, ctx.func_env, ctx.class_env, ctx.add_error)
+    t2, s = infer_expr(right, ctx.env, s,     ctx.func_env, ctx.class_env, ctx.add_error)
+    if t1 is not None:
+        t1 = s.apply(cast(Type, t1))
+    if t2 is not None:
+        t2 = s.apply(cast(Type, t2))
+
+    if t1 != t2:
+        ctx.add_error(
+                f"{type_to_str(t1)} is not comparable with {type_to_str(t2)} at '{op}' expression"
+            )
+    if t1 is not None:
+
+        result_t = t1
+    else:
+        if t2 is not None:
+            result_t = t2
+        else:
+            result_t = T_REAL
+    return result_t, s
+
 EXPR_DISPATCH: dict = {
     "num": expr_num,
     "var": expr_var,
@@ -1210,6 +1264,12 @@ EXPR_DISPATCH: dict = {
     "call": expr_call,
     "for_expr": expr_for_expr,
     "for_expr_range": expr_for_expr_range,
+    "cond_eq":  expr_cond, # Comparison condition exprs
+    "cond_neq": expr_cond,
+    "cond_lt":  expr_cond,
+    "cond_gt":  expr_cond,
+    "cond_leq": expr_cond,
+    "cond_geq": expr_cond,
 }
 
 
