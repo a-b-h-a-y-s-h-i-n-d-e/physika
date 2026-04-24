@@ -273,9 +273,9 @@ def expr_index(node: Any,
     >>> ctx2 = ExprContext({"A": TTensor(((3, "invariant"), (4, "invariant")))}, Substitution(), {}, {}, [].append)  # noqa: E501
     >>> t, _= expr_index(("index", "A", ("num", 0.0)), ctx2)  # ℝ[3,4][0] → ℝ[4]  # noqa: E501
     >>> t
-    ('tensor', [(4, 'invariant')])
+    ℝ[4]
     """
-    from physika.utils.type_checker_utils import get_tensor_shape, unify_dim, make_tensor_type  # noqa: E501
+    from physika.utils.type_checker_utils import get_tensor_shape, unify_dim  # noqa: E501
 
     # example node: ("index", "A", ("num", 0.0))
     arr_name = node[1]
@@ -286,8 +286,11 @@ def expr_index(node: Any,
     arr_t = ctx.s.apply(ctx.env[arr_name])
     shape = get_tensor_shape(arr_t)
 
-    if shape is None:  # arr_name is a scalar
-        ctx.add_error(f"Cannot index scalar '{arr_name}'")
+    if shape is None:
+        # Only report an error when arr_t is a non-tensor type.
+        # TVar / TDim means the type is still unknown.
+        if arr_t is not None and not isinstance(arr_t, (TVar, TDim)):
+            ctx.add_error(f"Cannot index scalar '{arr_name}'")
         return None, ctx.s
 
     # Infer the index expression type and unify it with the leading dimension.
@@ -304,7 +307,7 @@ def expr_index(node: Any,
     if len(shape) == 1:
         return (T_REAL, s)
     else:
-        return (make_tensor_type(shape[1:]), s)
+        return (TTensor(tuple((d, "invariant") for d in shape[1:])), s)
 
 
 def expr_indexN(node: Any,
