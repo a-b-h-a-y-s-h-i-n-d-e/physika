@@ -17,3 +17,4 @@ language program, that checks for dimension and data type correctenss.
    language
    examples
    api
+   tutorials/index
