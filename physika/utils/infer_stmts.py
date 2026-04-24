@@ -325,12 +325,8 @@ def stmt_body_if_else_return(stmt: Any, ctx: StmtContext) -> None:
 
     Type inference checks for ``then_expr`` and ``else_expr`` types, which are unified
     against each other.  A mismatch here means the two branches disagree on
-    what the function returns.
-    
-    The unified branch type is unified against
-    ``ctx.return_type`` (the declared return type of the function).
-    A mismatch here means the ``if`` and ``else`` branches match types,
-    but do not match the declaration.
+    what the function returns. Both errors are independent. Then the unified branch (with the inferred type) is 
+    unified with the declared type.
 
     Parameters
     ----------
