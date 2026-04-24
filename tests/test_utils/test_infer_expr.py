@@ -1512,10 +1512,10 @@ class TestExprCond:
         t, _ = expr_cond(("cond_neq", ("var", "u"), ("var", "v")), ctx)
         assert t == TTensor(((3, "invariant"), ))
         print(errors)
-        assert len(errors) == 2
+        assert len(errors) == 1
         assert errors == [
             "ℝ[3] is not comparable with ℝ[5] at 'cond_neq' expression"
-        ]  # noqa: E501
+        ]
 
     def test_tensor_equal_shape(self):
         """ℝ[3] compared with ℝ[3] equal types"""
