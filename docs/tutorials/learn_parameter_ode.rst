@@ -37,7 +37,7 @@ Helper functions
         new_length: ℝ = get_1d_array_length(x) + 1
         results: ℝ[new_length] = zero_1d_array(new_length)
         for i:ℕ(new_length):
-            if i<len(x):
+            if i<get_1d_array_length(x):
                 results[i] = x[i]
             else:
                 results[i] = var
@@ -196,7 +196,7 @@ Full Code
         new_length: ℝ = get_1d_array_length(x) + 1
         results: ℝ[new_length] = zero_1d_array(new_length)
         for i:ℕ(new_length):
-            if i<len(x):
+            if i<get_1d_array_length(x):
                 results[i] = x[i]
             else:
                 results[i] = var
