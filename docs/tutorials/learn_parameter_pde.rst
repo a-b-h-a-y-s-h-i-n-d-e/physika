@@ -78,8 +78,8 @@ boundary conditions (zero temperature at both ends):
         last_index: ℝ = get_1d_array_length(T)
         for i:ℕ(0, nt):
             T = T + dt * heat_equation(T, dx, α)
-        T[0] = 0
-        T[last_index-1] = 0
+            T[0] = 0
+            T[last_index-1] = 0
         return T
 
 .. note::
@@ -180,8 +180,8 @@ temperature profile should match the true one.
       def plot_trajectories(true_values, pred_values):
             import matplotlib.pyplot as plt
 
-            plt.plot(u_true.detach().numpy(), label="True")
-            plt.plot(u_pred.detach().numpy(), '--', label="Predicted")
+            plt.plot(true_values.detach().numpy(), label="True")
+            plt.plot(pred_values.detach().numpy(), '--', label="Predicted")
 
             plt.xlabel("x")
             plt.ylabel("Temperature")
