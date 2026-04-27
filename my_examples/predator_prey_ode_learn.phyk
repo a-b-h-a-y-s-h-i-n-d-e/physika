@@ -23,7 +23,9 @@ def append(x: R[m], var: R): R[n]:
 
 # ------------------------------------------------------------------------
 
-def f(x: R, y: R, theta: R[4]): R:
+def f(state: R[2], theta: R[4]): R:
+    x = state[0]
+    y = state[1]
     alpha = theta[0]
     beta = theta[1]
     gamma = theta[2]
@@ -33,27 +35,30 @@ def f(x: R, y: R, theta: R[4]): R:
     return [dx, dy]
 
 
-def rk4_step(x: R, y: R, theta: ℝ[4]): ℝ[2]:
-    k1 = f(x, y, theta)
-    k2 = f(x + 0.5 * dt * k1[0], y + 0.5 * dt * k1[1], theta)
-    k3 = f(x + 0.5 * dt * k2[0], y + 0.5 * dt * k2[1], theta)
-    k4 = f(x + dt * k3[0], y + dt * k3[1], theta)
-    x_new = x + (dt / 6.0) * (k1[0] + 2.0 * k2[0] * 2.0 + k3[0] + k4[0])
-    y_new = y + (dt / 6.0) * (k1[1] + 2.0 * k2[1] * 2.0 + k3[1] + k4[1])
+def rk4_step(state: R[2], theta: R[4]): R[2]:
+    k1 = f(state, theta)
+    k2_state = [state[0] + 0.5 * dt * k1[0],state[1] + 0.5 * dt * k1[1]]
+    k2 = f(k2_state, theta)
+    k3_state = [state[0] + 0.5 * dt * k2[0], state[1] + 0.5 * dt * k2[1]]
+    k3 = f(k3_state, theta)
+    k4_state = [state[0] + dt * k3[0],state[1] + dt * k3[1]]
+    k4 = f(k4_state, theta)
+    x_new = state[0] + (dt / 6.0) * (k1[0] + 2.0 * k2[0] + 2.0 * k3[0] + k4[0])
+    y_new = state[1] + (dt / 6.0) * (k1[1] + 2.0 * k2[1] + 2.0 * k3[1] + k4[1])
     return [x_new, y_new]
 
 
 def solver(theta: R[4]): R[m]:
-    x:R = 10.0
-    y:R = 1.0
-    x_array: R[1] = [x]
-    y_array: R[1] = [y]
+    state: R[2] = [10.0, 1.0]
+    x_array: R[0] = [10.0]
+    y_array: R[0] = [1.0]
     for i:N(timesteps):
-        results = rk4_step(x, y, theta)
+        results = rk4_step(state, theta)
         x = results[0]
         y = results[1]
         x_array = append(x_array, x)
         y_array = append(y_array, y)
+        state = results
     return [x_array, y_array]
 
 
