@@ -27,6 +27,7 @@ from physika.utils.infer_expr import (
     expr_call,
     expr_for_expr,
     expr_for_expr_range,
+    expr_cond,
     infer_expr,
 )
 from physika.utils.types import new_dim
@@ -1454,3 +1455,91 @@ class TestExprForExprRange:
         assert len(t.dims) == 1
         outer, _ = t.dims[0]
         assert isinstance(outer, TDim)
+
+
+class TestExprCond:
+    """
+    Tests for ``expr_cond``
+    """
+
+    conds = ("cond_eq", "cond_neq", "cond_lt", "cond_gt", "cond_leq",
+             "cond_geq")
+
+    def test_operators_return_real(self):
+        """
+        Every comparison operator for scalar operands should return T_REAL.
+        """
+        for op in self.conds:
+            ctx = make_ctx()
+            t, _ = expr_cond((op, ("num", 1.0), ("num", 2.0)), ctx)
+            assert t == T_REAL
+
+    def test_scalar_variables(self):
+        """ℝ op ℝ with variable operands emits no error."""
+        for op in self.conds:
+            errors = []
+            ctx = make_ctx(env={"x": T_REAL, "y": T_REAL}, errors=errors)
+            t, _ = expr_cond((op, ("var", "x"), ("var", "y")), ctx)
+            assert t == T_REAL
+            assert errors == []
+
+    def test_different_types(self):
+        """ℝ compared with ℝ[n] reports a type error"""
+        errors = []
+        ctx = make_ctx(
+            env={
+                "x": T_REAL,
+                "v": TTensor(((3, "invariant"), ))
+            },
+            errors=errors,
+        )
+        t, _ = expr_cond(("cond_gt", ("var", "x"), ("var", "v")), ctx)
+        assert t == T_REAL
+        assert len(errors) == 1
+        assert errors[
+            0] == "ℝ is not comparable with ℝ[3] at 'cond_gt' expression"
+
+    def test_different_tensor_shapes(self):
+        """ℝ[3] compared with ℝ[5] reports a type error."""  # noqa: E501
+        errors = []
+        ctx = make_ctx(
+            env={
+                "u": TTensor(((3, "invariant"), )),
+                "v": TTensor(((5, "invariant"), )),
+            },
+            errors=errors,
+        )
+        t, _ = expr_cond(("cond_neq", ("var", "u"), ("var", "v")), ctx)
+        assert t == TTensor(((3, "invariant"), ))
+        print(errors)
+        assert len(errors) == 1
+        assert errors == [
+            "ℝ[3] is not comparable with ℝ[5] at 'cond_neq' expression"
+        ]
+
+    def test_tensor_equal_shape(self):
+        """ℝ[3] compared with ℝ[3] equal types"""
+        errors = []
+        ctx = make_ctx(
+            env={
+                "u": TTensor(((3, "invariant"), )),
+                "v": TTensor(((3, "invariant"), )),
+            },
+            errors=errors,
+        )
+        t, _ = expr_cond(("cond_eq", ("var", "u"), ("var", "v")), ctx)
+        assert t == TTensor(((3, "invariant"), ))
+        assert errors == []
+
+    def test_substitution_applied_to_tvar_operands(self):
+        """
+        If an operand maps to a TVar bound in s, the binding is applied
+        before the comparison check.
+        """
+        alpha = TVar("α0")
+        s = Substitution({"α0": T_REAL})
+        errors = []
+        ctx = make_ctx(env={"x": alpha, "y": T_REAL}, s=s, errors=errors)
+        t, _ = expr_cond(("cond_eq", ("var", "x"), ("var", "y")), ctx)
+        assert t == T_REAL
+        assert errors == []

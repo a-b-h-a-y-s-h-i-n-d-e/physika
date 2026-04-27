@@ -682,6 +682,138 @@ introduced instead:
    # dynamic end bound (ℕ(0, n))
    expr_for_expr_range(("for_expr_range","i",("num",0.0),("var","n"),("imaginary",)), ctx, new_dim) → (ℝ[δ0], s)
 
+**expr_cond** (Comparison condition ``("cond_op", left, right)``)
+
+Handles six comparison operators: ``cond_eq`` (``==``), ``cond_neq`` (``!=``),
+``cond_lt`` (``<``), ``cond_gt`` (``>``), ``cond_leq`` (``<=``), ``cond_geq`` (``>=``).
+
+Both operands are inferred and their resolved types are unified (type error reported if unification fails).
+The return type is the inferred left operand type. If this is ``None`` the right operand type is used. Finally, if both are ``None`` the
+fallback is ``ℝ``::
+
+   # x : ℝ
+   # y : ℝ
+   expr_cond(("cond_gt", ("var","x"), ("var","y")), ctx)   →  (ℝ, s)
+
+   # u : ℝ[3]
+   # v : ℝ[3]
+   expr_cond(("cond_eq", ("var","u"), ("var","v")), ctx)   →  (ℝ[3], s)
+
+   # x : ℝ
+   # v : ℝ[3]
+   # type mismatch and left type returned
+   expr_cond(("cond_lt", ("var","x"), ("var","v")), ctx)   →  (ℝ, s) + "ℝ is not comparable with ℝ[3] at 'cond_lt' expression"
+
+
+Statement type inference
+------------------------
+Physika statement type inference at function's body and top-level programs (declaration, assigments, for-loops, if-else blocks, random sampling, etc)
+are handled by a  handler ``stmt_*`` function in ``physika/utils/infer_stmts.py``.
+
+Every handler receives an ``StmtContext`` that bundles six environment arguments (``env``, ``s``, ``func_env``, ``class_env``, ``func_name``, ``return_type``):
+
+- ``env``: Maps variable names to their current ``Type``.
+- ``s``: ``Substitution`` accumulated so far. Bindings from sub-expressions are visible to later ones.
+- ``func_env``: Maps function names to ``(param_types, return_type)``.
+- ``class_env``: Maps class names to their definition dicts.
+-  ``func_name``: User defined function name. Used when calling ``check_function`` from main type checking algorithm.
+- ``return_type``: Used especifically in ``body_if_return`` and ``body_if_else_return`` to unify the return expression type against it.
+
+Each handler unifies inferred type against declared type. If a mismatch is found, an error is reported. ``stmt_*`` handlers instead of returning the inferred type, updates ``ctx: StmtContext`` with inferred and declared information.
+Physika support statements as follows.
+
+**1. At function level** (``body_statements``).
+
+* **stmt_body_decl** (``("body_decl", var_name, var_type, expr)``)
+
+Typed variable declaration inside a function body (``x : ℝ = expr``).
+Infers the type of ``expr``, unifies it against the declared type, and
+registers the resolved type in ``env``.  On mismatch the inferred type is
+stored so inference can continue.
+
+Match: ``env[var_name]`` is set to the declared type::
+
+   # x : ℝ = 3.14
+   stmt_body_decl(("body_decl","x","ℝ",("num",3.14)), ctx)
+   # ctx.env["x"] == ℝ
+
+Mismatch: error reported, ``env[var_name]`` is set to the inferred type::
+
+   # v : ℝ[3] = 2.0
+   stmt_body_decl(("body_decl","v",("tensor",[(3,"invariant")]), ("num",2.0)), ctx)
+   # errors == ["In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"]
+   # inferred type stored so inference continues
+   # ctx.env["v"] == ℝ
+
+* **stmt_body_assign** (``("body_assign", var_name, expr)``)
+
+Untyped assignment inside a function body (``x = expr``).
+Infers the type of ``expr`` and registers it in ``env``.  There is no
+declared type to check against so no error is emitted.  If inference
+returns ``None`` a fresh type variable is stored.
+
+Scalar::
+
+   # x = 3.0
+   stmt_body_assign(("body_assign","x",("num",3.0)), ctx)
+   # ctx.env["x"] == ℝ,  errors == []
+
+Array::
+
+   # v = [1.0, 2.0, 3.0]
+   stmt_body_assign(("body_assign","v",
+                     ("array",[num(1),num(2),num(3)])), ctx)
+   # ctx.env["v"] == ℝ[3]
+
+If unknown type, a fresh type variable (``TVar``) stored::
+
+   # x not in env
+   stmt_body_assign(("body_assign","x",("var","unknown")), ctx)
+   # ctx.env["x"] == TVar("α0")
+
+* **stmt_body_if_return** (``("body_if_return", cond_expr, ret_expr)``)
+
+``if`` return statement inside a function body::
+
+   def f(x: ℝ): ℝ:
+       if x > 0.0:
+           return x * x
+
+The declared return type is unified against the inferred type and a mismatch calls ``add_error``::
+
+   # declared return type: ℝ
+   stmt_body_if_return(("body_if_return", cond, ("var","x")), ctx)
+
+   # ctx.return_type = ℝ,
+   #  v : ℝ[3]
+   stmt_body_if_return(("body_if_return", cond, ("var","v")), ctx)
+   # errors → "if-return type mismatch: declared ℝ, got ℝ[3]"
+
+* **stmt_body_if_else_return** (``("body_if_else_return", cond_expr, then_expr, else_expr)``)
+
+``if/else`` return statement inside a function body::
+
+   def f(x: ℝ): ℝ:
+       if x > 0.0:
+           return x * x
+       else:
+           return -x
+
+Type inference checks for ``then_expr`` and ``else_expr`` types, which are unified
+against each other.  A mismatch here means the two branches disagree on
+what the function returns. Both errors are independent. Then the unified branch (with the inferred type) is 
+unified with the declared type::
+
+   # ctx.return_type = ℝ,
+   # x : ℝ
+   stmt_body_if_else_return(("body_if_else_return", cond, ("var","x"), ("num",0.0)), ctx)
+
+   # ctx.return_type = ℝ
+   # v : ℝ[3]
+   stmt_body_if_else_return(("body_if_else_return", cond, ("var","v"), ("num",0.0)), ctx)
+   # Two errors:
+   # "if/else branch type mismatch: then=ℝ[3], else=ℝ: ..."
+   # "if/else return type mismatch: declared ℝ, got ℝ[3]: ..."
 
 Statement type inference
 ------------------------
