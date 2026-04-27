@@ -1,9 +1,10 @@
-Parameter Estimation for PDEs
-==============================
+Parameter Learning for simple PDE
+=================================
 
-In this tutorial we will learn how to estimate a parameter of a PDE using
-gradient descent in Physika. We will use the **heat equation** as our example
-— a classic PDE that describes how heat diffuses through a medium over time.
+In this tutorial we will learn how to learn a parameter of a PDE using
+gradient descent in Physika. We will use the 1D heat equation as our example
+— a parabolic partial differential equation first developed by Joseph Fourier
+in 1822 to model how heat diffuses through a given region.
 
 The Equation
 ------------
@@ -14,8 +15,8 @@ The 1D heat equation is:
 
    \frac{\partial u}{\partial t} = \alpha \frac{\partial^2 u}{\partial x^2}
 
-Where :math:`u` is the temperature field, :math:`x` is space, :math:`t` is time, and
-:math:`\alpha` is the **thermal diffusivity** — the parameter we want to learn.
+Where :math:`u` is temperature, :math:`x` is space, :math:`t` is time, and
+:math:`\alpha` is the thermal diffusivity parameter we want to learn.
 
 Helper functions
 ----------------
@@ -270,3 +271,10 @@ Full Code
     
     pred_values: ℝ[m] = solver(α, T0, dx, dt, nt)
     plot_trajectories(true_values, pred_values)
+
+
+References
+----------
+
+- `Heat equation (Wikipedia) <https://en.wikipedia.org/wiki/Heat_equation>`_
+- `Finite Difference method <https://aquaulb.github.io/book_solving_pde_mooc/solving_pde_mooc/notebooks/04_PartialDifferentialEquations/04_03_Diffusion_Explicit.html>`_
