@@ -10,15 +10,8 @@ from physika.utils.infer_stmts import (
     StmtContext,
     stmt_body_decl,
     stmt_body_assign,
-<<<<<<< HEAD
-=======
     stmt_body_if_return,
     stmt_body_if_else_return,
-<<<<<<< HEAD
-    stmt_body_if_else,
->>>>>>> 0c07a63 (add if-else infer-stmt hanlders and cond exprs)
-=======
->>>>>>> 8f746c7 (fix formatting and doctests)
 )
 
 
@@ -387,8 +380,6 @@ class TestStmtBodyAssign:
         ctx = make_stmt_ctx(errors=errors)
         stmt_body_assign(('body_assign', 'z', ('var', 'unknown')), ctx)
         assert isinstance(ctx.env['z'], TVar)
-<<<<<<< HEAD
-=======
 
 
 class TestStmtBodyIfReturn:
@@ -446,7 +437,7 @@ class TestStmtBodyIfReturn:
         assert vec_type != ret_type
         assert len(errors) == 2
         assert errors[
-            0] == "ℝ[3] is not comparable with ℝ at 'cond_gt' expression"  # noqa: E501
+            0] == "ℝ[3] is not comparable with ℝ at 'cond_gt' expression"
         assert errors[
             1] == 'if-return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]'  # noqa: E501
 
@@ -516,16 +507,9 @@ class TestStmtBodyIfElseReturn:
         stmt_body_if_else_return(stmt, ctx)
         print(errors)
         assert len(errors) == 3
-<<<<<<< HEAD
-        assert errors[0] == "ℝ[3] is not comparable with ℝ at 'cond_gt' expression"
-        assert errors[1] == "if/else branch type mismatch: then=ℝ[3], else=ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"
-        assert errors[2] == 'if/else return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]'
->>>>>>> 0c07a63 (add if-else infer-stmt hanlders and cond exprs)
-=======
         assert errors[
             0] == "ℝ[3] is not comparable with ℝ at 'cond_gt' expression"
         assert errors[
             1] == "if/else branch type mismatch: then=ℝ[3], else=ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"  # noqa: E501
         assert errors[
             2] == 'if/else return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]'  # noqa: E501
->>>>>>> 8f746c7 (fix formatting and doctests)
