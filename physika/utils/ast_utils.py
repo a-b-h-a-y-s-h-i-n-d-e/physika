@@ -975,6 +975,17 @@ def emit_body_stmts(
             expr_code = generate_solve_call(expr)
             lines.append(f"{prefix}{var_name} = {expr_code}")
             known_vars.append(var_name)
+        elif stmt_op == "body_index_assign":
+            _, name, idx, val = stmt
+            idx_code = ast_to_torch_expr(idx)
+            val_code = ast_to_torch_expr(val)
+            lines.append(f"{prefix}{name}[int({idx_code})] = {val_code}")
+        elif stmt_op == "body_index_assign_nd":
+            _, name, indices, val = stmt
+            idx_code = ", ".join(f"int({ast_to_torch_expr(i)})"
+                                 for i in indices)
+            val_code = ast_to_torch_expr(val)
+            lines.append(f"{prefix}{name}[{idx_code}] = {val_code}")
         elif stmt_op == "body_tuple_unpack":
             _, var_names, expr = stmt
             expr_code = generate_solve_call(expr)
@@ -1559,6 +1570,17 @@ def generate_statement(stmt: ASTNode,
         expr = stmt[2]
         expr_code = ast_to_torch_expr(expr)
         return f"{name} = {expr_code}"
+
+    elif op == "index_assign":
+        name, idx, val = stmt[1], stmt[2], stmt[3]
+        idx_code = ast_to_torch_expr(
+            ("var", idx)) if isinstance(idx, str) else ast_to_torch_expr(idx)
+        return f"{name}[int({idx_code})] = {ast_to_torch_expr(val)}"
+
+    elif op == "index_assign_nd":
+        name, indices, val = stmt[1], stmt[2], stmt[3]
+        idx_code = ", ".join(f"int({ast_to_torch_expr(i)})" for i in indices)
+        return f"{name}[{idx_code}] = {ast_to_torch_expr(val)}"
 
     elif op == "expr":
         expr = stmt[1]

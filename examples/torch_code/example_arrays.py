@@ -4,6 +4,19 @@ import torch.optim as optim
 
 from physika.runtime import physika_print
 
+# === Functions ===
+def update_1d_array(x):
+    x[int(1)] = 3
+    return x
+
+def update_3d_array(x):
+    x[int(1), int(1), int(1)] = 3
+    return x
+
+def update_2d_array(x):
+    x[int(1), int(1)] = 3
+    return x
+
 # === Program ===
 x = torch.tensor([1, 2, 3, 5, 6, 7])
 y = (x[0:3] + x[0:3])
@@ -38,3 +51,18 @@ T12 = T[int(1), int(2)]
 T000 = T[int(0), int(0), int(0)]
 T123 = T[int(1), int(2), int(3)]
 T012 = T[int(0), int(1), int(2)]
+prog_1d = torch.tensor([1.0, 1.0])
+prog_2d = torch.tensor([[1.0, 1.0], [1.0, 1.0]])
+prog_3d = torch.tensor([[[1.0, 1.0], [1.0, 1.0]], [[1.0, 1.0], [1.0, 1.0]]])
+prog_1d[int(1)] = 2
+prog_2d[int(1), int(1)] = 2
+prog_3d[int(1), int(1), int(1)] = 2
+physika_print(prog_1d)
+physika_print(prog_2d)
+physika_print(prog_3d)
+func_1d = torch.tensor([1.0, 1.0])
+func_2d = torch.tensor([[1.0, 1.0], [1.0, 1.0]])
+func_3d = torch.tensor([[[1.0, 1.0], [1.0, 1.0]], [[1.0, 1.0], [1.0, 1.0]]])
+physika_print(update_1d_array(func_1d))
+physika_print(update_2d_array(func_2d))
+physika_print(update_3d_array(func_3d))

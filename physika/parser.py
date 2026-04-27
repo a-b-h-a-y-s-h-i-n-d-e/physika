@@ -196,6 +196,38 @@ def p_func_body_stmt_assign(p):
     p[0] = ("body_assign", p[1], p[3])
 
 
+def p_func_body_stmt_index_assign(p):
+    """func_body_stmt : ID LBRACKET func_expr RBRACKET EQUALS func_expr NEWLINE"""  # noqa
+    # Indexed assignment of array inside function body
+    # Example:
+    # def update_1d_array(x: R[m]): R[m]:
+    #   x[1] = 3
+    #   return x
+    # arr1d = [1, 2, 3]
+    # update_1d_array(arr1d)
+    # Parameters:
+    # p[1] — array name
+    # p[3] — index expression/number
+    # p[5] — right hand side expression/number
+    p[0] = ("body_index_assign", p[1], p[3], p[6])
+
+
+def p_func_body_stmt_index_assign_nd(p):
+    """func_body_stmt : ID LBRACKET multi_index_list RBRACKET EQUALS func_expr NEWLINE"""  # noqa
+    # nd Indexed assignment of array inside function body
+    # Example:
+    # def update_2d_array(x: R[m, n]): R[m, n]:
+    #   x[1, 1] = 3
+    #   return x
+    # 2d_array: R[2 , 2] = [[1, 1], [1, 1]]
+    # update_2d_array(2d_array)
+    # Parameters:
+    # p[1] — array name
+    # p[3] — index list of numbers/expressions
+    # p[5] — right hand side expression/number
+    p[0] = ("body_index_assign_nd", p[1], p[3], p[6])
+
+
 def p_func_body_stmt_decl(p):
     """func_body_stmt : ID COLON type_spec EQUALS func_expr NEWLINE"""
     # Typed declaration: x : R = expr
@@ -972,6 +1004,37 @@ def p_statement_expr(p):
     p[0] = ("expr", p[1], p.lineno(1))
 
 
+def p_statement_index_assign(p):
+    """statement : ID LBRACKET ID RBRACKET EQUALS expr NEWLINE
+                 | ID LBRACKET NUMBER RBRACKET EQUALS expr NEWLINE"""
+    # Indexed assignment of array at program level
+    # Example:
+    # arr1d = [1, 2, 3]
+    # arr1d[1] = 2
+    # m: R = 1
+    # arr1d[m] = 3
+    # Parameters:
+    # p[1] — array name
+    # p[3] — index expression/number
+    # p[5] — right hand side expression/number
+    p[0] = ("index_assign", p[1], p[3], p[6], p.lineno(1))
+
+
+def p_statement_index_assign_nd(p):
+    """statement : ID LBRACKET multi_index_list RBRACKET EQUALS expr NEWLINE"""
+    # Indexed assignment of array at program level
+    # Example:
+    # arr2d = [[1, 1], [1, 1]]
+    # arr2d[1, 1] = 2
+    # m: R = 1
+    # arr1d[m, m] = 3
+    # Parameters:
+    # p[1] — array name
+    # p[3] — index expression/number
+    # p[5] — right hand side expression/number
+    p[0] = ("index_assign_nd", p[1], p[3], p[6], p.lineno(1))
+
+
 def p_statement_empty(p):
     """statement : NEWLINE"""
     global print_separator
@@ -1587,8 +1650,30 @@ def p_elements_newline(p):
 
 def p_factor_index(p):
     """factor : ID LBRACKET NUMBER RBRACKET"""
-    # Return AST node for array indexing
+    # Numeric literal indexing of array at program level
+    # Example:
+    # arr[0]
+    # arr[2]
+    # Parameters:
+    # p[1] — array name
+    # p[3] — numeric literal index
+    # Returns:
+    #   ("index", name, ("num", index))
     p[0] = ("index", p[1], ("num", p[3]))
+
+
+def p_factor_index_var(p):
+    """factor : ID LBRACKET ID RBRACKET"""
+    # Variable indexing of array at program level
+    # Example:
+    # arr[i]
+    # arr[m]
+    # Parameters:
+    # p[1] — array name
+    # p[3] — variable name used as index
+    # Returns:
+    #   ("index", name, ("var", index))
+    p[0] = ("index", p[1], ("var", p[3]))
 
 
 def p_factor_indexN(p):
