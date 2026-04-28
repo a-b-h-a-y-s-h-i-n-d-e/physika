@@ -353,10 +353,9 @@ class TestJacobian:
     @pytest.fixture()
     def ns(self):
         return compile("example_jacobian")
-    
-    @pytest.mark.parametrize("x_val, expected", [
-        ([2.0, 3.0], [[4.0, 1.0], [1.0, 6.0]])
-    ])
+
+    @pytest.mark.parametrize("x_val, expected",
+                             [([2.0, 3.0], [[4.0, 1.0], [1.0, 6.0]])])
     def test_single_argument_jacobian(self, ns, x_val, expected):
         f = ns["f_vec"]
         x = torch.tensor(x_val)
@@ -366,16 +365,15 @@ class TestJacobian:
             for j, val in enumerate(row):
                 assert abs(val - expected[i][j]) < r_tol
 
-
-    @pytest.mark.parametrize("state, theta, expected_j_state, expected_j_theta", [
-        (
+    @pytest.mark.parametrize(
+        "state, theta, expected_j_state, expected_j_theta", [(
             [5.0, 1.0],
             [2.0, 1.5, 2.0, 0.8],
             [[0.5, -7.5], [0.8, 2.0]],
             [[5.0, -5.0, 0.0, 0.0], [0.0, 0.0, -1.0, 5.0]],
-        )
-    ])
-    def test_lotka_volterra_jacobian_state(self, ns, state, theta, expected_j_state, expected_j_theta):
+        )])
+    def test_lotka_volterra_jacobian_state(self, ns, state, theta,
+                                           expected_j_state, expected_j_theta):
         f = ns["lotka_volterra"]
         state = torch.tensor(state)
         theta = torch.tensor(theta)
