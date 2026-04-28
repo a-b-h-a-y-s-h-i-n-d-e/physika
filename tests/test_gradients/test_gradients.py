@@ -343,3 +343,53 @@ class TestDiffFor:
             for j in range(3):
                 if j != i:
                     assert abs(jac[i, j].item()) < r_tol
+
+
+class TestJacobian:
+    """
+    Tests for calculating jacobians with grad call
+    """
+
+    @pytest.fixture()
+    def ns(self):
+        return compile("example_jacobian")
+    
+    @pytest.mark.parametrize("x_val, expected", [
+        ([2.0, 3.0], [[4.0, 1.0], [1.0, 6.0]])
+    ])
+    def test_single_argument_jacobian(self, ns, x_val, expected):
+        f = ns["f_vec"]
+        x = torch.tensor(x_val)
+        jac = compute_grad(f, x)
+        assert jac.shape == (2, 2)
+        for i, row in enumerate(jac.tolist()):
+            for j, val in enumerate(row):
+                assert abs(val - expected[i][j]) < r_tol
+
+
+    @pytest.mark.parametrize("state, theta, expected_j_state, expected_j_theta", [
+        (
+            [5.0, 1.0],
+            [2.0, 1.5, 2.0, 0.8],
+            [[0.5, -7.5], [0.8, 2.0]],
+            [[5.0, -5.0, 0.0, 0.0], [0.0, 0.0, -1.0, 5.0]],
+        )
+    ])
+    def test_lotka_volterra_jacobian_state(self, ns, state, theta, expected_j_state, expected_j_theta):
+        f = ns["lotka_volterra"]
+        state = torch.tensor(state)
+        theta = torch.tensor(theta)
+
+        # check J_state
+        j_state = compute_grad(f, state, theta, 0)
+        assert j_state.shape == (2, 2)
+        for i, row in enumerate(j_state.tolist()):
+            for j, val in enumerate(row):
+                assert abs(val - expected_j_state[i][j]) < r_tol
+
+        # check J_theta
+        j_theta = compute_grad(f, state, theta, 1)
+        assert j_theta.shape == (2, 4)
+        for i, row in enumerate(j_theta.tolist()):
+            for j, val in enumerate(row):
+                assert abs(val - expected_j_theta[i][j]) < r_tol
