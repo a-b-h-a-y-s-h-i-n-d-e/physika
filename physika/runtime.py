@@ -261,10 +261,8 @@ def evaluate(model: nn.Module, X: torch.Tensor, y: torch.Tensor) -> float:
     return total_loss / n_samples
 
 
-def compute_grad(
-    f: Union[Callable, torch.Tensor],
-    x: Union[float, torch.Tensor],
-) -> torch.Tensor:
+def compute_grad(f: Union[Callable, torch.Tensor],
+                 x: Union[float, torch.Tensor], *args) -> torch.Tensor:
     """Compute the scalar gradient of a Physika expression with respect to *x*,
     where x is the function's argument.
 
@@ -300,13 +298,31 @@ def compute_grad(
     tensor(6.)
     """
     if callable(f):
+        idx = None
         # Evaluate f on a fresh leaf so the tape is always clean.
         if isinstance(x, torch.Tensor) and x.dim() > 0:
             x_leaf = x.detach().clone().float().requires_grad_(True)
         else:
             x_val = x.item() if isinstance(x, torch.Tensor) else float(x)
             x_leaf = torch.tensor(x_val, requires_grad=True)
-        out = f(x_leaf)
+
+        # if wrt index is passed, differentiate w.r.t. that specific argument
+        if args and isinstance(args[-1], int):
+            idx = int(float(args[-1]))
+            extra_args = list(args[:-1])
+            all_args = [x] + extra_args
+            target = all_args[idx]
+            if isinstance(target, torch.Tensor) and target.dim() > 0:
+                x_leaf = target.detach().clone().float().requires_grad_(True)
+            else:
+                x_val = target.item() if isinstance(
+                    target, torch.Tensor) else float(target)
+                x_leaf = torch.tensor(x_val, requires_grad=True)
+            all_args[idx] = x_leaf
+            out = f(*all_args)
+        else:
+            out = f(x_leaf)
+
         if not isinstance(out, torch.Tensor):
             out = torch.tensor(float(out))
         if out.dim() == 0 or out.numel() == 1:
@@ -314,10 +330,17 @@ def compute_grad(
             (grad, ) = torch.autograd.grad(out, x_leaf)
             return grad.detach()
         else:
-            # Vector/tensor output (f: ℝ -> ℝ[n,...])
-            # return Jacobian df/dx
-            jac = torch.autograd.functional.jacobian(f, x_leaf)
-            return jac.detach()  # type: ignore[return-value]
+            # # Vector/tensor output (f: ℝ -> ℝ[n,...])
+            # # return Jacobian df/dx
+            if idx is not None:
+                jac = torch.autograd.functional.jacobian(
+                    lambda v: f(*([
+                        v if i == idx else all_args[i]
+                        for i in range(len(all_args))
+                    ])), x_leaf)
+            else:
+                jac = torch.autograd.functional.jacobian(f, x_leaf)
+            return jac.detach()
     else:
         # f(x) was already evaluated with x as a requires_grad leaf.
         # Call autograd.grad directly on the pre-built graph.
