@@ -92,6 +92,12 @@ Factorial (recursive)
 .. literalinclude:: ../examples/factorial.phyk
    :language: text
 
+Calculate Jacobians
+~~~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../examples/example_jacobian.phyk
+   :language: text
+
 ----
 
 Classes
