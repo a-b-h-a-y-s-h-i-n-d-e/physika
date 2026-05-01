@@ -35,17 +35,15 @@ def f(state: R[2], theta: R[4]): R:
     return [dx, dy]
 
 
-def rk4_step(state: R[2], theta: R[4]): R[2]:
-    k1 = f(state, theta)
-    k2_state = [state[0] + 0.5 * dt * k1[0],state[1] + 0.5 * dt * k1[1]]
-    k2 = f(k2_state, theta)
-    k3_state = [state[0] + 0.5 * dt * k2[0], state[1] + 0.5 * dt * k2[1]]
-    k3 = f(k3_state, theta)
-    k4_state = [state[0] + dt * k3[0],state[1] + dt * k3[1]]
-    k4 = f(k4_state, theta)
-    x_new = state[0] + (dt / 6.0) * (k1[0] + 2.0 * k2[0] + 2.0 * k3[0] + k4[0])
-    y_new = state[1] + (dt / 6.0) * (k1[1] + 2.0 * k2[1] + 2.0 * k3[1] + k4[1])
-    return [x_new, y_new]
+def rk4_step(state: ℝ[2], θ: ℝ[4]): R[2]:
+    k1: ℝ[2] = f(state, θ)
+    k2_state: ℝ[2] = state + 0.5 * dt * k1
+    k2: ℝ[2] = f(k2_state, θ)
+    k3_state: ℝ[2] = state + 0.5 * dt * k2
+    k3: ℝ[2] = f(k3_state, θ)
+    k4_state: ℝ[2] = state + dt * k3
+    k4: ℝ[2] = f(k4_state, θ)
+    return state + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
 
 def solver(theta: R[4]): R[m]:
