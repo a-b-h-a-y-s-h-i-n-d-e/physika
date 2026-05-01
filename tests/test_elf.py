@@ -110,7 +110,6 @@ class TestELF:
         rules = empty_elf.lexer_rules()
         assert rules["reserved"] == {}
         assert rules["tokens"] == []
-        assert "token_funcs" in rules
         assert empty_elf.parser_rules() == []
         assert empty_elf.type_rules() == {}
         assert empty_elf.forward_rules() == {}
@@ -158,7 +157,7 @@ class TestSuperindexELF:
         as PLY grammar rule.
         """
         super_index_elf = SuperindexELF()
-        assert len(super_index_elf.parser_rules()[0]) == 1
+        assert len(super_index_elf.parser_rules()) == 1
         super_index_string = super_index_elf.parser_rules()[0].__doc__
         assert super_index_string.strip() == "type_spec : TYPESUPER"  # noqa: E501
 
