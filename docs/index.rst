@@ -18,3 +18,4 @@ language program, that checks for dimension and data type correctenss.
    examples
    api
    tutorials/index
+   elf
