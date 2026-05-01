@@ -89,7 +89,7 @@ class ELF:
     >>> # check type rules
     >>> check = WhileLoopFeature().type_rules()[feature_name]
     >>> errors = []
-    >>> t, _ = check(("while_loop", ("var", "n"), []), {"n": ("scalar",)}, Substitution(), {}, {}, errors.append, None)
+    >>> t, _ = check(("while_loop", ("var", "n"), []), {"n": ("scalar",)}, Substitution(), {}, {}, errors.append, None)  # noqa: E501
     >>> t is None and errors == []
     True
     """
@@ -102,7 +102,7 @@ class ELF:
 
         Each returned callable must be a PLY ``p_`` function. PLY's functions
         must start with ``p_`` and docstring must contain a valid
-        Backus-Naur Form (BNF) rule.  These functions are passed to ``parser.py``
+        Backus-Naur Form (BNF) rule.  These functions are passed to ``parser.py``  # noqa: E501
         by `FeatureRegistry.add_parser_rules` so that
         ``yacc.yacc()`` include them when parsing Physika code.
 
@@ -119,7 +119,7 @@ class ELF:
         ...     name = "while_loop"
         ...     def parser_rules(self):
         ...         def p_while(p):
-        ...             \"\"\"statement : WHILE expr COLON NEWLINE INDENT stmts DEDENT\"\"\"
+        ...             \"\"\"statement : WHILE expr COLON NEWLINE INDENT stmts DEDENT\"\"\"  # noqa: E501
         ...             p[0] = ("while_loop", p[2], p[6])
         ...         return [p_while]
 
@@ -127,7 +127,7 @@ class ELF:
         'statement : WHILE expr COLON NEWLINE INDENT stmts DEDENT'
         """
         return []
-    
+
     def lexer_rules(self) -> dict:
         """
         Adds reserve keywords and token names to lexer environment for
@@ -154,12 +154,11 @@ class ELF:
         >>> class WhileLoopFeature(ELF):
         ...     name = "while_loop"
         ...     def lexer_rules(self):
-        ...         return {"reserved": {"while": "WHILE"}, "tokens": ["WHILE"]}
+        ...         return {"reserved": {"while": "WHILE"}, "tokens": ["WHILE"]}  # noqa: E501
         >>> WhileLoopFeature().lexer_rules()
         {'reserved': {'while': 'WHILE'}, 'tokens': ['WHILE']}
         """
-        return {"reserved": {}, "tokens": []}
-
+        return {"reserved": {}, "tokens": [], "token_funcs": []}
 
     def type_rules(self) -> dict:
         """Return a mapping from AST node tags to type inference function handlers.
@@ -190,7 +189,7 @@ class ELF:
         >>> check = WhileLoopFeature().type_rules()["while_loop"]
         >>> node = ("while_loop", ("var", "done"), [])
         >>> errors = []
-        >>> t, s = check(node, {"done": ("scalar",)}, Substitution(), {}, {}, errors.append, infer_expr)
+        >>> t, s = check(node, {"done": ("scalar",)}, Substitution(), {}, {}, errors.append, infer_expr)  # noqa: E501
         >>> t is None and errors == []
         True
         """
@@ -219,7 +218,7 @@ class ELF:
         ...             _, cond, body = node
         ...             body_lines = [f"    {generate_statement(s, set())}" for s in body]
         ...             body_code = "\\n".join(body_lines) if body_lines else "    pass"
-        ...             return f"while {condition_to_expr(cond)}:\\n{body_code}"
+        ...             return f"while {condition_to_expr(cond)}:\\n{body_code}"  # noqa: E501
         ...         return {"while_loop": emit}
         >>> emit = WhileLoopFeature().forward_rules()["while_loop"]
         >>> node = ("while_loop", ("cond_lt", ("var", "n"), ("num", 10.0)), [])
