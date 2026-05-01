@@ -141,8 +141,8 @@ Step 5: Adjoint Gradient
 ------------------------
 
 To train the Lotka-Volterra ODE model, we use the adjoint state method to compute gradients
-during optimization. The method useful for this equation because it computes gradients with respect to all parameters using a single backward pass,
-without storing the full forward trajectory, making it memory-efficient and scalable to long time horizons.
+during optimization. This method is useful because it computes gradients with respect to all
+parameters using a single backward pass, without storing the full forward trajectory, making it memory-efficient and scalable to long time horizons.
 
 
 .. code-block:: text
