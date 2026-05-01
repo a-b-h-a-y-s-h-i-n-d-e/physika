@@ -1,178 +1,267 @@
-from typing import Any, Callable, Optional
-
-
 class ELF:
     """
-    Easy Language Feature (ELF).
-    
-    Base class for Physika-ELFs.
+    Easy Language Feature (ELF) class for implementing Physika language features.
 
-    Subclass and override the four rule methods.  
-    
-    Return an empty dict for rules that are not needed by the new feature.
+    Subclasses of ``ELF`` extends Physika language features with new parser/lexer,
+    type checking, and code generation rules.  Each subclass
+    declares a unique `name` and overrides four methods that controls basics operations
+    in Physika. These are:
+
+    * `parser_rules`: PLY grammar functions that introduce new syntax rules.
+    * `lexer_rules`: New reserved keywords and token names for the lexer.
+    * `type_rules`: Physika's type checker handlers that
+      receive AST nodes and update the type environment following Hindley-Milner type inference.
+    * `forward_rules`: Code generation handlers that emit
+      PyTorch code as strings from AST nodes.
+    * `backward_rules`: Differentiation handlers for custom
+      gradient computation.
+
+    Attributes
+    ----------
+    name : str
+        Identifier language feature.
+
+    Examples
+    --------
+    >>> from physika.elf import ELF
+    >>> from physika.utils.type_checker_utils import Substitution
+    >>> class WhileLoopFeature(ELF):
+    ...     name = "while_loop"
+    ...     def lexer_rules(self):
+    ...         return {"reserved": {"while": "WHILE"}, "tokens": ["WHILE"]}
+
+    ...     def parser_rules(self):
+    ...         def p_while(p):
+    ...             \"\"\"statement : WHILE condition COLON NEWLINE INDENT statements DEDENT\"\"\"
+    ...             p[0] = ("while_loop", p[2], p[6])
+    ...         return [p_while]
+
+    ...     def type_rules(self):
+    ...         def check(node, env, s, func_env, class_env, add_error, infer_expr):
+    ...             from physika.utils.infer_expr import infer_expr
+    ...             _, cond, body = node
+    ...             # checking contion is scalar for simplicity
+    ...             cond_t, s = infer_expr(cond, env, s, func_env, class_env, add_error)
+    ...             if cond_t != ("scalar",):
+    ...                 add_error("while condition must be scalar")
+    ...             return None, s
+    ...         return {"while_loop": check}
+
+    ...     def forward_rules(self):
+    ...         def emit(node):
+    ...             from physika.utils.ast_utils import generate_statement, condition_to_expr
+    ...             _, cond, body = node
+    ...             body_lines = [f"    {generate_statement(s, set())}" for s in body]
+    ...             body_code = "\\n".join(body_lines) if body_lines else "    pass"
+    ...             return f"while {condition_to_expr(cond)}:\\n{body_code}"
+    ...         return {"while_loop": emit}
+
+    ...     def backward_rules(self):
+    ...         def grad(node, grad_output):
+    ...             return (
+    ...                 f"_adj = {grad_output}\\n"
+    ...                 f"for _state in reversed(_while_tape):\\n"
+    ...                 f"    _adj = _body_vjp(_state, _adj)"
+    ...             )
+    ...         return {"while_loop": grad}
+    >>> feature_name = WhileLoopFeature().name
+    >>> feature_name
+    'while_loop'
+    >>> # check parser rules
+    >>> parser_rules = WhileLoopFeature().parser_rules()
+    >>> parser_rules[0].__doc__
+    'statement : WHILE condition COLON NEWLINE INDENT statements DEDENT'
+    >>> # check lexer rules
+    >>> lexer_rules = WhileLoopFeature().lexer_rules()
+    >>> lexer_rules["reserved"]
+    {'while': 'WHILE'}
+    >>> # check forward emit
+    >>> while_forward_emit = WhileLoopFeature().forward_rules()[feature_name]
+    >>> node = ("while_loop", ("cond_lt", ("var", "n"), ("num", 10.0)), [("assign", "n", ("add", ("var", "n"), ("num", 1.0)), 1)])
+    >>> while_forward_emit(node)
+    'while n < 10.0:\\n    n = (n + 1.0)'
+    >>> # check backward emit
+    >>> while_backward_grad = WhileLoopFeature().backward_rules()[feature_name]
+    >>> print(while_backward_grad(node, "dL_dn"))
+    _adj = dL_dn
+    for _state in reversed(_while_tape):
+        _adj = _body_vjp(_state, _adj)
+    >>> # check type rules
+    >>> check = WhileLoopFeature().type_rules()[feature_name]
+    >>> errors = []
+    >>> t, _ = check(("while_loop", ("var", "n"), []), {"n": ("scalar",)}, Substitution(), {}, {}, errors.append, None)
+    >>> t is None and errors == []
+    True
     """
 
-    # feature name
     name: str = ""
 
-    def parser_rules(self) -> list[Callable]:
-        """Return PLY ``p_`` functions that define the grammar for this feature."""
-        return []
-
-    def type_rules(self) -> dict[str, Callable]:
-        """Return a mapping of AST op tag to type inference function."""
-        return {}
-
-    def forward_rules(self) -> dict[str, Callable]:
-        """Return a mapping of AST op tag to code generation function."""
-        return {}
-
-    def backward_rules(self) -> dict[str, Callable]:
+    def parser_rules(self) -> list:
         """
-        Return a mapping of AST op tag to differentiation rule function.
+        Return PLY grammar functions that define new syntax for this feature.
 
-        Rules on how to compute gradients towards a fully differentiable feature.
-        """
-        return {}
+        Each returned callable must be a PLY ``p_`` function. PLY's functions
+        must start with ``p_`` and docstring must contain a valid
+        Backus-Naur Form (BNF) rule.  These functions are passed to ``parser.py``
+        by `FeatureRegistry.add_parser_rules` so that
+        ``yacc.yacc()`` include them when parsing Physika code.
 
-
-
-class FeatureRegistry:
-    """
-    Collects ``ELF`` instances and drives the
-    dispatch chains in the parser, type checker, and code generation.
-    """
-
-    def __init__(self) -> None:
-        self._features: list[ELF] = []
-        self._type_dispatch:      dict[str, Callable] = {}
-        self._forward_dispatch:   dict[str, Callable] = {}
-        self._backward_dispatch:  dict[str, Callable] = {}
-        self._call_type_dispatch: dict[str, Callable] = {}
-        self._call_emit_dispatch: dict[str, Callable] = {}
-
-
-    def register(self, feature: ELF) -> None:
-        """Register a feature and merge its rule tables into the registry."""
-        self._features.append(feature)
-        self._type_dispatch.update(feature.type_rules())
-        self._forward_dispatch.update(feature.forward_rules())
-        self._backward_dispatch.update(feature.backward_rules())
-        for fname, (type_fn, emit_fn) in feature.call_rules().items():
-            self._call_type_dispatch[fname] = type_fn
-            self._call_emit_dispatch[fname] = emit_fn
-
-
-    def install_parser_rules(self, module: Any) -> None:
-        """
-        Inject all grammar rules so that
-        PLY's ``yacc.yacc()`` can build the parser.
-
-
-        Example
+        Returns
         -------
-        >>> from physika.feature import REGISTRY
-        >>> REGISTRY.install_parser_rules(sys.modules[__name__])
-        >>> parser = yacc.yacc()
+        list[Callable]
+            A list of PLY grammar functions.
+
+        Examples
+        --------
+        >>> import physika.parser as physika_parser
+        >>> from physika.elf import ELF, FeatureRegistry
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def parser_rules(self):
+        ...         def p_while(p):
+        ...             \"\"\"statement : WHILE expr COLON NEWLINE INDENT stmts DEDENT\"\"\"
+        ...             p[0] = ("while_loop", p[2], p[6])
+        ...         return [p_while]
+
+        >>> WhileLoopFeature().parser_rules()[0].__doc__
+        'statement : WHILE expr COLON NEWLINE INDENT stmts DEDENT'
         """
-        for feature in self._features:
-            for rule_fn in feature.parser_rules():
-                setattr(module, rule_fn.__name__, rule_fn)
-
-
-    def has_type_rule(self, op: str) -> bool:
-        return op in self._type_dispatch
-
-    def dispatch_type(
-        self,
-        op: str,
-        node: Any,
-        env: dict,
-        s: Any,
-        func_env: dict,
-        class_env: dict,
-        add_error: Callable,
-        infer_expr: Callable,
-    ):
+        return []
+    
+    def lexer_rules(self) -> dict:
         """
-        Dispatch to the type rule for *op*, if one is registered.
+        Adds reserve keywords and token names to lexer environment for
+        the new feature.
 
-        Returns ``(None, s)`` if no rule is registered for *op*.
+        The returned dict contains two optional keys:
 
-        Should be integrated at the end of ``infer_expr`` in ``types.py``.
+        - ``"reserved"``: maps keyword strings to PLY token names
+          and merges into ``lexer.reserved``
+          so the existing ``t_ID`` rule promotes matching identifiers to
+          the new token type automatically.
+        - ``"tokens"``: list of new token names that will be appended to
+          ``lexer.tokens``.
+
+
+        Returns
+        -------
+        dict
+            Dict with optional keys ``"reserved"`` and ``"tokens"``.
+
+        Examples
+        --------
+        >>> from physika.elf import ELF
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def lexer_rules(self):
+        ...         return {"reserved": {"while": "WHILE"}, "tokens": ["WHILE"]}
+        >>> WhileLoopFeature().lexer_rules()
+        {'reserved': {'while': 'WHILE'}, 'tokens': ['WHILE']}
         """
-        fn = self._type_dispatch.get(op)
-        if fn is None:
-            return None, s
-        return fn(node, env, s, func_env, class_env, add_error, infer_expr)
+        return {"reserved": {}, "tokens": []}
 
 
-    def has_forward_rule(self, op: str) -> bool:
-        return op in self._forward_dispatch
+    def type_rules(self) -> dict:
+        """Return a mapping from AST node tags to type inference function handlers.
 
-    def dispatch_forward(self, op: str, node: Any, **ctx) -> Optional[str]:
+        Each handler receives the full AST node for its operation tag and must
+        return ``(inferred_type, substitution)`` according to Physika's ``type`` system.
+
+        Returns
+        -------
+        dict[str, Callable]
+            Mapping of ``{op_tag: handler}``.
+
+        Examples
+        --------
+        >>> from physika.elf import ELF
+        >>> from physika.utils.infer_expr import infer_expr
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def type_rules(self):
+        ...         def check(node, env, s, func_env, class_env, add_error, infer_expr):
+        ...             _, cond, body = node
+        ...             cond_t, s = infer_expr(cond, env, s, func_env, class_env, add_error)
+        ...             if cond_t != ("scalar",):
+        ...                 add_error("while condition must be scalar")
+        ...             return None, s
+        ...         return {"while_loop": check}
+        >>> from physika.utils.type_checker_utils import Substitution
+        >>> check = WhileLoopFeature().type_rules()["while_loop"]
+        >>> node = ("while_loop", ("var", "done"), [])
+        >>> errors = []
+        >>> t, s = check(node, {"done": ("scalar",)}, Substitution(), {}, {}, errors.append, infer_expr)
+        >>> t is None and errors == []
+        True
         """
-        Dispatch to the forward (code generation) rule for *op*.
+        return {}
 
-        Returns ``None`` if no rule is registered.
-
-        Integrate at the end of ``ast_to_torch_expr`` in ``ast_utils.py``, and 
-        at the end of ``emit_body_stmts``.
+    def forward_rules(self) -> dict:
         """
-        fn = self._forward_dispatch.get(op)
-        if fn is None:
-            return None
-        return fn(node, **ctx)
+        Return a mapping from AST node tags to code generation handlers.
 
-    # Backward rules (I need to think more about generalizing gradient computation rules)
+        Each handler receives the AST node and emits a
+        Python/PyTorch source string.
 
-    def has_backward_rule(self, op: str) -> bool:
-        return op in self._backward_dispatch
+        Returns
+        -------
+        dict[str, Callable]
+            Mapping of ``{node_tag: handler}``.
 
-    def dispatch_backward(
-        self, op: str, node: Any, grad_output: Any, **ctx
-    ) -> Optional[str]:
+        Examples
+        --------
+        >>> from physika.elf import ELF
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def forward_rules(self):
+        ...         def emit(node):
+        ...             from physika.utils.ast_utils import generate_statement, condition_to_expr
+        ...             _, cond, body = node
+        ...             body_lines = [f"    {generate_statement(s, set())}" for s in body]
+        ...             body_code = "\\n".join(body_lines) if body_lines else "    pass"
+        ...             return f"while {condition_to_expr(cond)}:\\n{body_code}"
+        ...         return {"while_loop": emit}
+        >>> emit = WhileLoopFeature().forward_rules()["while_loop"]
+        >>> node = ("while_loop", ("cond_lt", ("var", "n"), ("num", 10.0)), [])
+        >>> emit(node)
+        'while n < 10.0:\\n    pass'
         """
-        Dispatch to the backward (differentiation) rule for *op*.
+        return {}
 
-        Returns ``None`` if no rule is registered.
-
-        Reserved for future use — not yet wired into the runtime.
+    def backward_rules(self) -> dict:
         """
-        fn = self._backward_dispatch.get(op)
-        if fn is None:
-            return None
-        return fn(node, grad_output, **ctx)
+        Return a mapping from AST node tags to differentiation handlers.
 
+        Each handler receives the AST node and a ``grad_output``
+        expression string representing the upstream gradient, and must
+        return a Python/PyTorch source string that computes the
+        gradient contribution.
 
+        Returns
+        -------
+        dict[str, Callable]
+            Mapping of ``{node_tag: backward_handler}``.
 
-"""
-    Example:
-    --------------
-
-    from physika.feature import LanguageFeature, REGISTRY
-
-    class WhileLoopFeature(LanguageFeature):
-        name = "while_loop"
-
-        def parser_rules(self):
-            def p_while(p):
-                \"\"\"statement : WHILE expr COLON NEWLINE INDENT stmts DEDENT\"\"\"
-                p[0] = ("while_loop", p[2], p[6])
-            return [p_while]
-
-        def type_rules(self):
-            def check(node, env, s, func_env, class_env, add_error, infer_expr):
-                _, cond, body = node
-                cond_t, s = infer_expr(cond, env, s, func_env, class_env, add_error)
-                return None, s
-            return {"while_loop": check}
-
-        def forward_rules(self):
-            def emit(node, to_expr, **_):
-                _, cond, body = node
-                return f"while {to_expr(cond)}:\\n    pass"
-            return {"while_loop": emit}
-
-    REGISTRY.register(WhileLoopFeature())
-"""
+        Examples
+        --------
+        >>> from physika.elf import ELF
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def backward_rules(self):
+        ...         def grad(node, grad_output, **_):
+        ...             # Adjoint method: reverse through the recorded tape,
+        ...             # applying the body VJP at each step.
+        ...             return (
+        ...                 f"_adj = {grad_output}\\n"
+        ...                 f"for _state in reversed(_while_tape):\\n"
+        ...                 f"    _adj = _body_vjp(_state, _adj)"
+        ...             )
+        ...         return {"while_loop": grad}
+        >>> grad_fn = WhileLoopFeature().backward_rules()["while_loop"]
+        >>> node = ("while_loop", ("var", "done"), [])
+        >>> print(grad_fn(node, "dL_dy"))
+        _adj = dL_dy
+        for _state in reversed(_while_tape):
+            _adj = _body_vjp(_state, _adj)
+        """
+        return {}
