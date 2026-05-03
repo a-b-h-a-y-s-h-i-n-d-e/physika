@@ -807,6 +807,7 @@ def emit_func_loop_body(
     indent_level: int,
     lines: list[str],
     loop_var,
+    grad_target_vars: set | None = None
 ) -> None:
     """Emit code lines for a list of ``func_loop_stmt`` AST nodes.
 
@@ -847,9 +848,16 @@ def emit_func_loop_body(
             lines.append(f"{prefix}{var_name} = {expr_code}")
         elif tag == "loop_assign":
             _, var_name, expr = loop_stmt
-            lines.append(
-                f"{prefix}{var_name} = {ast_to_torch_expr(expr, current_loop_var=active)}"  # noqa: E501
-            )
+            expr_code = ast_to_torch_expr(expr, current_loop_var=active)
+            if grad_target_vars and var_name in grad_target_vars:
+                lines.append(f"{prefix}{var_name} = torch.as_tensor({expr_code}).float().requires_grad_(True)")
+            else:
+                lines.append(f"{prefix}{var_name} = {expr_code}")
+        # elif tag == "loop_assign":
+        #     _, var_name, expr = loop_stmt
+        #     lines.append(
+        #         f"{prefix}{var_name} = {ast_to_torch_expr(expr, current_loop_var=active)}"  # noqa: E501
+        #     )
         elif tag == "loop_index_assign_nd":
             _, arr_name, idx_list, rhs = loop_stmt
             indices = ", ".join(
@@ -907,6 +915,7 @@ def emit_body_stmts(
     scalar_only: bool = False,
     expr_fn=ast_to_torch_expr,
     _equation_vars: set[str] | None = None,
+    grad_target_vars: set | None = None
 ) -> None:
     """Recursively emit Python code lines for a function body.
 
@@ -1043,7 +1052,7 @@ def emit_body_stmts(
                 )
             else:
                 lines.append(f"{prefix}for {loop_var} in range(n):")
-            emit_func_loop_body(loop_body, indent_level + 1, lines, loop_var)
+            emit_func_loop_body(loop_body, indent_level + 1, lines, loop_var, grad_target_vars)
         elif stmt_op == "body_for_range":
             _, loop_var, start_expr, end_expr, loop_body = stmt
             start_code = ast_to_torch_expr(start_expr)
@@ -1051,7 +1060,7 @@ def emit_body_stmts(
             lines.append(
                 f"{prefix}for {loop_var} in range(int({start_code}), int({end_code})):"  # noqa: E501
             )
-            emit_func_loop_body(loop_body, indent_level + 1, lines, loop_var)
+            emit_func_loop_body(loop_body, indent_level + 1, lines, loop_var, grad_target_vars)
         elif stmt_op == "body_zeros_decl":
             # Type annotation for an accumulation target.
             # The paired body_for_accum emits the `torch.stack` expression that
@@ -1101,7 +1110,7 @@ def emit_body_stmts(
                 lines.append(f"{prefix}{tensor_name} = {inner_expr}")
 
 
-def generate_function(name: str, func_def: dict[str, Any]) -> str:
+def generate_function(name: str, func_def: dict[str, Any], grad_target_vars: set | None = None) -> str:
     """Generate a Python/PyTorch function definition from a function AST.
 
     Translates a Physika function (params, body statements, return
@@ -1179,7 +1188,7 @@ def generate_function(name: str, func_def: dict[str, Any]) -> str:
 
     # Generate body statements
     emit_body_stmts(statements, 1, lines, known_vars, equation_vars,
-                    generate_solve_call, scalar_only)
+                    generate_solve_call, scalar_only, grad_target_vars=grad_target_vars)
 
     # Generate for-loop body
     if func_def.get("has_loop"):
