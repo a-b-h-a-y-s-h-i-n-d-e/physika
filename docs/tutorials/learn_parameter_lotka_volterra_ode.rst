@@ -153,8 +153,8 @@ parameters using a single backward pass, without storing the full forward trajec
         y_array: ℝ[m] = states[1]
         m: ℝ = get_1d_array_length(x_array)
         s: ℝ[2] = [
-            2 * (x_array[m-1] - true_x[m-1]) / m,
-            2 * (y_array[m-1] - true_y[m-1]) / m
+            2 * (x_array[m-1] - true_x[m-1]),
+            2 * (y_array[m-1] - true_y[m-1])
         ]
         L: ℝ[4] = zero_1d_array(4)
         for i:ℕ(m-1):
@@ -249,8 +249,8 @@ We start with an initial guess and run 1000 epochs:
 .. code-block:: text
 
     θ: ℝ[4] = [1.0, 0.7, 2.5, 0.7]  
-    learning_rate: ℝ = 0.05
-    epochs: ℕ = 1000
+    learning_rate: ℝ = 0.0005
+    epochs: ℕ = 2000
 
     for i:ℕ(epochs):
         g = adjoint_grad(θ)
@@ -264,7 +264,7 @@ Step 7: Visualize Results
 
 .. code-block:: text
 
-   pred_results = solver(theta)
+   pred_results = solver(θ)
    plot_trajectories(true_results, pred_results)
 
 .. note::
@@ -371,8 +371,8 @@ Full Code
         y_array: ℝ[m] = states[1]
         m: ℝ = get_1d_array_length(x_array)
         s: ℝ[2] = [
-            2 * (x_array[m-1] - true_x[m-1]) / m,
-            2 * (y_array[m-1] - true_y[m-1]) / m
+            2 * (x_array[m-1] - true_x[m-1]),
+            2 * (y_array[m-1] - true_y[m-1])
         ]
         L: ℝ[4] = zero_1d_array(4)
         for i:ℕ(m-1):
@@ -387,14 +387,14 @@ Full Code
         return L
 
     θ: ℝ[4] = [1.0, 0.7, 2.5, 0.7]  
-    learning_rate: ℝ = 0.05
-    epochs: ℕ = 1000
+    learning_rate: ℝ = 0.0005
+    epochs: ℕ = 2000
 
     for i:ℕ(epochs):
         g = adjoint_grad(θ)
         θ = θ - learning_rate * g
     
-    pred_results = solver(theta)
+    pred_results = solver(θ)
     plot_trajectories(true_results, pred_results)
 
 
