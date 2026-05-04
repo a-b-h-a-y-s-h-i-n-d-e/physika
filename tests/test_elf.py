@@ -405,16 +405,30 @@ class TestFeatureRegistry:
 
     def test_add_lexer_rules_token_funcs(self):
         """
-        Test add_lexer_rules injects t_ functions and triggers lexer rebuild.
+        Test add_lexer_rules injects t_ functions onto physika.lexer.
         """
         reg = FeatureRegistry()
         reg.register(SuperindexELF())
         mod = get_physika_module('physika.lexer')
 
-        reg.add_lexer_rules(mod)
+        # save base state
+        saved_tokens = mod.tokens
+        saved_t_TYPESUPER = getattr(mod, "t_TYPESUPER", None)
+        saved_lexer = mod.lexer.lexer
 
+        reg.add_lexer_rules(mod)
+        # t_TYPESUPER injected onto physika.lexer
         assert hasattr(mod, "t_TYPESUPER")
+        # token name appended to module.tokens
         assert "TYPESUPER" in mod.tokens
+
+        # restore module state
+        # As t_TYESUPER was added, we need to get back to base state removing it from physika.lexer
+        # This is done for testing purposes.
+        mod.tokens = saved_tokens
+        if saved_t_TYPESUPER is None and hasattr(mod, "t_TYPESUPER"):
+            delattr(mod, "t_TYPESUPER")
+        mod.lexer.lexer = saved_lexer  # swap back to original lexer
 
     def test_add_parser_rules(self):
         """
