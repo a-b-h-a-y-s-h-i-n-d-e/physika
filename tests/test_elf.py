@@ -358,7 +358,8 @@ class TestFeatureRegistry:
 
     def test_register_multiple_ELF(self):
         """
-        Test that registering multiple ELF accumulates entries across dispatch tables.
+        Test that registering multiple ELF accumulates entries across dispatch
+        tables.
         """
 
         reg = FeatureRegistry()
@@ -375,7 +376,8 @@ class TestFeatureRegistry:
 
     def test_add_lexer_rules(self):
         """
-        Test add_lexer_rules merges reserved keywords and token names into physika.lexer.
+        Test add_lexer_rules merges reserved keywords and token names into
+        physika.lexer.
         """
         mod = get_physika_module('physika.lexer')
         reg = FeatureRegistry()
@@ -416,7 +418,8 @@ class TestFeatureRegistry:
 
     def test_add_parser_rules(self):
         """
-        Test add_parser_rules injects p_* grammar functions onto the parser module.
+        Test add_parser_rules injects p_* grammar functions onto the parser
+        module.
         """
         reg = FeatureRegistry()
         reg.register(WhileLoopFeature())
@@ -425,7 +428,7 @@ class TestFeatureRegistry:
         # p_while set on parser.py
         assert hasattr(mod, "p_while")
         assert mod.p_while.__doc__.strip() == (
-            "statement : WHILE condition COLON NEWLINE INDENT statements DEDENT"
+            "statement : WHILE condition COLON NEWLINE INDENT statements DEDENT"  # noqa: E501
         )
 
     def test_has_type_rule_unregistered(self):
@@ -476,7 +479,8 @@ class TestFeatureRegistry:
 
     def test_dispatch_forward(self):
         """
-        Test dispatch_forward invokes the registered handler and returns emits the correct code.
+        Test dispatch_forward invokes the registered handler and returns emits
+        the correct code.
         """
         reg = FeatureRegistry()
         reg.register(WhileLoopFeature())
@@ -487,14 +491,16 @@ class TestFeatureRegistry:
 
     def test_dispatch_forward_unknown(self):
         """
-        Test dispatch_forward returns None when no handler is registered for the tag.
+        Test dispatch_forward returns None when no handler is registered for
+        the tag.
         """
         reg = FeatureRegistry()
         assert reg.dispatch_forward("unknown_op", ("unknown_op", )) is None
 
     def test_dispatch_backward(self):
         """
-        Test dispatch_backward invokes the registered handler and returns gradient code
+        Test dispatch_backward invokes the registered handler and returns
+        gradient code
         """
         reg = FeatureRegistry()
         reg.register(WhileLoopFeature())
@@ -506,7 +512,8 @@ class TestFeatureRegistry:
 
     def test_dispatch_backward_unknown(self):
         """
-        Test dispatch_backward returns None when no handler is registered for the tag.
+        Test dispatch_backward returns None when no handler is registered
+        for the tag.
         """
         reg = FeatureRegistry()
         assert reg.dispatch_backward("unknown_op", ()) is None

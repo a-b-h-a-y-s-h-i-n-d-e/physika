@@ -424,7 +424,7 @@ class FeatureRegistry:
                 has_new_funcs = True  # need a full re-lex below
 
         # Updates module.tokens
-        module.tokens = tuple(tokens_list) # type: ignore
+        module.tokens = tuple(tokens_list)  # type: ignore
 
         if has_new_funcs:
             # Rebuild lexer
