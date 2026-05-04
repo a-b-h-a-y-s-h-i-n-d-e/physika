@@ -423,7 +423,8 @@ class TestFeatureRegistry:
         assert "TYPESUPER" in mod.tokens
 
         # restore module state
-        # As t_TYESUPER was added, we need to get back to base state removing it from physika.lexer
+        # As t_TYESUPER was added, we need to get back to base state removing
+        # it from physika.lexer
         # This is done for testing purposes.
         mod.tokens = saved_tokens
         if saved_t_TYPESUPER is None and hasattr(mod, "t_TYPESUPER"):
