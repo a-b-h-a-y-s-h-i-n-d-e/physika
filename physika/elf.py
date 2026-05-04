@@ -1,3 +1,9 @@
+import logging
+import types
+from typing import Any, Callable, Optional
+import ply.lex as ply_lex  # type: ignore
+
+
 class ELF:
     """
     Easy Language Feature (ELF) class for implementing Physika language features.
@@ -264,3 +270,337 @@ class ELF:
             _adj = _body_vjp(_state, _adj)
         """
         return {}
+
+
+class FeatureRegistry:
+    """
+    Collects registered ELF features, adds their lexer and parser rules at
+    import time, and dispatches type inference and code generation handlers
+    at runtime.
+
+    Examples
+    --------
+    >>> from physika.elf import ELF, FeatureRegistry
+    >>> class WhileLoopFeature(ELF):
+    ...     name = "while_loop"
+    ...     def forward_rules(self):
+    ...         def emit(node, **ctx):
+    ...             _, cond, _ = node
+    ...             return f"while {cond}:\\n    pass"
+    ...         return {"while_loop": emit}
+    ...     def backward_rules(self):
+    ...         def grad(node, g, **kw): return f"_adj = {g}"
+    ...         return {"while_loop": grad}
+    >>> reg = FeatureRegistry()
+    >>> reg.register(WhileLoopFeature())
+    >>> reg.dispatch_forward("while_loop", ("while_loop", "x > 0", []))
+    'while x > 0:\\n    pass'
+    >>> reg.dispatch_backward("while_loop", ("while_loop", "x > 0", []), "dL")
+    '_adj = dL'
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize empty dispatch tables.
+
+        Attributes
+        ----------
+        features : list[ELF]
+            Ordered list of registered ELF feature instances.
+        type_dispatch : dict[str, Callable]
+            Maps AST node tags to type inference handlers.
+        forward_dispatch : dict[str, Callable]
+            Maps AST node tags to forward code generation handlers.
+        backward_dispatch : dict[str, Callable]
+            Maps AST node tags to backward differentiation handlers.
+
+        Examples
+        --------
+        >>> from physika.elf import FeatureRegistry
+        >>> reg = FeatureRegistry()
+        >>> reg.features
+        []
+        >>> reg.type_dispatch, reg.forward_dispatch, reg.backward_dispatch
+        ({}, {}, {})
+        """
+        self.features: list[ELF] = []
+        self.type_dispatch: dict[str, Callable] = {}
+        self.forward_dispatch: dict[str, Callable] = {}
+        self.backward_dispatch: dict[str, Callable] = {}
+
+    def register(self, feature: ELF) -> None:
+        """
+        Register a new ELF subclass instance and update rule dispatch tables.
+
+        Parameters
+        ----------
+        feature : ELF
+            ELF subclass to be registerd.
+
+        Returns
+        -------
+        None
+            ``.register()`` updates the registry dictionaries in place.
+
+        Examples
+        --------
+        >>> from physika.elf import ELF, FeatureRegistry
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def forward_rules(self):
+        ...         def emit(node, **ctx):
+        ...             _, cond, _ = node
+        ...             return f"while {cond}:\\n    pass"
+        ...         return {"while_loop": emit}
+        >>> reg = FeatureRegistry()
+        >>> reg.register(WhileLoopFeature())
+        >>> len(reg.features)
+        1
+        """
+        self.features.append(feature)
+        self.type_dispatch.update(feature.type_rules())
+        self.forward_dispatch.update(feature.forward_rules())
+        self.backward_dispatch.update(feature.backward_rules())
+
+    def add_lexer_rules(self, module: types.ModuleType) -> None:
+        """
+        Adds lexer rules to ``lexer.py`` module from every registered feature.
+
+        For each feature, we have three objects to be merged into lexer module,
+        which are: **reserved**, **tokens**, and **token_funcs**.
+
+        ``reserved`` is a dict in ``lexer.py`` that maps keywords
+        (e.g. ``"while"``) to their token type (``"WHILE"``). ``tokens``
+        are new token name strings (e.g. ``["WHILE"]``), appended to
+        ``module.tokens``, avoiding duplicates. ``token_funcs`` are ``t_``
+        functions added to ``lexer.py`` so PLY looks for `t_*`` patterns.
+
+        After registering the new lexer additions, ``module.tokens`` is updated.
+        Then, if a new function token rule is added, the lexer must be rebuilt
+        by running ``ply_lex.lex()`` on the updated module.
+
+        Parameters
+        ----------
+        module : types.ModuleType
+            ``physika.lexer`` module object.
+
+        Examples
+        --------
+        >>> import types
+        >>> from physika.elf import ELF, FeatureRegistry
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def lexer_rules(self):
+        ...         return {"reserved": {"while": "WHILE"}, "tokens": ["WHILE"], "token_funcs": []}  # noqa: E501
+        >>> # mod is actually physika.lexer when running Physika programs
+        >>> mod = types.SimpleNamespace(tokens=("ID",), reserved={})
+        >>> reg = FeatureRegistry()
+        >>> reg.register(WhileLoopFeature())
+        >>> reg.add_lexer_rules(mod)
+        >>> "WHILE" in mod.tokens
+        True
+        >>> mod.reserved
+        {'while': 'WHILE'}
+        """
+        tokens_list = list(module.tokens)
+        has_new_funcs = False
+
+        for feature in self.features:
+            rules = feature.lexer_rules()
+
+            # Includes new reserved tokens to lexer.reserved list.
+            module.reserved.update(rules.get("reserved", {}))
+
+            # Append new token names
+            for tok in rules.get("tokens", []):
+                if tok not in tokens_list:
+                    # avoids duplicates.
+                    tokens_list.append(tok)
+
+            # adds function token rules to physika.lexer
+            # module so PLY can find look for t_* naming convention.
+            for fn in rules.get("token_funcs", []):
+                setattr(module, fn.__name__, fn)
+                has_new_funcs = True  # need a full re-lex below
+
+        # Updates module.tokens
+        module.tokens = tuple(tokens_list) # type: ignore
+
+        if has_new_funcs:
+            # Rebuild lexer
+            err_log = logging.getLogger("elf.lex")
+            err_log.propagate = False
+            new_raw = ply_lex.lex(module=module, errorlog=err_log)
+            # Updates PLY lexer object inside Physika's lexer.py IndentLexer
+            # class.
+            if hasattr(module, "lexer") and hasattr(module.lexer, "lexer"):
+                module.lexer.lexer = new_raw
+        else:
+            # No new function rules
+            # lextokens and lextokens_all are PLY attributes
+            if hasattr(module, "lexer") and hasattr(module.lexer, "lexer"):
+                inner = module.lexer.lexer
+                inner.lextokens = set(module.tokens)
+                inner.lextokens_all = set(module.tokens)
+
+    def add_parser_rules(self, module: types.ModuleType) -> None:
+        """
+        Inject each feature's PLY grammar functions into ``parser.py``.
+
+        Each function returned by ``feature.parser_rules()`` is set as an
+        attribute on ``physika.parser``. PLY finds grammar
+        rules by looking for ``p_`` attributes at ``yacc.yacc()``.
+
+        Parameters
+        ----------
+        module : types.ModuleType
+            ``physika.parser`` module object.
+
+        Examples
+        --------
+        >>> import types as types
+        >>> from physika.elf import ELF, FeatureRegistry
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def parser_rules(self):
+        ...         def p_while(p):
+        ...             \"\"\"statement : WHILE expr COLON NEWLINE INDENT stmts DEDENT\"\"\"  # noqa: E501
+        ...             p[0] = ("while_loop", p[2], p[6])
+        ...         return [p_while]
+        >>> # mod is actually physika.lexer when running Physika programs
+        >>> mod = types.SimpleNamespace()
+        >>> reg = FeatureRegistry()
+        >>> reg.register(WhileLoopFeature())
+        >>> reg.add_parser_rules(mod)
+        >>> hasattr(mod, "p_while")
+        True
+        >>> mod.p_while.__doc__
+        'statement : WHILE expr COLON NEWLINE INDENT stmts DEDENT'
+        """
+        for feature in self.features:
+            for rule_fn in feature.parser_rules():
+                setattr(module, rule_fn.__name__, rule_fn)
+
+    def has_type_rule(self, op: str) -> bool:
+        """
+        Return ``True`` if a type inference handler is registered for
+        the new ELF.
+
+        Parameters
+        ----------
+        op : str
+            The node tag to search in AST with the ``.name`` of the subclass
+            ELF.
+
+        Examples
+        --------
+        >>> from physika.elf import ELF, FeatureRegistry
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def type_rules(self):
+        ...         return {"while_loop": lambda node, *a, **kw: (None, None)}
+        >>> reg = FeatureRegistry()
+        >>> reg.register(WhileLoopFeature())
+        >>> reg.has_type_rule("while_loop")
+        True
+        >>> reg.has_type_rule("for_loop")
+        False
+        """
+        return op in self.type_dispatch
+
+    def dispatch_type(self, op: str, *args: Any, **kwargs: Any) -> Any:
+        """
+        Call the ELF type-inference handler for ``op``.
+
+        The handler is expected to return a tuple of (``inferred_type``, ``substitution``).  # noqa: E501
+        If no handler is registered for ``op``, then returns ``None``.
+
+        Parameters
+        ----------
+        op : str
+            The node tag to search in AST with the ``.name`` of the subclass ELF.
+        *args, **kwargs
+            Arguments to pass to the type inference handler.
+
+        Examples
+        --------
+        >>> from physika.elf import ELF, FeatureRegistry
+        >>> from physika.utils.type_checker_utils import Substitution
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def type_rules(self):
+        ...         def check(node, env, s, func_env, class_env, add_error, infer_expr):  # noqa: E501
+        ...             return None, s
+        ...         return {"while_loop": check}
+        >>> reg = FeatureRegistry()
+        >>> reg.register(WhileLoopFeature())
+        >>> s = Substitution()
+        >>> t, _ = reg.dispatch_type("while_loop", ("while_loop", ("var", "n"), []), {}, s, {}, {}, [].append, None)  # noqa: E501
+        >>> t is None
+        True
+        """
+        fn = self.type_dispatch.get(op)
+        if fn is not None:
+            return fn(*args, **kwargs)
+        else:
+            None
+
+    def dispatch_forward(self, op: str, node: tuple,
+                         **ctx: Any) -> Optional[str]:  # noqa: E501
+        """
+        Call the forward code generation handler for ``op``.
+
+        The handler is expected to return a string of Python code.
+
+        Examples
+        --------
+        >>> from physika.elf import ELF, FeatureRegistry
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def forward_rules(self):
+        ...         def emit(node, **ctx):
+        ...             _, cond, _ = node
+        ...             return f"while {cond}:\\n    pass"
+        ...         return {"while_loop": emit}
+        >>> reg = FeatureRegistry()
+        >>> reg.register(WhileLoopFeature())
+        >>> reg.dispatch_forward("while_loop", ("while_loop", "x > 0", []))
+        'while x > 0:\\n    pass'
+        """
+        fn = self.forward_dispatch.get(op)
+        if fn is not None:
+            return fn(node, **ctx)
+        else:
+            return None
+
+    def dispatch_backward(self, op: str, *args: Any,
+                          **kwargs: Any) -> Optional[str]:  # noqa: E501
+        """
+        Call the backward differentiation handler for ``op``, or return ``None``.
+
+        The handler is expected to return a string of PyTorch code that
+        computes the gradient for the given node.
+
+        Examples
+        --------
+        >>> from physika.elf import ELF, FeatureRegistry
+        >>> class WhileLoopFeature(ELF):
+        ...     name = "while_loop"
+        ...     def backward_rules(self):
+        ...         def grad(node, g, **kw): return f"_adj = {g}"
+        ...         return {"while_loop": grad}
+        >>> reg = FeatureRegistry()
+        >>> reg.register(WhileLoopFeature())
+        >>> reg.dispatch_backward("while_loop", ("while_loop", "x > 0", []), "dL")  # noqa: E501
+        '_adj = dL'
+        >>> reg.dispatch_backward("unknown_op", ()) is None
+        True
+        """
+        fn = self.backward_dispatch.get(op)
+        if fn is not None:
+            return fn(*args, **kwargs)
+        else:
+            return None
+
+
+REGISTRY = FeatureRegistry()
