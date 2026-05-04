@@ -4,37 +4,38 @@
 
 
 # grad/jacobian call with single argument
-def f_vec(state : ℝ[2]) : ℝ[2]:
-    x = state[0]
-    y = state[1]
-    fx = x**2 + y
-    fy = x + y**2
+def f_vec(state : ℝ[m]) : ℝ[m]:
+    # state is an array with 2 numbers (x, y)
+    x: ℝ = state[0]
+    y: ℝ = state[1]
+    fx: ℝ = x**2 + y
+    fy: ℝ = x + y**2
     return [fx, fy]
 
 
 state : ℝ[2] = [1.0, 2.0]
-J = grad(f_vec, state)
+J: ℝ[2, 2] = grad(f_vec, state)
 J
 
 # grad/jacobian call with multiple args
-def lotka_volterra(state : ℝ[2], theta : ℝ[4]) : ℝ[2]:
-    x = state[0]
-    y = state[1]
-    alpha = theta[0]
-    beta = theta[1]
-    gamma = theta[2]
-    delta = theta[3]
-    dx = (alpha * x) - (beta * x * y)
-    dy = (delta * x * y) - (gamma * y)
+def lotka_volterra(state : ℝ[m], θ : ℝ[n]) : ℝ[m]:
+    x: ℝ = state[0]
+    y: ℝ = state[1]
+    α: ℝ = θ[0]
+    β: ℝ = θ[1]
+    γ: ℝ = θ[2]
+    δ: ℝ = θ[3]
+    dx: ℝ = (α * x) - (β * x * y)
+    dy: ℝ = (δ * x * y) - (γ * y)
     return [dx, dy]
 
 state : ℝ[2] = [10.0, 1.0]
-theta : ℝ[4] = [1.5, 1.0, 3.0, 1.0]
+θ : ℝ[4] = [1.5, 1.0, 3.0, 1.0]
 
 # 2x2 jacobian matrix
-J_state = grad(lotka_volterra, state, theta, 0)
+J_state: ℝ[2, 2] = grad(lotka_volterra, state, θ, 0)
 J_state
 
 # 2x4 jacobian matrix
-J_theta = grad(lotka_volterra, state, theta, 1)
+J_theta: ℝ[2, 4] = grad(lotka_volterra, state, θ, 1)
 J_theta
