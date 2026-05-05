@@ -1,0 +1,24 @@
+# Ax * b with gaussian elimination
+def solve(A: ℝ[m, m], b: ℝ[m]) : ℝ[m]:
+    n: ℝ = get_1d_array_length(b)
+    Aug: ℝ[m, m] = zero_2d_array(n, n+1)
+    result: ℝ[m] = zero_1d_array(n)
+    # create augmented matrix
+    for i:ℕ(n):
+        for j:ℕ(n):
+            Aug[i, j] = A[i, j]
+        Aug[i, n] = b[i]
+    # convert into upper triangular matrix
+    for pivot : ℕ(n):
+        for i : ℕ(pivot+1, n):
+            factor = Aug[i, pivot] / Aug[pivot, pivot]
+            for j : ℕ(pivot, n+1):
+                Aug[i, j] = Aug[i, j] - factor * Aug[pivot, j]
+    # back substitution
+    for i:ℕ(n):
+        ri = n - 1 - i
+        result[ri] = Aug[ri, n]
+        for j:ℕ(ri+1, n):
+            result[ri] = result[ri] - Aug[ri, j] * result[j]
+        result[ri] = result[ri] / Aug[ri, ri]
+    return result
