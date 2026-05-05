@@ -25,36 +25,6 @@
 #   x(t) = x0 * cos(ω t) + (v0 / ω) * sin(ω t)
 # ============================================================
 
-# ------------------------------------------------------------
-# Helper functions
-# ------------------------------------------------------------
-
-def factorial(n: ℕ): ℝ:
-    result: ℝ = 1.0
-    for i: ℕ(1, n+1):
-        result = result * i
-    return result
-
-def physika_cos(x: ℝ): ℝ:
-    n: ℕ = 10
-    result: ℝ = 0.0
-    for i:ℕ(n):
-        sign = (-1) ** i
-        power = x ** (2 * i)
-        fact = factorial(2 * i)
-        result = result + sign * power / fact
-    return result
-
-def physika_sin(x: ℝ) : ℝ:
-    n: ℕ = 10
-    result: ℝ = 0.0
-    for i:ℕ(n):
-        sign = (-1) ** i
-        power = x ** (2 * i + 1)
-        fact = factorial(2 * i + 1)
-        result = result + sign * power / fact
-    return result
-
 
 # ------------------------------------------------------------
 # Time Evolution U(k, m, t, x0, v0)
@@ -63,7 +33,7 @@ def U(k: ℝ, m: ℝ, t: ℝ, x0: ℝ, v0: ℝ): ℝ:
     omega = (k / m) ** 0.5
     A = x0
     B = v0 / omega
-    return A * physika_cos(omega * t) + B * physika_sin(omega * t)
+    return A * cos(omega * t) + B * sin(omega * t)
 
 # ------------------------------------------------------------
 # Physical Constants

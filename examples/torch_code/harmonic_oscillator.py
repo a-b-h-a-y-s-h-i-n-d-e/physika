@@ -7,37 +7,11 @@ from physika.runtime import compute_grad
 from physika.runtime import animate
 
 # === Functions ===
-def factorial(n):
-    result = 1.0
-    for i in range(int(1), int((n + 1))):
-        result = (result * i)
-    return result
-
-def physika_cos(x):
-    n = 10
-    result = 0.0
-    for i in range(int(0), int(n)):
-        sign = ((-1) ** i)
-        power = (x ** (2 * i))
-        fact = factorial((2 * i))
-        result = (result + ((sign * power) / fact))
-    return result
-
-def physika_sin(x):
-    n = 10
-    result = 0.0
-    for i in range(int(0), int(n)):
-        sign = ((-1) ** i)
-        power = (x ** ((2 * i) + 1))
-        fact = factorial(((2 * i) + 1))
-        result = (result + ((sign * power) / fact))
-    return result
-
 def U(k, m, t, x0, v0):
     omega = ((k / m) ** 0.5)
     A = x0
     B = (v0 / omega)
-    return ((A * physika_cos((omega * t))) + (B * physika_sin((omega * t))))
+    return ((A * (torch.cos((omega * t)) if isinstance((omega * t), torch.Tensor) else math.cos((omega * t)))) + (B * (torch.sin((omega * t)) if isinstance((omega * t), torch.Tensor) else math.sin((omega * t)))))
 
 # === Program ===
 k = 1.0
