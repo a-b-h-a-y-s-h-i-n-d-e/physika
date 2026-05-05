@@ -628,6 +628,7 @@ def ast_to_torch_expr(node: ASTNode,
         arg_strs = [
             ast_to_torch_expr(arg, indent, current_loop_var) for arg in args
         ]
+        arg = arg_strs[0]
 
         # Map built-in functions to PyTorch equivalents
         torch_funcs = {
@@ -642,8 +643,17 @@ def ast_to_torch_expr(node: ASTNode,
             "real": "torch.real",
         }
 
+        # if value is scalar ℝ
+        math_funcs = {
+            "exp": "math.exp",
+            "log": "math.log",
+            "sin": "math.sin",
+            "cos": "math.cos",
+            "sqrt": "math.sqrt",
+            "abs": "abs",
+        }
         if func_name in torch_funcs:
-            return f"{torch_funcs[func_name]}({', '.join(arg_strs)})"
+            return f"({torch_funcs[func_name]}({arg}) if isinstance({arg}, torch.Tensor) else {math_funcs.get(func_name, func_name)}({arg}))"  # noqa
 
         elif func_name == "grad":
             # grad(output, input) -> compute_grad(output, input)

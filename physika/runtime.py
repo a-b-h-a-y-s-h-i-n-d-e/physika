@@ -3,6 +3,7 @@ import copy
 import inspect
 from typing import Any, Sequence, Union, Callable, cast
 
+import math  # noqa
 import torch
 import torch.nn as nn
 import torch.optim as optim
