@@ -1,26 +1,69 @@
 # ============================================================
 # Harmonic Oscillator - Differentiable Time Evolution
 # ============================================================
-# Equation: m * d²x/dt² = -k * x
+# Equation: 
+#   m * d²x/dt² = -k * x
+# 
+# Angular frequence:
+#   ω = √(k / m)
 #
-# General solution (complex exponential form):
-#   x(t) = a * exp(i*ω*t) + b * exp(-i*ω*t)
-#   where ω = √(k/m)
+# General solution (sine-cosine form):
+#   x(t) = A * cos(ω t) + B * sin(ω t)
+# 
+# Velocity:
+#   v(t) = dx/dt = -Aω sin(ω t) + Bω cos(ω t)
+# 
+# Initial conditions:
+#   x(0) = x0
+#   v(0) = v0
 #
-# Initial conditions give a linear system:
-#   eq1: x0 = a + b
-#   eq2: v0 = i*ω*a - i*ω*b
-#
+# Apply initial conditions:
+#   x(0) = A = x0
+#   v(0) = Bω = v0 -> B = v0 / ω
+# 
+# Final solution:
+#   x(t) = x0 * cos(ω t) + (v0 / ω) * sin(ω t)
+# ============================================================
+
+# ------------------------------------------------------------
+# Helper functions
+# ------------------------------------------------------------
+
+def factorial(n: ℕ): ℝ:
+    result: ℝ = 1.0
+    for i: ℕ(1, n+1):
+        result = result * i
+    return result
+
+def physika_cos(x: ℝ): ℝ:
+    n: ℕ = 10
+    result: ℝ = 0.0
+    for i:ℕ(n):
+        sign = (-1) ** i
+        power = x ** (2 * i)
+        fact = factorial(2 * i)
+        result = result + sign * power / fact
+    return result
+
+def physika_sin(x: ℝ) : ℝ:
+    n: ℕ = 10
+    result: ℝ = 0.0
+    for i:ℕ(n):
+        sign = (-1) ** i
+        power = x ** (2 * i + 1)
+        fact = factorial(2 * i + 1)
+        result = result + sign * power / fact
+    return result
+
 
 # ------------------------------------------------------------
 # Time Evolution U(k, m, t, x0, v0)
 # ------------------------------------------------------------
 def U(k: ℝ, m: ℝ, t: ℝ, x0: ℝ, v0: ℝ): ℝ:
-    omega: ℝ = (k / m) ** 0.5
-    eq1: ℝ = 'x0 = a + b'
-    eq2: ℝ = 'v0 = i * omega * a - i * omega * b'
-    a, b = solve(eq1, eq2)
-    return a * exp(i * t * omega) + b * exp(0.0 - i * t * omega)
+    omega = (k / m) ** 0.5
+    A = x0
+    B = v0 / omega
+    return A * physika_cos(omega * t) + B * physika_sin(omega * t)
 
 # ------------------------------------------------------------
 # Physical Constants
