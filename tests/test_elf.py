@@ -1,4 +1,6 @@
-from physika.elf import ELF
+from physika.elf import ELF, FeatureRegistry
+import sys
+from physika.utils.type_checker_utils import Substitution
 
 # Helper to test superscript lexer and parser rules
 SUPER_MAP = {
@@ -13,6 +15,13 @@ SUPER_MAP = {
     "⁸": "8",
     "⁹": "9",
 }
+
+
+def get_physika_module(mod: str = 'physika.lexer'):
+    """
+    Helper funciton to get module object of physika.lexer/parser
+    for testing"""
+    return sys.modules[mod]
 
 
 def decode_dim(s: str) -> int:
@@ -308,3 +317,218 @@ class TestWhileLoopELF:
         result = grad("dL_dn")
 
         assert result == "_adj = dL_dn\\nfor _state in reversed(_while_tape):\\n    _adj = _body_vjp(_state, _adj)"  # noqa: E501
+
+
+class TestFeatureRegistry:
+
+    def test_init(self):
+        """
+        Test that a new FeatureRegistry starts with empty dispatch tables.
+        """
+
+        reg = FeatureRegistry()
+
+        assert reg.features == []
+        assert reg.type_dispatch == {}
+        assert reg.forward_dispatch == {}
+        assert reg.backward_dispatch == {}
+
+        # test that registering an ELF populates dispatch tables
+        reg = FeatureRegistry()
+        reg.register(WhileLoopFeature())
+        # feature instance is tracked in order
+        assert len(reg.features) == 1
+        # all three dispatch tables receive the while_loop tag
+        assert "while_loop" in reg.type_dispatch
+        assert "while_loop" in reg.forward_dispatch
+        assert "while_loop" in reg.backward_dispatch
+
+    def test_register_superindex(self):
+        """
+        Test that SuperindexELF does not add unexpected dispatch entries.
+        """
+
+        reg = FeatureRegistry()
+        reg.register(SuperindexELF())
+        assert len(reg.features) == 1
+        # SuperindexELF doesnt define new type, forward, backward rules
+        assert reg.type_dispatch == {}
+        assert reg.forward_dispatch == {}
+        assert reg.backward_dispatch == {}
+
+    def test_register_multiple_ELF(self):
+        """
+        Test that registering multiple ELF accumulates entries across dispatch
+        tables.
+        """
+
+        reg = FeatureRegistry()
+        reg.register(WhileLoopFeature())
+        reg.register(SuperindexELF())
+
+        assert len(reg.features) == 2
+        # while_loop rules from WhileLoopFeature are present
+        assert reg.features[0].name == "while_loop"
+        assert reg.features[1].name == "superindex"
+        # test that forward rules are included just for WhileLoopFeature
+        assert "while_loop" in reg.forward_dispatch
+        assert "superindex" not in reg.forward_dispatch
+
+    def test_add_lexer_rules(self):
+        """
+        Test add_lexer_rules merges reserved keywords and token names into
+        physika.lexer.
+        """
+        mod = get_physika_module('physika.lexer')
+        reg = FeatureRegistry()
+        reg.register(WhileLoopFeature())
+
+        reg.add_lexer_rules(mod)
+        # reserved keyword
+        assert mod.reserved["while"] == "WHILE"
+        # token name
+        assert "WHILE" in mod.tokens
+        # existing tokens preserved
+        assert "ID" in mod.tokens
+
+    def test_add_lexer_rules_no_duplicates(self):
+        """Test add_lexer_rules does not add duplicate token names."""
+        reg = FeatureRegistry()
+        reg.register(WhileLoopFeature())
+        mod = get_physika_module('physika.lexer')
+        assert mod.tokens.count("WHILE") == 1
+
+        for _ in range(10):
+            reg.add_lexer_rules(mod)
+            assert mod.tokens.count(
+                "WHILE") == 1  # WHILE already present in module tokens
+
+    def test_add_lexer_rules_token_funcs(self):
+        """
+        Test add_lexer_rules injects t_ functions onto physika.lexer.
+        """
+        reg = FeatureRegistry()
+        reg.register(SuperindexELF())
+        mod = get_physika_module('physika.lexer')
+
+        # save base state
+        saved_tokens = mod.tokens
+        saved_t_TYPESUPER = getattr(mod, "t_TYPESUPER", None)
+        saved_lexer = mod.lexer.lexer
+
+        reg.add_lexer_rules(mod)
+        # t_TYPESUPER injected onto physika.lexer
+        assert hasattr(mod, "t_TYPESUPER")
+        # token name appended to module.tokens
+        assert "TYPESUPER" in mod.tokens
+
+        # restore module state
+        # As t_TYESUPER was added, we need to get back to base state removing
+        # it from physika.lexer
+        # This is done for testing purposes.
+        mod.tokens = saved_tokens
+        if saved_t_TYPESUPER is None and hasattr(mod, "t_TYPESUPER"):
+            delattr(mod, "t_TYPESUPER")
+        mod.lexer.lexer = saved_lexer  # swap back to original lexer
+
+    def test_add_parser_rules(self):
+        """
+        Test add_parser_rules injects p_* grammar functions onto the parser
+        module.
+        """
+        reg = FeatureRegistry()
+        reg.register(WhileLoopFeature())
+        mod = get_physika_module('physika.parser')
+        reg.add_parser_rules(mod)
+        # p_while set on parser.py
+        assert hasattr(mod, "p_while")
+        assert mod.p_while.__doc__.strip() == (
+            "statement : WHILE condition COLON NEWLINE INDENT statements DEDENT"  # noqa: E501
+        )
+
+    def test_has_type_rule_unregistered(self):
+        """T
+        est has_type_rule returns False for a tag that has not been registered.
+        """
+        reg = FeatureRegistry()
+        reg.register(WhileLoopFeature())
+        assert reg.has_type_rule("for_loop") is False
+
+    def test_type_rule_while_ELF(self):
+        """
+        Test has_type_rule and type_dispatch works properly for a tag that
+        has been registered.
+        """
+        reg = FeatureRegistry()
+        reg.register(WhileLoopFeature())
+        # checks type rules has been defined
+        assert reg.has_type_rule("while_loop") is True
+
+        s = Substitution()
+
+        # minimal infer_expr that returns scalar type for any var node
+        # for testing purposes.
+        def scalar_infer(node, env, s, func_env, class_env, add_error):
+            return ("scalar", ), s
+
+        errors = []
+        t, _ = reg.dispatch_type(
+            "while_loop",
+            ("while_loop", ("var", "n"), []),
+            {"n": ("scalar", )},
+            s,
+            {},
+            {},
+            errors.append,
+            scalar_infer,
+        )
+        assert t is None
+        assert errors == []
+
+    def test_dispatch_type_unknown(self):
+        """
+        Test dispatch_type returns None when no handler is registered for ELF.
+        """
+        reg = FeatureRegistry()
+        assert reg.dispatch_type("unknown_op", ()) is None
+
+    def test_dispatch_forward(self):
+        """
+        Test dispatch_forward invokes the registered handler and returns emits
+        the correct code.
+        """
+        reg = FeatureRegistry()
+        reg.register(WhileLoopFeature())
+        body = [("assign", "n", ("add", ("var", "n"), ("num", 1.0)), 1)]
+        node = ("while_loop", ("cond_lt", ("var", "n"), ("num", 10.0)), body)
+        result = reg.dispatch_forward("while_loop", node)
+        assert result == "while n < 10.0:\\n    n = (n + 1.0)"
+
+    def test_dispatch_forward_unknown(self):
+        """
+        Test dispatch_forward returns None when no handler is registered for
+        the tag.
+        """
+        reg = FeatureRegistry()
+        assert reg.dispatch_forward("unknown_op", ("unknown_op", )) is None
+
+    def test_dispatch_backward(self):
+        """
+        Test dispatch_backward invokes the registered handler and returns
+        gradient code
+        """
+        reg = FeatureRegistry()
+        reg.register(WhileLoopFeature())
+        result = reg.dispatch_backward("while_loop", "dL_dn")
+        expected = ("_adj = dL_dn\\n"
+                    "for _state in reversed(_while_tape):\\n"
+                    "    _adj = _body_vjp(_state, _adj)")
+        assert result == expected
+
+    def test_dispatch_backward_unknown(self):
+        """
+        Test dispatch_backward returns None when no handler is registered
+        for the tag.
+        """
+        reg = FeatureRegistry()
+        assert reg.dispatch_backward("unknown_op", ()) is None
