@@ -1185,9 +1185,6 @@ def generate_function(name: str, func_def: dict[str, Any]) -> str:
             args = expr[2]
             arg_strs = [ast_to_torch_expr(arg) for arg in args]
             # Add known variables as keyword arguments (exclude equation vars)
-            kw_strs = [
-                f"{v}={v}" for v in known_vars if v not in equation_vars
-            ]
             return f"solve({', '.join(arg_strs)})"
         return ast_to_torch_expr(expr)
 
