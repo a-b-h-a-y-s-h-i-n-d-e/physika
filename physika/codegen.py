@@ -82,7 +82,7 @@ def from_ast_to_torch(unified_ast: Dict[str, Any],
     True
     >>> "torch.exp" in code
     True
-    >>> print(code)
+    >>> print(code)  # noqa: E501
     import torch
     import torch.nn as nn
     import torch.optim as optim

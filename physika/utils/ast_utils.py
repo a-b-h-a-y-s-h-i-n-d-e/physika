@@ -648,7 +648,7 @@ def ast_to_torch_expr(node: ASTNode,
         }
 
         if func_name in torch_funcs:
-            return f"{torch_funcs[func_name]}({arg} if isinstance({arg}, torch.Tensor) else torch.tensor(float({arg})))"  # noqa
+            return f"{torch_funcs[func_name]}({arg} if isinstance({arg}, torch.Tensor) else torch.tensor(float({arg})))"  # noqa: E501
 
         elif func_name == "grad":
             # grad(output, input) -> compute_grad(output, input)
