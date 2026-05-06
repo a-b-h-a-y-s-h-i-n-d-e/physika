@@ -317,7 +317,9 @@ def compute_grad(
             # Vector/tensor output (f: ℝ -> ℝ[n,...])
             # return Jacobian df/dx
             x_val = x_leaf.detach().float()
-            jac = torch.func.jacrev(f)(x_val) # jacrev allows one backward pass per output row, vectorised over rows (vmap)
+            jac = torch.func.jacrev(f)(
+                x_val
+            )  # jacrev allows one backward pass per output row, vectorised over rows (vmap)  # noqa
             return jac.detach()
     else:
         # f(x) was already evaluated with x as a requires_grad leaf.

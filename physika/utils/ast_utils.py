@@ -653,18 +653,19 @@ def ast_to_torch_expr(node: ASTNode,
                              if isinstance(diff_var_node, tuple)
                              and diff_var_node[0] == "var" else None)
 
-            if isinstance(inner, tuple) and inner[0] == "call" and diff_var_name:
+            if isinstance(inner,
+                          tuple) and inner[0] == "call" and diff_var_name:
                 # wrap in lambda so compute_grad evaluates on a fresh leaf
                 inner_func = inner[1]
                 inner_call_args = inner[2]
                 lamb_var = f"_d{diff_var_name}"
                 new_arg_strs = [
-                    lamb_var if a == ("var", diff_var_name)
-                    else ast_to_torch_expr(a, indent, current_loop_var)
+                    lamb_var if a == ("var", diff_var_name) else
+                    ast_to_torch_expr(a, indent, current_loop_var)
                     for a in inner_call_args
                 ]
                 inner_call = f"{inner_func}({', '.join(new_arg_strs)})"
-                return f"compute_grad(lambda {lamb_var}: {inner_call}, {arg_strs[1]})"
+                return f"compute_grad(lambda {lamb_var}: {inner_call}, {arg_strs[1]})"  # noqa
             return f"compute_grad({', '.join(arg_strs)})"
 
         elif func_name == "subs":
