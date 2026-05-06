@@ -1188,7 +1188,7 @@ def generate_function(name: str, func_def: dict[str, Any]) -> str:
             kw_strs = [
                 f"{v}={v}" for v in known_vars if v not in equation_vars
             ]
-            return f"solve({', '.join(arg_strs)}, {', '.join(kw_strs)})"
+            return f"solve({', '.join(arg_strs)})"
         return ast_to_torch_expr(expr)
 
     # Use if/else (not torch.where) when all params are scalars
