@@ -15,7 +15,7 @@ def f(x):
 # === Program ===
 a = torch.tensor(3.0, requires_grad=True)
 physika_print(f(a))
-physika_print(compute_grad(f(a), a))
+physika_print(compute_grad(lambda _da: f(_da), a))
 b = torch.tensor((-2.0), requires_grad=True)
 physika_print(f(b))
-physika_print(compute_grad(f(b), b))
+physika_print(compute_grad(lambda _db: f(_db), b))

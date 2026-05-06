@@ -343,3 +343,97 @@ class TestDiffFor:
             for j in range(3):
                 if j != i:
                     assert abs(jac[i, j].item()) < r_tol
+
+
+class TestJacobian:
+    """
+    Tests for calculating jacobians.
+    """
+
+    @pytest.fixture()
+    def ns(self):
+        return compile("example_jacobians")
+
+    @pytest.mark.parametrize("x_val, expected", [
+        ([2.0, 3.0], [[3.0, 2.0], [1.0, 1.0]]),
+        ([0.0, 3.0], [[3.0, 0.0], [1.0, 1.0]]),
+        ([-1.0, 3.0], [[3.0, -1.0], [1.0, 1.0]]),
+    ])
+    def test_single_arg_jacobian(self, ns, x_val, expected):
+        f = ns["single_arg_jacobian"]
+        x = torch.tensor(x_val, dtype=torch.float32, requires_grad=True)
+        J = compute_grad(f, x)
+        assert J.shape == (2, 2)
+        assert torch.allclose(J,
+                              torch.tensor(expected, dtype=torch.float32),
+                              atol=r_tol)
+
+    @pytest.mark.parametrize(
+        "state_val, theta_val, expected_state, expected_theta", [
+            (
+                [1.0, 2.0],
+                [1.0, 0.3, 1.3, 0.5],
+                [[0.4, -0.3], [1.0, -0.8]],
+                [[1.0, -2.0, 0.0, 0.0], [0.0, 0.0, -2.0, 2.0]],
+            ),
+        ])
+    def test_double_arg_jacobians(self, ns, state_val, theta_val,
+                                  expected_state, expected_theta):
+        f = ns["double_arg_jacobians"]
+
+        state = torch.tensor(state_val,
+                             dtype=torch.float32,
+                             requires_grad=True)
+        theta = torch.tensor(theta_val,
+                             dtype=torch.float32,
+                             requires_grad=True)
+
+        J_state = compute_grad(f(state, theta), state)
+        J_theta = compute_grad(f(state, theta), theta)
+
+        assert J_state.shape == (2, 2)
+        assert J_theta.shape == (2, 4)
+        assert torch.allclose(J_state,
+                              torch.tensor(expected_state,
+                                           dtype=torch.float32),
+                              atol=r_tol)
+        assert torch.allclose(J_theta,
+                              torch.tensor(expected_theta,
+                                           dtype=torch.float32),
+                              atol=r_tol)
+
+    @pytest.mark.parametrize(
+        "a_val, b_val, c_val, expected_a, expected_b, expected_c", [
+            (
+                [1.0, 2.0],
+                [3.0, 4.0],
+                [5.0, 6.0],
+                [[3.0, 0.0], [1.0, 0.0]],
+                [[1.0, 0.0], [5.0, 0.0]],
+                [[1.0, 0.0], [3.0, 0.0]],
+            ),
+        ])
+    def test_three_arg_jacobians(self, ns, a_val, b_val, c_val, expected_a,
+                                 expected_b, expected_c):
+        f = ns["three_arg_jacobians"]
+
+        a = torch.tensor(a_val, dtype=torch.float32, requires_grad=True)
+        b = torch.tensor(b_val, dtype=torch.float32, requires_grad=True)
+        c = torch.tensor(c_val, dtype=torch.float32, requires_grad=True)
+
+        J_a = compute_grad(f(a, b, c), a)
+        J_b = compute_grad(f(a, b, c), b)
+        J_c = compute_grad(f(a, b, c), c)
+
+        assert J_a.shape == (2, 2)
+        assert J_b.shape == (2, 2)
+        assert J_c.shape == (2, 2)
+        assert torch.allclose(J_a,
+                              torch.tensor(expected_a, dtype=torch.float32),
+                              atol=r_tol)
+        assert torch.allclose(J_b,
+                              torch.tensor(expected_b, dtype=torch.float32),
+                              atol=r_tol)
+        assert torch.allclose(J_c,
+                              torch.tensor(expected_c, dtype=torch.float32),
+                              atol=r_tol)
