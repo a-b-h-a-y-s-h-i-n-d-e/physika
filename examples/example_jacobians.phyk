@@ -1,0 +1,63 @@
+# ---------------------------------------
+# single arg example
+# ---------------------------------------
+
+def single_arg_jacobian(x: ℝ[m]): ℝ[n]:
+    a: ℝ = x[0]
+    b: ℝ = x[1]
+    return [a*b, a+b]
+
+x: ℝ[2] = [2.0, 3.0]
+J: ℝ[2, 2] = grad(single_arg_jacobian, x)
+J
+
+
+# ---------------------------------------
+# double arg example (lotka-volterra)
+# ---------------------------------------
+
+def double_arg_jacobians(state: ℝ[2], theta: ℝ[4]): ℝ:
+    x: ℝ = state[0]
+    y: ℝ = state[1]
+    α: ℝ = theta[0]
+    β: ℝ = theta[1]
+    γ: ℝ = theta[2]
+    δ: ℝ = theta[3]
+    dx: ℝ = (α * x) - (β * x * y)
+    dy: ℝ = (δ * x * y) - (γ * y)
+    return [dx, dy]
+
+
+state: ℝ[2] = [1, 2]
+θ: ℝ[4] = [1.0, 0.3, 1.3, 0.5]
+
+J_state: ℝ[2, 2] = grad(double_arg_jacobians(state, θ), state)
+J_theta: ℝ[2, 4] = grad(double_arg_jacobians(state, θ), θ)
+
+J_state
+J_theta
+
+
+# ---------------------------------------
+# Three args example
+# ---------------------------------------
+
+def three_arg_jacobians(a: ℝ[m], b: ℝ[n], c: ℝ[o]): ℝ[p]:
+    x1: ℝ = a[0]
+    x2: ℝ = b[0]
+    x3: ℝ = c[0]
+    y1: ℝ = x1 * x2 + x3
+    y2: ℝ = x1 + x2 * x3
+    return [y1, y2]
+
+a: ℝ[2] = [1.0, 2.0]
+b: ℝ[2] = [3.0, 4.0]
+c: ℝ[2] = [5.0, 6.0]
+
+J_a: ℝ[2, 2] = grad(three_arg_jacobians(a, b, c), a)
+J_b: ℝ[2, 2] = grad(three_arg_jacobians(a, b, c), b)
+J_c: ℝ[2, 2] = grad(three_arg_jacobians(a, b, c), c)
+
+J_a
+J_b
+J_c
