@@ -162,15 +162,15 @@ parameters using a single backward pass, without storing the full forward trajec
             x = x_array[idx]
             y = y_array[idx]
             state = [x, y]
-            J_state = grad(rk4_step, state, θ, 0)
-            J_theta = grad(rk4_step, state, θ, 1)
+            J_state = grad(rk4_step(state, θ), state)
+            J_theta = grad(rk4_step(state, θ), θ)
             L += s @ J_theta
             s = s @ J_state
         return L
 
-``grad(rk4_step, state, theta, 0)`` differentiates ``rk4_step`` with respect
-to ``state`` (argument 0) and ``grad(rk4_step, state, theta, 1)`` with respect
-to ``theta`` (argument 1).
+``grad(rk4_step(state, θ), state)`` differentiates ``rk4_step`` with respect
+to ``state`` and ``grad(rk4_step(state, θ), θ)`` with respect
+to ``theta``.
 
 The function ``adjoint_grad`` implements the adjoint state method for computing gradients of the Lotka–Volterra ODE parameters.
 
@@ -380,8 +380,8 @@ Full Code
             x = x_array[idx]
             y = y_array[idx]
             state = [x, y]
-            J_state = grad(rk4_step, state, θ, 0)
-            J_theta = grad(rk4_step, state, θ, 1)
+            J_state = grad(rk4_step(state, θ), state)
+            J_theta = grad(rk4_step(state, θ), θ)
             L += s @ J_theta
             s = s @ J_state
         return L
