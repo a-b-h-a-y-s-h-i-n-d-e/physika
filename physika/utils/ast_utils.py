@@ -508,7 +508,7 @@ def ast_to_torch_expr(node: ASTNode,
     >>> ast_to_torch_expr(("add", ("num", 1.0), ("var", "x")))
     '(1.0 + x)'
     >>> ast_to_torch_expr(("call", "sin", [("var", "theta")]))
-    'torch.sin(theta)'
+    '(torch.sin(theta) if isinstance(theta, torch.Tensor) else math.sin(theta))'
     >>> ast_to_torch_expr(("array", [("num", 1.0), ("num", 2.0)]))
     'torch.tensor([1.0, 2.0])'
     """
@@ -1160,7 +1160,7 @@ def generate_function(name: str, func_def: dict[str, Any]) -> str:
     ... }
     >>> print(generate_function("f", func_def))
     def f(x):
-        return torch.exp(x)
+        return (torch.exp(x) if isinstance(x, torch.Tensor) else math.exp(x))
     """
     params = func_def["params"]
     body = func_def["body"]

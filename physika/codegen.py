@@ -91,7 +91,7 @@ def from_ast_to_torch(unified_ast: Dict[str, Any],
     <BLANKLINE>
     # === Functions ===
     def f(x):
-        return torch.exp(x)
+        return (torch.exp(x) if isinstance(x, torch.Tensor) else math.exp(x))
     <BLANKLINE>
     # === Program ===
     physika_print(f(1.0))
