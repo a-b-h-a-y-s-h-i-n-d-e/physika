@@ -38,12 +38,12 @@ def get_1d_array_length(x: ℝ[m]): ℝ:
         total += 1
     return total
 
-def zero_1d_array(len: R): R[m]:
-    results: R[len] = for i: N(len) -> i*0
+def zero_1d_array(len: ℝ): ℝ[m]:
+    results: ℝ[len] = for i:ℕ(len) -> i*0
     return results
 
-def zero_2d_array(rows: R, cols: R): R[m, n]:
-    results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+def zero_2d_array(rows: ℝ, cols: ℝ): R[m, n]:
+    results: ℝ[rows, cols] = for i:ℕ(rows) -> for j:ℕ(cols) -> j*0
     return results
 
 # ------------------------------------------------------------
@@ -60,10 +60,10 @@ def solve(A: ℝ[m, m], b: ℝ[m]) : ℝ[m]:
             Aug[i, j] = A[i, j]
         Aug[i, n] = b[i]
     # convert into upper triangular matrix
-    for pivot : ℕ(n):
-        for i : ℕ(pivot+1, n):
+    for pivot:ℕ(n):
+        for i:ℕ(pivot+1, n):
             factor = Aug[i, pivot] / Aug[pivot, pivot]
-            for j : ℕ(pivot, n+1):
+            for j:ℕ(pivot, n+1):
                 Aug[i, j] = Aug[i, j] - factor * Aug[pivot, j]
     # back substitution
     for i:ℕ(n):
@@ -79,12 +79,12 @@ def solve(A: ℝ[m, m], b: ℝ[m]) : ℝ[m]:
 # Time Evolution U(k, m, t, x0, v0)
 # ------------------------------------------------------------
 def U(k: ℝ, m: ℝ, t: ℝ, x0: ℝ, v0: ℝ): ℝ:
-    omega = (k / m) ** 0.5
-    A: R[2, 2] = [[1.0, 0.0], [0.0, omega]]
-    B: R[2] = [x0, v0]
-    coeffs: R[2] = solve(A, B)
-    a: R = coeffs[0]
-    b: R = coeffs[1]
+    omega: ℝ = (k / m) ** 0.5
+    A: ℝ[2, 2] = [[1.0, 0.0], [0.0, omega]]
+    B: ℝ[2] = [x0, v0]
+    coeffs: ℝ[2] = solve(A, B)
+    a: ℝ = coeffs[0]
+    b: ℝ = coeffs[1]
     return a * cos(omega * t) + b * sin(omega * t)
 
 # ------------------------------------------------------------
