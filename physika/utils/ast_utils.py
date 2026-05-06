@@ -507,8 +507,12 @@ def ast_to_torch_expr(node: ASTNode,
     >>> from physika.utils.ast_utils import ast_to_torch_expr
     >>> ast_to_torch_expr(("add", ("num", 1.0), ("var", "x")))
     '(1.0 + x)'
-    >>> ast_to_torch_expr(("call", "sin", [("var", "theta")]))
-    '(torch.sin(theta) if isinstance(theta, torch.Tensor) else math.sin(theta))'  # noqa
+    >>> expected = (
+    ...     "(torch.sin(theta) if isinstance(theta, torch.Tensor) "
+    ...     "else math.sin(theta))"
+    ... )
+    >>> ast_to_torch_expr(("call", "sin", [("var", "theta")])) == expected
+    True
     >>> ast_to_torch_expr(("array", [("num", 1.0), ("num", 2.0)]))
     'torch.tensor([1.0, 2.0])'
     """
