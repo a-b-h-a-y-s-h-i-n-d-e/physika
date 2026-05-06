@@ -73,7 +73,7 @@ animate(U, k, m, x0, v0, 0.0, 31.1416) # t = 10π
 
 
 # ------------------------------------------------------------
-# Velocity via grad(real(U), t) = dU/dt
+# Velocity via grad(U, t) = dU/dt
 # For x0=1, v0=0: x(t) = cos(t)
 #                  v(t) = -sin(t)
 # Expected: v(0) = 0,
@@ -81,10 +81,10 @@ animate(U, k, m, x0, v0, 0.0, 31.1416) # t = 10π
 #            v(π) = 0
 # ------------------------------------------------------------
 t0: ℝ = 0.0
-grad(real(U(k, m, t0, x0, v0)), t0)
+grad(U(k, m, t0, x0, v0), t0)
 
 t1: ℝ = 1.5708
-grad(real(U(k, m, t1, x0, v0)), t1)
+grad(U(k, m, t1, x0, v0), t1)
 
 t2: ℝ = 3.1416
-grad(real(U(k, m, t2, x0, v0)), t2)
+grad(U(k, m, t2, x0, v0), t2)

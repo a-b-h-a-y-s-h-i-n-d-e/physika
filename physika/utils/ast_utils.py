@@ -1153,7 +1153,7 @@ def generate_function(name: str, func_def: dict[str, Any]) -> str:
     ...     "body": ("call", "exp", [("var", "x")]),
     ...     "statements": [],
     ... }
-    >>> print(generate_function("f", func_def))
+    >>> print(generate_function("f", func_def)) # noqa: E501
     def f(x):
         return torch.exp(x if isinstance(x, torch.Tensor) else torch.tensor(float(x)))
     """
