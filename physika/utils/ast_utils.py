@@ -508,17 +508,17 @@ def ast_to_torch_expr(node: ASTNode,
     >>> ast_to_torch_expr(("add", ("num", 1.0), ("var", "x")))
     '(1.0 + x)'
     >>> expected = (
-    ...     "(torch.sin(theta) if isinstance(theta, torch.Tensor) "
-    ...     "else math.sin(theta))"
+    ...     "torch.sin(theta if isinstance(theta, torch.Tensor) "
+    ...     "else torch.tensor(float(theta)))"
     ... )
     >>> ast_to_torch_expr(("call", "sin", [("var", "theta")])) == expected
     True
     >>> ast_to_torch_expr(("array", [("num", 1.0), ("num", 2.0)]))
     'torch.tensor([1.0, 2.0])'
     """
+
     if not isinstance(node, tuple):
         return repr(node)
-
     op = node[0]
 
     if op == "num":
@@ -647,17 +647,8 @@ def ast_to_torch_expr(node: ASTNode,
             "real": "torch.real",
         }
 
-        # if value is scalar ℝ
-        math_funcs = {
-            "exp": "math.exp",
-            "log": "math.log",
-            "sin": "math.sin",
-            "cos": "math.cos",
-            "sqrt": "math.sqrt",
-            "abs": "abs",
-        }
         if func_name in torch_funcs:
-            return f"({torch_funcs[func_name]}({arg}) if isinstance({arg}, torch.Tensor) else {math_funcs.get(func_name, func_name)}({arg}))"  # noqa
+            return f"{torch_funcs[func_name]}({arg} if isinstance({arg}, torch.Tensor) else torch.tensor(float({arg})))"  # noqa
 
         elif func_name == "grad":
             # grad(output, input) -> compute_grad(output, input)
@@ -1164,7 +1155,7 @@ def generate_function(name: str, func_def: dict[str, Any]) -> str:
     ... }
     >>> print(generate_function("f", func_def))
     def f(x):
-        return (torch.exp(x) if isinstance(x, torch.Tensor) else math.exp(x))
+        return torch.exp(x if isinstance(x, torch.Tensor) else torch.tensor(float(x)))
     """
     params = func_def["params"]
     body = func_def["body"]
