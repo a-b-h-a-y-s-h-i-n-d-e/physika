@@ -11,7 +11,7 @@ def U(k, m, t, x0, v0):
     omega = ((k / m) ** 0.5)
     A = x0
     B = (v0 / omega)
-    return ((A * (torch.cos((omega * t)) if isinstance((omega * t), torch.Tensor) else math.cos((omega * t)))) + (B * (torch.sin((omega * t)) if isinstance((omega * t), torch.Tensor) else math.sin((omega * t)))))
+    return ((A * torch.cos((omega * t) if isinstance((omega * t), torch.Tensor) else torch.tensor(float((omega * t))))) + (B * torch.sin((omega * t) if isinstance((omega * t), torch.Tensor) else torch.tensor(float((omega * t))))))
 
 # === Program ===
 k = 1.0
@@ -28,8 +28,8 @@ physika_print(U(k, m, 1.5708, 0.0, 1.0))
 physika_print(U(k, m, 3.1416, 0.0, 1.0))
 animate(U, k, m, x0, v0, 0.0, 31.1416)
 t0 = torch.tensor(0.0, requires_grad=True)
-physika_print(compute_grad(lambda _dt0: real(U(k, m, t0, x0, v0)), t0))
+physika_print(compute_grad(torch.real(U(k, m, t0, x0, v0) if isinstance(U(k, m, t0, x0, v0), torch.Tensor) else torch.tensor(float(U(k, m, t0, x0, v0)))), t0))
 t1 = torch.tensor(1.5708, requires_grad=True)
-physika_print(compute_grad(lambda _dt1: real(U(k, m, t1, x0, v0)), t1))
+physika_print(compute_grad(torch.real(U(k, m, t1, x0, v0) if isinstance(U(k, m, t1, x0, v0), torch.Tensor) else torch.tensor(float(U(k, m, t1, x0, v0)))), t1))
 t2 = torch.tensor(3.1416, requires_grad=True)
-physika_print(compute_grad(lambda _dt2: real(U(k, m, t2, x0, v0)), t2))
+physika_print(compute_grad(torch.real(U(k, m, t2, x0, v0) if isinstance(U(k, m, t2, x0, v0), torch.Tensor) else torch.tensor(float(U(k, m, t2, x0, v0)))), t2))
