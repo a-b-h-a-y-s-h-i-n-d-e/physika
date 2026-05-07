@@ -537,8 +537,10 @@ class TestStmtBodyIfElse:
         Correct typed then/else branches does not produce errors.
         """
         errors = []
-        ctx = make_stmt_ctx(env={'x': T_REAL}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        ctx = make_stmt_ctx(env={'x': T_REAL},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ("cond_gt", ("var", "x"), ("num", 0.0))
         then_stmts = [("body_assign", "y", ("var", "x"))]
         else_stmts = [("body_assign", "y", ("num", 1.0))]
@@ -552,13 +554,15 @@ class TestStmtBodyIfElse:
         Then and else branches are inferred independently.
         """
         errors = []
-        vec = TTensor(((3, 'invariant'),))
-        ctx = make_stmt_ctx(env={'v': vec}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        vec = TTensor(((3, 'invariant'), ))
+        ctx = make_stmt_ctx(env={'v': vec},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ("cond_gt", ("num", 1.0), ("num", 0.0))
 
-        then_stmts = [("body_assign", "y", ("var", "v"))]# ℝ[3]
-        else_stmts = [("body_assign", "y", ("num", 0.0))] # ℝ
+        then_stmts = [("body_assign", "y", ("var", "v"))]  # ℝ[3]
+        else_stmts = [("body_assign", "y", ("num", 0.0))]  # ℝ
         stmt_body_if_else(("body_if_else", cond, then_stmts, else_stmts), ctx)
         assert errors == []
 
@@ -567,9 +571,11 @@ class TestStmtBodyIfElse:
         since these are not the return values. variable assingments can be
         used to perform more operations and then return."""
         errors = []
-        vec = TTensor(((3, 'invariant'),))
-        ctx = make_stmt_ctx(env={'x': T_REAL}, func_name='f',
-                            return_type=vec, errors=errors)
+        vec = TTensor(((3, 'invariant'), ))
+        ctx = make_stmt_ctx(env={'x': T_REAL},
+                            func_name='f',
+                            return_type=vec,
+                            errors=errors)
         cond = ("cond_gt", ("var", "x"), ("num", 0.0))
         then_stmts = [("body_assign", "y", ("var", "x"))]
         else_stmts = [("body_assign", "y", ("num", 0.0))]
@@ -583,37 +589,46 @@ class TestStmtBodyIfElse:
         """
         # Case then branch error
         errors = []
-        ctx = make_stmt_ctx(env={'x': T_REAL}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        ctx = make_stmt_ctx(env={'x': T_REAL},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ("cond_gt", ("var", "x"), ("num", 0.0))
 
         # Declaring wrong type v : ℝ[3] = 2.0 (type error)
-        bad_decl = ("body_decl", "v",
-                                      ("tensor", [(3, 'invariant')]), # ℝ
-                                      ("num", 2.0)) # ℝ
+        bad_decl = (
+            "body_decl",
+            "v",
+            ("tensor", [(3, 'invariant')]),  # ℝ
+            ("num", 2.0))  # ℝ
         stmt_body_if_else(("body_if_else", cond, [bad_decl], []), ctx)
         assert len(errors) == 1
         print(errors)
-        assert errors[0] == "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"  # noqa: E501
+        assert errors[
+            0] == "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"  # noqa: E501
 
         # Case else branch error
         errors = []
-        ctx = make_stmt_ctx(env={'x': T_REAL}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        ctx = make_stmt_ctx(env={'x': T_REAL},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ("cond_gt", ("var", "x"), ("num", 0.0))
-        
 
         stmt_body_if_else(("body_if_else", cond, [], [bad_decl]), ctx)
         assert len(errors) == 1
-        assert errors[0] == "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"  # noqa: E501
+        assert errors[
+            0] == "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ"  # noqa: E501
 
     def test_body_if_only(self):
         """
         body_if runs only the then branch without error.
         """
         errors = []
-        ctx = make_stmt_ctx(env={'x': T_REAL}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        ctx = make_stmt_ctx(env={'x': T_REAL},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ("cond_gt", ("var", "x"), ("num", 0.0))
         then_stmts = [("body_assign", "y", ("var", "x"))]
         # body_if has no else_stmts argument
@@ -628,10 +643,12 @@ class TestStmtBodyFor:
 
     def test_body_for_assigns(self):
         errors = []
-        arr_type = TTensor(((4, 'invariant'),))
-        ctx = make_stmt_ctx(env={'arr': arr_type}, func_name='f',
-                            return_type=T_REAL, errors=errors)
-        # equivalent of doing: 
+        arr_type = TTensor(((4, 'invariant'), ))
+        ctx = make_stmt_ctx(env={'arr': arr_type},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
+        # equivalent of doing:
         # for i:
         #   total = arr[i]
         body = [('loop_assign', 'total', ('index', 'arr', ('var', 'i')))]
@@ -645,13 +662,14 @@ class TestStmtBodyFor:
         All body statements are type-checked and hoisted to env.
         """
         errors = []
-        arr_type = TTensor(((4, 'invariant'),))
+        arr_type = TTensor(((4, 'invariant'), ))
         ctx = make_stmt_ctx(env={'arr': arr_type}, errors=errors)
         # for i:
         #   a = arr[i] # ℝ
         #   b = 2
         body = [
-            ('loop_assign', 'a', ('index', 'arr', ('var', 'i'))),  # a = arr[i] : ℝ
+            ('loop_assign', 'a', ('index', 'arr', ('var',
+                                                   'i'))),  # a = arr[i] : ℝ
             ('loop_assign', 'b', ('num', 2.0)),
         ]
         stmt_body_for(('body_for', 'i', body, ['arr']), ctx)
@@ -668,7 +686,8 @@ class TestStmtBodyFor:
         bad = ('body_decl', 'v', ('tensor', [(3, 'invariant')]), ('num', 1.0))
         stmt_body_for(('body_for', 'i', [bad], []), ctx)
         assert len(errors) == 1
-        assert "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ" in errors[0]  # noqa: E501
+        assert "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ" in errors[  # noqa: E501
+            0]  # noqa: E501
 
 
 class TestStmtBodyForRange:
@@ -681,8 +700,8 @@ class TestStmtBodyForRange:
         errors = []
         ctx = make_stmt_ctx(env={'x': T_REAL}, errors=errors)
         stmt_body_for_range(
-            ('body_for_range', 'i', ('num', 0), ('num', 10),
-             [('loop_assign', 'acc', ('var', 'x'))]), ctx)
+            ('body_for_range', 'i', ('num', 0),
+             ('num', 10), [('loop_assign', 'acc', ('var', 'x'))]), ctx)
         assert ctx.env.get('acc') == T_REAL
         assert ctx.env['i'] == T_NAT
         assert errors == []
@@ -721,7 +740,8 @@ class TestStmtBodyForRange:
         stmt_body_for_range(
             ('body_for_range', 'i', ('num', 0), ('num', 10), [bad]), ctx)
         assert len(errors) == 1
-        assert "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ" in errors[0]  # noqa: E501
+        assert "In 'f': 'v' declared ℝ[3], inferred ℝ: Cannot unify tensor ℝ[3] with scalar ℝ" in errors[  # noqa: E501
+            0]  # noqa: E501
 
 
 class TestStmtBodyZerosDecl:
@@ -741,15 +761,15 @@ class TestStmtBodyZerosDecl:
         ctx = make_stmt_ctx(errors=errors)
         stmt_body_zeros_decl(
             ('body_zeros_decl', 'v', ('tensor', [(4, 'invariant')])), ctx)
-        assert ctx.env['v'] == TTensor(((4, 'invariant'),))
+        assert ctx.env['v'] == TTensor(((4, 'invariant'), ))
 
         # Case ℝ[3,3]
         """Declaring ℝ[3,3] registers a TTensor with two dimensions."""
         errors = []
         ctx = make_stmt_ctx(errors=errors)
         stmt_body_zeros_decl(
-            ('body_zeros_decl', 'C',
-             ('tensor', [(3, 'invariant'), (3, 'invariant')])), ctx)
+            ('body_zeros_decl', 'C', ('tensor', [(3, 'invariant'),
+                                                 (3, 'invariant')])), ctx)
         assert ctx.env['C'] == TTensor(((3, 'invariant'), (3, 'invariant')))
 
     def test_none_type_adds_tvar(self):
@@ -796,7 +816,7 @@ class TestStmtForAssign:
 
         # case ℝ[3]
         errors = []
-        vec = TTensor(((3, 'invariant'),))
+        vec = TTensor(((3, 'invariant'), ))
         ctx = make_stmt_ctx(env={'v': vec}, errors=errors)
         stmt_for_assign(('loop_assign', 'w', ('var', 'v')), ctx)
         assert ctx.env['w'] == vec
@@ -831,8 +851,8 @@ class TestStmtForPluseq:
         ctx.env['i'] = i_dim
         ctx.env['j'] = j_dim
         stmt_for_pluseq(
-            ('loop_index_pluseq', 'C',
-             [('var', 'i'), ('var', 'j')], ('num', 1.0)), ctx)
+            ('loop_index_pluseq', 'C', [('var', 'i'),
+                                        ('var', 'j')], ('num', 1.0)), ctx)
         assert errors == []
         # env keeps the raw TDim objects unchanged
         assert ctx.env['i'] is i_dim
@@ -848,8 +868,10 @@ class TestStmtLoopIf:
     def test_valid_condition_and_body(self):
         """Valid condition and body produce no errors."""
         errors = []
-        ctx = make_stmt_ctx(env={'x': T_REAL}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        ctx = make_stmt_ctx(env={'x': T_REAL},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ('cond_gt', ('var', 'x'), ('num', 0.0))
         body = [('loop_assign', 'y', ('var', 'x'))]
         stmt_loop_if(('loop_if', cond, body), ctx)
@@ -869,15 +891,18 @@ class TestStmtLoopIf:
     def test_tensor_condition_reports_error(self):
         """Using a ℝ[3] tensor as a comparison operand reports an error."""
         errors = []
-        vec = TTensor(((3, 'invariant'),))
-        ctx = make_stmt_ctx(env={'v': vec}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        vec = TTensor(((3, 'invariant'), ))
+        ctx = make_stmt_ctx(env={'v': vec},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         # Comparing a ℝ[3] tensor with a scalar
         # should report an error
         cond = ('cond_gt', ('var', 'v'), ('num', 0.0))
         stmt_loop_if(('loop_if', cond, []), ctx)
         assert len(errors) == 1
-        assert "ℝ[3] is not comparable with ℝ at 'cond_gt' expression" == errors[0]
+        assert "ℝ[3] is not comparable with ℝ at 'cond_gt' expression" == errors[  # noqa: E501
+            0]
 
 
 class TestStmtLoopIfElse:
@@ -886,8 +911,10 @@ class TestStmtLoopIfElse:
     def test_valid_branches(self):
         """Valid condition and both branches produce no errors."""
         errors = []
-        ctx = make_stmt_ctx(env={'x': T_REAL}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        ctx = make_stmt_ctx(env={'x': T_REAL},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ('cond_gt', ('var', 'x'), ('num', 0.0))
         then_body = [('loop_assign', 'positive', ('var', 'x'))]
         else_body = [('loop_assign', 'zero', ('num', 0.0))]
@@ -907,13 +934,16 @@ class TestStmtLoopIfElse:
     def test_tensor_condition_reports_error(self):
         """ℝ[3] tensor as condition operand reports an error."""
         errors = []
-        vec = TTensor(((3, 'invariant'),))
-        ctx = make_stmt_ctx(env={'v': vec}, func_name='f',
-                            return_type=T_REAL, errors=errors)
+        vec = TTensor(((3, 'invariant'), ))
+        ctx = make_stmt_ctx(env={'v': vec},
+                            func_name='f',
+                            return_type=T_REAL,
+                            errors=errors)
         cond = ('cond_gt', ('var', 'v'), ('num', 0.0))
         stmt_loop_if_else(('loop_if_else', cond, [], []), ctx)
         assert len(errors) == 1
-        assert "ℝ[3] is not comparable with ℝ at 'cond_gt' expression" == errors[0]
+        assert "ℝ[3] is not comparable with ℝ at 'cond_gt' expression" == errors[  # noqa: E501
+            0]
 
 
 class TestInferStmts:
@@ -922,53 +952,49 @@ class TestInferStmts:
     def test_dispatches_body_decl(self):
         """infer_stmts dispatches body_decl and updates env."""
         errors = []
-        env, _ = infer_stmts(
-            [('body_decl', 'x', 'ℝ', ('num', 1.0))],
-            {}, Substitution(), {}, {}, errors.append)
+        env, _ = infer_stmts([('body_decl', 'x', 'ℝ', ('num', 1.0))], {},
+                             Substitution(), {}, {}, errors.append)
         assert env['x'] == T_REAL
         assert errors == []
 
     def test_dispatches_body_assign(self):
         """infer_stmts dispatches body_assign and updates env."""
         errors = []
-        env, _ = infer_stmts(
-            [('body_assign', 'x', ('num', 2.0))],
-            {}, Substitution(), {}, {}, errors.append)
+        env, _ = infer_stmts([('body_assign', 'x', ('num', 2.0))], {},
+                             Substitution(), {}, {}, errors.append)
         assert env['x'] == T_REAL
 
     def test_dispatches_loop_assign(self):
         """infer_stmts dispatches loop_assign."""
         errors = []
-        env, _ = infer_stmts(
-            [('loop_assign', 'y', ('num', 5.0))],
-            {}, Substitution(), {}, {}, errors.append)
+        env, _ = infer_stmts([('loop_assign', 'y', ('num', 5.0))], {},
+                             Substitution(), {}, {}, errors.append)
         assert env['y'] == T_REAL
 
     def test_dispatches_body_for(self):
         """infer_stmts dispatches body_for"""
         errors = []
-        env, _ = infer_stmts(
-            [('body_for', 'k', [], [])],
-            {}, Substitution(), {}, {}, errors.append)
+        env, _ = infer_stmts([('body_for', 'k', [], [])], {}, Substitution(),
+                             {}, {}, errors.append)
         assert env['k'] == T_NAT
 
     def test_dispatches_body_zeros_decl(self):
         """infer_stmts dispatches body_zeros_decl."""
         errors = []
-        env, _ = infer_stmts(
-            [('body_zeros_decl', 'C',
-              ('tensor', [(2, 'invariant'), (2, 'invariant')]))],
-            {}, Substitution(), {}, {}, errors.append)
+        env, _ = infer_stmts([('body_zeros_decl', 'C',
+                               ('tensor', [(2, 'invariant'),
+                                           (2, 'invariant')]))], {},
+                             Substitution(), {}, {}, errors.append)
         assert env['C'] == TTensor(((2, 'invariant'), (2, 'invariant')))
 
     def test_multiple_stmts_body_assign(self):
         """Statements types are inferred and added to env."""
         errors = []
-        env, _ = infer_stmts(
-            [('body_assign', 'a', ('num', 1.0)),
-             ('body_assign', 'b', ('num', 2.0)),
-             ('body_assign', 'c', ('add', ('var', 'a'), ('var', 'b')))],
-            {}, Substitution(), {}, {}, errors.append)
+        env, _ = infer_stmts([('body_assign', 'a', ('num', 1.0)),
+                              ('body_assign', 'b', ('num', 2.0)),
+                              ('body_assign', 'c', ('add', ('var', 'a'),
+                                                    ('var', 'b')))], {},
+                             Substitution(), {}, {}, errors.append)
         assert env['a'] == T_REAL
         assert env['b'] == T_REAL
         assert env['c'] == T_REAL
