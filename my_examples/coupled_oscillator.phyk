@@ -1,0 +1,198 @@
+def get_1d_array_length(x: ℝ[m]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+def zero_1d_array(len: ℝ): ℝ[m]:
+    results: ℝ[len] = for i:ℕ(len) -> i*0
+    return results
+
+def zero_2d_array(rows: ℝ, cols: ℝ): R[m, n]:
+    results: ℝ[rows, cols] = for i:ℕ(rows) -> for j:ℕ(cols) -> j*0
+    return results
+
+
+
+def solve(A: ℝ[m, m], b: ℝ[m]) : ℝ[m]:
+    n: N = get_1d_array_length(b)
+    Aug: ℝ[m, m] = zero_2d_array(n, n+1)
+    result: ℝ[m] = zero_1d_array(n)
+    # create augmented matrix
+    for i:ℕ(n):
+        for j:ℕ(n):
+            Aug[i, j] = A[i, j]
+        Aug[i, n] = b[i]
+    #
+    # convert into upper triangular matrix
+    for pivot:ℕ(n):
+        max_row = pivot
+        for i:N(pivot+1, n):
+            if abs(Aug[i, pivot]) > abs(Aug[max_row, pivot]):
+                max_row = i
+        if max_row != pivot:
+            for j:ℕ(n+1):
+                temp = Aug[pivot, j]
+                Aug[pivot, j] = Aug[max_row, j]
+                Aug[max_row, j] = temp
+        for i:ℕ(pivot+1, n):
+            factor = Aug[i, pivot] / Aug[pivot, pivot]
+            for j:ℕ(pivot, n+1):
+                Aug[i, j] = Aug[i, j] - factor * Aug[pivot, j]
+    # back substitution
+    for i:ℕ(n):
+        ri = n - 1 - i
+        result[ri] = Aug[ri, n]
+        for j:ℕ(ri+1, n):
+            result[ri] = result[ri] - Aug[ri, j] * result[j]
+        result[ri] = result[ri] / Aug[ri, ri]
+    return result
+
+def another_solve(A: ℝ[m, m], b: ℝ[m]) : ℝ[m]:
+    n: N = get_1d_array_length(b)
+    Aug: ℝ[m, m] = zero_2d_array(n, n+1)
+    result: ℝ[m] = zero_1d_array(n)
+    # create augmented matrix
+    for i:ℕ(n):
+        for j:ℕ(n):
+            Aug[i, j] = A[i, j]
+        Aug[i, n] = b[i]
+    for pivot:ℕ(n):
+        max_row = pivot
+        for i:N(pivot+1, n):
+            if abs(Aug[i, pivot]) > abs(Aug[max_row, pivot]):
+                max_row = i
+        for j:ℕ(n+1):
+            temp = Aug[pivot, j]
+            Aug[pivot, j] = Aug[max_row, j]
+            Aug[max_row, j] = temp
+        if Aug[pivot, pivot] != 0:
+            for i:ℕ(pivot+1, n):
+                factor = Aug[i, pivot] / Aug[pivot, pivot]
+                for j:ℕ(pivot, n+1):
+                    Aug[i, j] = Aug[i, j] - factor * Aug[pivot, j]
+    for i:ℕ(n):
+        ri = n - 1 - i
+        result[ri] = Aug[ri, n]
+        for j:ℕ(ri+1, n):
+            result[ri] = result[ri] - Aug[ri, j] * result[j]
+        if Aug[ri, ri] != 0:
+            result[ri] = result[ri] / Aug[ri, ri]
+    return result
+
+
+def solve_quadratic(a: R, b: R, c: R): R[m]:
+    disc = sqrt(b*b - 4.0 * a * c)
+    x1 = (-b + disc) / (2.0 * a)
+    x2 = (-b - disc) / (2.0 * a)
+    return [x1, x2]
+
+
+def coupled_oscillator(k1: R, k2: R, k3: R, m1: R, m2: R, x10: R, x20: R, v10: R, v20: R, t: R): R:
+    a: R = (k1 + k2) / m1
+    b: R = -k2 / m1
+    c: R = -k2/ m2
+    d: R = (k2 + k3) / m2
+    #
+    # characteristic equation:
+    # λ² - (a+d)λ + (ad-bc) = 0
+    # λ = ω²
+    #
+    quadratic_solution = solve_quadratic(1.0, -(a+d), a*d-b*c)
+    lam1 = quadratic_solution[0]
+    lam2 = quadratic_solution[1]
+    w1 = lam1 ** 0.5
+    w2 = lam2 ** 0.5
+    # eigenvectors
+    v1 = [-b, a - lam1]
+    v2 = [-b, a - lam2]
+    # normalization
+    n1 = (v1[0] ** 2 + v1[1] ** 2) ** 0.5
+    n2 = (v2[0] ** 2 + v2[1] ** 2) ** 0.5
+    v1[0] = v1[0] / n1
+    v1[1] = v1[1] / n1
+    v2[0] = v2[0] / n2
+    v2[1] = v2[1] / n2
+    #
+    A = [
+        [v1[0], v2[0], 0.0, 0.0],
+        [v1[1], v2[1], 0.0, 0.0],
+        [0.0, 0.0, w1*v1[0], w2*v2[0]],
+        [0.0, 0.0, w1*v1[1], w2*v2[1]]
+    ]
+    B = [x10, x20, v10, v20]
+    coeffs = another_solve(A, B)
+    c1 = coeffs[0]
+    d1 = coeffs[1]
+    c2 = coeffs[2]
+    d2 = coeffs[3]
+    mode1 = c1 * cos(w1 * t) + d1 * sin(w1 * t)
+    mode2 = c2 * cos(w2 * t) + d2 * sin(w2 * t)
+    x1 = v1[0] * mode1 + v2[0] * mode2
+    x2 = v1[1] * mode1 + v2[1] * mode2
+    return [x1, x2]
+
+
+
+def U(k: R, m1: R, m2: R, x10: R, x20: R, v10: R, v20: R, t: R): R:
+    a = k / m1
+    b = -k / m1
+    c = -k / m2
+    d = k / m2
+    #
+    # characteristic equation:
+    # λ² - (a+d)λ + (ad-bc) = 0
+    # λ = ω²
+    #
+    quadratic_solution = solve_quadratic(1.0, -(a+d), a*d-b*c)
+    lam1 = quadratic_solution[0]
+    lam2 = quadratic_solution[1]
+    w1 = sqrt(lam1)
+    w2 = sqrt(lam2)
+    v1 = [b, lam1 - a]
+    v2 = [b, lam2 - a]
+    A = [
+        [v1[0], v2[0]],
+        [v1[1], v2[1]]
+    ]
+    c1, c2 = solve(A, [x10, x20])
+    A2 = [
+        [w1*v1[0], w2*v2[0]],
+        [w1*v1[1], w2*v2[1]]
+    ]
+    d1, d2 = solve(A2, [v10, v20])
+    x1 = (
+        c1*v1[0]*cos(w1*t) +
+        d1*v1[0]*sin(w1*t) +
+        c2*v2[0]*cos(w2*t) +
+        d2*v2[0]*sin(w2*t)
+    )
+    x2 = (
+        c1*v1[1]*cos(w1*t) +
+        d1*v1[1]*sin(w1*t) +
+        c2*v2[1]*cos(w2*t) +
+        d2*v2[1]*sin(w2*t)
+    )
+    return [x1, x2]
+
+
+
+k1: R = 1
+k2: R = 1
+k3: R = 1
+m1: R = 1
+m2: R = 1
+
+t: R = 2
+x10: R = 3
+x20: R = 5
+v10: R = 0
+v20: R = 2
+
+
+#coupled_oscillator(k1, k2, k3, m1, m2, x10, x20, v10, v20, t)
+#U(k1, m1, m2, x10, x20, v10, v20, 5)
+
+new_animate(coupled_oscillator, k1, k2, k3, m1, m2, x10, x20, v10, v20, 0.0, 31.1416)
