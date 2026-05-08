@@ -184,11 +184,11 @@ Physical Constants and Initial Conditions
 
 .. code-block:: text
 
-    k: ℝ = 1.0    # spring constant
-    m: ℝ = 1.0    # mass
+    k: ℝ = 1.0    # spring constant (N/m)
+    m: ℝ = 1.0    # mass (kg)
 
-    x0: ℝ = 1.0   # initial displacement
-    v0: ℝ = 0.0   # initial velocity
+    x0: ℝ = 1.0   # initial displacement (m - meter)
+    v0: ℝ = 0.0   # initial velocity (m/s)
 
     U(k, m, 0.0 , x0, v0) # t = 0 * π
     U(k, m, 1.5708, x0, v0) # t = π / 2
