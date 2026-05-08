@@ -2,8 +2,8 @@ from typing import Dict, Set, Any
 
 from physika.utils.ast_utils import (ast_uses_solve, ast_uses_func,
                                      collect_grad_targets, generate_function,
-                                     generate_class, generate_statement,
-                                     ast_uses_sympy, ast_to_torch_expr)
+                                     generate_statement, ast_to_torch_expr,
+                                     ast_uses_sympy)
 from physika.elf import REGISTRY
 
 
@@ -19,9 +19,9 @@ def from_ast_to_torch(unified_ast: Dict[str, Any],
        ``simulate``, ``animate``, etc) are referenced, and collects variables
        used as ``grad()`` differentiation targets.
     2. **Code-generation pass** — uses ``generate_function``,
-       ``generate_class``, and ``generate_statement`` (from
-       ``utils.ast_utils``) to emit Python source for each AST entry,
-       preceded by import header.
+       , ``generate_statement`` (from
+       ``utils.ast_utils``), and ``REGISTRY.dispatch_forward`` for ELF
+       features to emit Python source for each AST entry.
 
     The returned string is ready to be executed with ``exec()``.
 
