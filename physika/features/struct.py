@@ -208,7 +208,7 @@ def make_parser_rules():
     def p_statement_class_no_params(p):
         """statement : CLASS ID COLON NEWLINE INDENT class_items DEDENT"""
         name = p[2]
-        class_def = build_class(name, None, p[6])
+        class_def = build_class(None, p[6])
         
         parser_mod.symbol_table[name] = {"type": "class", "value": class_def}
         p[0] = ("class_def", name)
@@ -216,7 +216,7 @@ def make_parser_rules():
     def p_statement_class_with_params(p):
         """statement : CLASS ID LPAREN params RPAREN COLON NEWLINE INDENT class_items DEDENT"""
         name = p[2]
-        class_def = build_class(name, p[4], p[9])
+        class_def = build_class(p[4], p[9])
 
         parser_mod.symbol_table[name] = {"type": "class", "value": class_def}
         p[0] = ("class_def", name)
