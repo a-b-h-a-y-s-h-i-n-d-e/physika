@@ -787,3 +787,22 @@ def test_lhs_var_name():
     assert _lhs_var_name("j") is None
     assert _lhs_var_name(None) is None
     assert _lhs_var_name(42) is None
+
+
+class TestAstToTorch:
+    """
+    Verify that we can use all supported torch functions wrapped inside
+    ``torch_funcs`` dictionary in ``ast_to_torch_expr`` with scalar `ℝ` values
+    """
+
+    def test_torch_functions(self):
+        scalar_stmt = ("call", "sin", [("num", "1.0")])
+        scalar_expected = "torch.sin('1.0' if isinstance('1.0', torch.Tensor) else torch.tensor(float('1.0')))"  # noqa
+        scalar_output = ast_to_torch_expr(scalar_stmt)
+        assert scalar_output == scalar_expected
+
+        tensor_stmt = ("call", "cos", [("array", [("num", 1.0),
+                                                  ("num", 2.0)])])
+        tensor_expected = "torch.cos(torch.tensor([1.0, 2.0]) if isinstance(torch.tensor([1.0, 2.0]), torch.Tensor) else torch.tensor(float(torch.tensor([1.0, 2.0]))))"  # noqa
+        tensor_output = ast_to_torch_expr(tensor_stmt)
+        assert tensor_output == tensor_expected
