@@ -183,6 +183,7 @@ the ground truth trajectory that we will try to recover:
     pi: ℝ = 3.14
     true_c: ℝ = 0.5
 
+    x: R[m] = linspace(a, b, nx)
     u0: ℝ[nx] = zero_1d_array(nx)
     for i:ℕ(0, nx):
         u0[i] = sin(2 * pi * x[i])
