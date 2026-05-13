@@ -18,12 +18,10 @@ def tanh(x: ℝ): ℝ:
 # ------------------------------------------------------------
 class HamiltonianNet(W1: ℝ[M,N], b1: ℝ[M], w2: ℝ[M], b2: ℝ):
     def λ(x: ℝ[N]) → ℝ:
-        z : ℝ[M] = for i → tanh((W1[i] @ x) + b1[i])
-        h : ℝ = w2 @ z + b2
+        h : ℝ = w2 @ tanh(W1 @ x + b1) + b2
         return h
     def loss(H: ℝ, target: ℝ[N]) → ℝ:
-        dH : ℝ[N] = grad(H, x)
-        lo : ℝ = (dH[1] - target[0]) ** 2.0 + (0.0 - dH[0] - target[1]) ** 2.0
+        lo : ℝ = (grad(H, x)[1] - target[0]) ** 2.0 + (0.0 - grad(H, x)[0] - target[1]) ** 2.0
         return lo
 
 # ------------------------------------------------------------

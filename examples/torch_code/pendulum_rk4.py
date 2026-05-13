@@ -14,11 +14,10 @@ class RK4(nn.Module):
     def __init__(self, f, dt, n):
         super().__init__()
         self.f = f
-        self.dt = dt.float() if isinstance(dt, torch.Tensor) else nn.Parameter(torch.tensor(dt).float())
+        self.dt = nn.Parameter(torch.tensor(dt).float() if not isinstance(dt, torch.Tensor) else dt.clone().detach().float())
         self.n = n
 
     def forward(self, x):
-        this = self
         x = torch.as_tensor(x).float()
         for k in range(self.n):
             k1 = self.f(x)
@@ -27,16 +26,6 @@ class RK4(nn.Module):
             k4 = self.f((x + (self.dt * k3)))
             x = (x + ((self.dt / 6.0) * (((k1 + (2.0 * k2)) + (2.0 * k3)) + k4)))
         return x
-
-    @property
-    def params(self):
-        return list(self.parameters())
-
-    def update(self, lr, grads):
-        with torch.no_grad():
-            for p, g in zip(self.parameters(), grads):
-                if g is not None:
-                    p -= lr * g
 
 # === Program ===
 dt = 0.01

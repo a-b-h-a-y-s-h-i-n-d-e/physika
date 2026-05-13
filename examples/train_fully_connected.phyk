@@ -15,7 +15,7 @@ def sigma(x: ℝ): ℝ:
 class FullyConnectedNetwork(f: ℝ → ℝ, W: ℝ[2,3,3], B: ℝ[2,3], w: ℝ[3], b: ℝ, n: ℕ):
     def λ(x: ℝ[3]) → ℝ:
         for k:
-            x = for i : ℕ(3) → f((W[k][i] @ x) + B[k][i])
+            x = f(W[k] @ x + B[k])
         return w @ x + b
     def loss(y: ℝ, target: ℝ) → ℝ:
         return (y - target) ** 2.0
