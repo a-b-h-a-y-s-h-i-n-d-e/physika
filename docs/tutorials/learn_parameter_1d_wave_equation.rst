@@ -155,8 +155,8 @@ time domain :math:`[1, 2]` into ``nt`` steps, giving uniform spacings
 
     a: ℝ = 0
     b: ℝ = 1
-    t0: ℝ = 1
-    tf: ℝ = 2
+    t0: ℝ = 0
+    tf: ℝ = 1
 
     dx: ℝ = (b-a)/(nx-1)
     dt: ℝ = (tf-t0)/(nt-1)
