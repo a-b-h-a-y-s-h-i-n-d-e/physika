@@ -714,7 +714,7 @@ def stmt_decl(stmt: Any, ctx: StmtContext) -> None:
     >>> errors
     []
     """
-    from physika.utils.type_checker_utils import from_typespec, unify, type_to_str
+    from physika.utils.type_checker_utils import from_typespec, unify, type_to_str  # noqa: E501
     _, name, ts, expr, *_ = stmt
     inferred = ctx.infer_type(expr)
     declared = from_typespec(ts)
