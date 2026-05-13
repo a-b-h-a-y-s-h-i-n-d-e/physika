@@ -1,6 +1,8 @@
+# flake8: noqa: E501
 import re
 from typing import Optional, Callable
 from physika.elf import ELF
+
 
 def is_learnable(type_spec: str) -> bool:
     """
@@ -467,8 +469,8 @@ def make_parser_rules():
 
     def p_class_method_params_body(p):
         """class_method : DEF LAMBDA LPAREN params RPAREN ARROW type_spec COLON NEWLINE INDENT func_body_stmts class_method_return DEDENT
-                        | DEF ID    LPAREN params RPAREN ARROW type_spec COLON NEWLINE INDENT func_body_stmts class_method_return DEDENT  # noqa :E501
-                        | DEF ID    LPAREN params RPAREN COLON type_spec COLON NEWLINE INDENT func_body_stmts class_method_return DEDENT"""  # noqa :E501
+                        | DEF ID    LPAREN params RPAREN ARROW type_spec COLON NEWLINE INDENT func_body_stmts class_method_return DEDENT
+                        | DEF ID    LPAREN params RPAREN COLON type_spec COLON NEWLINE INDENT func_body_stmts class_method_return DEDENT"""
         # Method with params and statements.
         #  methods; arrow → or colon : return-type separator.
         # Example:
