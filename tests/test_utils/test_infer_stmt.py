@@ -1024,7 +1024,7 @@ class TestStmtDecl:
              ('array', [('num', 1.0), ('num', 2.0), ('num', 3.0)])),
             ctx,
         )
-        assert ctx.env['v'] == TTensor(((3, 'invariant'),))
+        assert ctx.env['v'] == TTensor(((3, 'invariant'), ))
         assert errors == []
 
     def test_type_mismatch(self):
@@ -1037,7 +1037,8 @@ class TestStmtDecl:
         )
         print(errors)
         assert len(errors) == 1
-        assert "Type mismatch for 't': declared ℝ[3], got ℝ: Cannot unify tensor ℝ[3] with scalar ℝ" == errors[0]
+        assert "Type mismatch for 't': declared ℝ[3], got ℝ: Cannot unify tensor ℝ[3] with scalar ℝ" == errors[  # noqa: E501
+            0]
 
         # on a type mismatch the variable is still added to env
         assert 't' in ctx.env
@@ -1059,11 +1060,11 @@ class TestStmtAssign:
         errors = []
         ctx = make_stmt_ctx(errors=errors)
         stmt_assign(
-            ('assign', 'v',
-             ('array', [('num', 1.0), ('num', 2.0), ('num', 3.0)])),
+            ('assign', 'v', ('array', [('num', 1.0), ('num', 2.0),
+                                       ('num', 3.0)])),
             ctx,
         )
-        assert ctx.env['v'] == TTensor(((3, 'invariant'),))
+        assert ctx.env['v'] == TTensor(((3, 'invariant'), ))
         assert errors == []
 
     def test_expression_rhs(self):
@@ -1086,7 +1087,6 @@ class TestStmtAssign:
         assert isinstance(ctx.env['z'], TVar)
 
 
-
 class TestStmtExpr:
     """Tests for ``stmt_expr``"""
 
@@ -1107,8 +1107,8 @@ class TestStmtExpr:
     def test_shape_mismatch_caught(self):
         """A shape error inside the expression is reported as an error."""
         errors = []
-        v2 = TTensor(((2, 'invariant'),))
-        v3 = TTensor(((3, 'invariant'),))
+        v2 = TTensor(((2, 'invariant'), ))
+        v3 = TTensor(((3, 'invariant'), ))
         ctx = make_stmt_ctx(env={'a': v2, 'b': v3}, errors=errors)
         stmt_expr(
             ('expr', ('add', ('var', 'a'), ('var', 'b'))),
