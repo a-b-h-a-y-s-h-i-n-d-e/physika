@@ -1,6 +1,6 @@
 import re
 from typing import Optional, Callable
-
+from physika.elf import ELF
 
 def is_learnable(type_spec: str) -> bool:
     """
@@ -631,3 +631,192 @@ def make_parser_rules():
         p_type_class,
         p_func_body_stmt_method_call,
     ]
+
+
+
+class StructFeature(ELF):
+    name = "struct"
+
+    def lexer_rules(self) -> dict:
+        def t_DOT(t):
+            r"\."
+            return t
+        return {"tokens": ["DOT"], "token_funcs": [t_DOT]}
+
+    def parser_rules(self) -> list:
+        return make_parser_rules()
+
+    def type_rules(self) -> dict:
+        from physika.utils.types import TInstance, Substitution
+        from physika.utils.type_checker_utils import from_typespec, type_to_str
+        from typing import Callable, Any
+
+        def check_not_constructor(
+            expr: tuple,
+            class_env: dict,
+            add_error: Callable[[str], None],
+            expr_name: str,
+        ) -> bool:
+            """
+            Physika classes must be initialized before accesing fields
+            or methods. This function checks this behavior by looking at
+            ASTNodes for classes fields and methods and comparing if these
+            are also defined in the class enviroment.
+
+            Parameters
+            ----------
+            expr: tuple
+                ASTNode for the defined class that contains the parsed
+                information for `field_access` or `method_call` expressions.
+            class_env: dict
+                Dictionary that contains details about fields, methods, and
+                types used inside a class.
+            add_error: Callable[[str], None]
+                Append function to register an error.
+            what: str
+                Expression that is being called on a non-initialized class
+                (``field_access`` or ``method_call``).
+
+            Examples
+            --------
+            >>> from 
+            Classes cannot be used direclty:
+            class Particle:
+                x:ℝ
+            
+            Particle.x gives an error
+            # Must be instances
+            p : Particle = Particle(1.0)
+            p.x
+            Outputs -> 1.0 𝛜 ℝ
+            """
+
+            # ('field_access', ('var', 'Vect'), 'x')
+            # is equivalent of:
+            # Vect.x
+            # where Vect is a Physika class
+            if (isinstance(expr, tuple) and expr[0] == "var"
+                    and expr[1] in class_env):
+                add_error(
+                    f"'{expr[1]}' is a class constructor, not an instance; "
+                    f"use an instance to access {expr_name}"
+                )
+                return True
+            return False
+
+        def check_field_access(
+            node: tuple,
+            env: dict,
+            s: Substitution,
+            func_env: dict,
+            class_env: dict,
+            add_error: Callable[[str], None],
+            infer_expr: Callable[..., tuple],
+        ) -> tuple[Any, Substitution]:
+            _, obj_expr, field_name = node
+
+            obj_type, s = infer_expr(obj_expr, env, s, func_env, class_env, add_error)
+
+            if isinstance(obj_type, TInstance):
+                # get class info (fields, methods, returm types)
+                info = class_env.get(obj_type.class_name)
+                if info:
+                    # struct-style classes store fields in constructor_params
+                    all_fields = dict(info.get("constructor_params", []) + info.get("fields", []))
+                    if field_name in all_fields:
+                        return from_typespec(all_fields[field_name]), s
+                    add_error(
+                        f"Class '{obj_type.class_name}' has no field '{field_name}'"
+                    )
+            elif obj_type is None:
+                # Case ClassName.field where ClassName is `var` not TInstance (error)
+                check_not_constructor(obj_expr, class_env, add_error,
+                                      f"field '{field_name}'")
+            return None, s
+
+        def check_method_call(
+            node: tuple,
+            env: dict,
+            s: Substitution,
+            func_env: dict,
+            class_env: dict,
+            add_error: Callable[[str], None],
+            infer_expr: Callable[..., tuple],
+        ) -> tuple[Any, Substitution]:
+            _, obj_expr, method_name, args = node
+  
+            obj_type, s = infer_expr(obj_expr, env, s, func_env, class_env, add_error)
+            # check proper method call ClassName.method() (classes must be first initialized)
+            # this expression "ClassName.method()" would have the form of "('var', ClassName)"
+            # which will infer to None
+            if obj_type is None:
+                
+                check_not_constructor(obj_expr, class_env, add_error,
+                                      f"method '{method_name}'")
+                return None, s
+
+            if isinstance(obj_type, TInstance):
+                info = class_env.get(obj_type.class_name)
+                if info:
+                    methods = info.get("methods", {})
+                    if method_name in methods:
+                        method_info = methods[method_name]
+                        expected_params = method_info.get("params", [])
+
+                        # check args matches
+                        if len(args) != len(expected_params):
+                            add_error(
+                                f"Method '{obj_type.class_name}.{method_name}' expects "
+                                f"{len(expected_params)} argument(s), got {len(args)}"
+                            )
+                        else:
+                            for arg, (pname, ptype_spec) in zip(args, expected_params):
+                                # Type check args
+                                arg_type, s = infer_expr(arg, env, s, func_env,
+                                                         class_env, add_error)
+                                expected_type = from_typespec(ptype_spec)
+
+                                # skip if inferred type is unknown
+                                if expected_type is None:
+                                    continue
+                                if arg_type != expected_type:
+                                    add_error(
+                                        f"Method '{obj_type.class_name}.{method_name}' "
+                                        f"parameter '{pname}': expected "
+                                        f"'{type_to_str(expected_type)}', "
+                                        f"got '{type_to_str(arg_type)}'"
+                                    )
+
+                        return from_typespec(method_info.get("return_type")), s
+
+                    add_error(
+                        f"Class '{obj_type.class_name}' has no method '{method_name}'"
+                    )
+            return None, s
+
+        return {
+            "field_access": check_field_access,
+            "method_call":  check_method_call,
+        }
+
+    def forward_rules(self) -> dict:
+        #         **ctx as keyword arguments. So **ctx in the handler signatures is
+        #   required to absorb them. 
+        def emit_field_access(node, to_expr, **ctx):
+            _, obj_expr, field_name = node
+            return f"{to_expr(obj_expr)}.{field_name}"
+
+        def emit_method_call(node, to_expr, **ctx):
+            _, obj_expr, method_name, args = node
+            args_str = ", ".join(to_expr(a) for a in args)
+            return f"{to_expr(obj_expr)}.{method_name}({args_str})"
+
+        def emit_class_def(node, **ctx):
+            _, name, class_def = node
+            return generate_class(name, class_def)
+
+        return {
+            "field_access": emit_field_access,
+            "method_call":  emit_method_call,
+            "class_def":    emit_class_def,
+        }
