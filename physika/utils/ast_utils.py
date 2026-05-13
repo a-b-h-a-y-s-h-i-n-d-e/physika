@@ -1602,6 +1602,8 @@ def generate_statement(stmt: ASTNode,
                 return f"{name} = torch.as_tensor({expr_code}).float().requires_grad_(True)"  # noqa: E501
         if type_spec == "\u2124":
             return f"{name} = int({expr_code})"
+        if type_spec == "\u2102":
+            return f"{name} = torch.tensor({expr_code}, dtype=torch.complex64)"
         return f"{name} = {expr_code}"
 
     elif op == "assign":

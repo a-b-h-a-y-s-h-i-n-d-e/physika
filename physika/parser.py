@@ -50,6 +50,8 @@ def p_type_scalar(p):
         p[0] = "ℤ"
     elif p[1] == "ℕ":
         p[0] = "ℕ"
+    elif p[1] == "ℂ":
+        p[0] = "ℂ"
     else:
         p[0] = "ℝ"
 
