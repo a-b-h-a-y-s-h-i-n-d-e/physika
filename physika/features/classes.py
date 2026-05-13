@@ -64,7 +64,7 @@ def replace_class_params(code: str, all_params: list) -> str:
     return code
 
 
-def unwrap_return(ret: tuple[str]) -> Optional[tuple[tuple, str]]:
+def unwrap_return(ret: Optional[tuple]) -> Optional[tuple]:
     """
     Helper function to build a return expression that will be used
     by the parser.
@@ -76,7 +76,7 @@ def unwrap_return(ret: tuple[str]) -> Optional[tuple[tuple, str]]:
 
     Returns
     -------
-    Optional[tuple[tuple, str]]
+    Optional[tuple]
         Depending on the case, None return expression, single or tuple
         return expressions
 
@@ -219,7 +219,7 @@ def emit_method(method: dict, all_params: list, to_expr: Callable,
                 f"        {pname} = torch.as_tensor({pname}).float()")
 
     if statements:
-        stmt_method_lines = []
+        stmt_method_lines: list[str] = []
         emit_body_stmts(statements, 2, stmt_method_lines, list(param_names),
                         set(), to_expr, scalar_only)
         for line in stmt_method_lines:
@@ -244,7 +244,7 @@ def emit_method(method: dict, all_params: list, to_expr: Callable,
     return method_lines
 
 
-def generate_class(name: str, class_def: dict) -> list[str]:
+def generate_class(name: str, class_def: dict) -> str:
     """
     Emit a ``nn.Module`` subclass from a Physika class definition.
 
@@ -259,8 +259,8 @@ def generate_class(name: str, class_def: dict) -> list[str]:
 
     Returns
     -------
-    class_lines: list[str]
-        Pytorch code lines for converrting Physika classes (from parsed AST) to nn.Module.
+    str
+        PyTorch source code for the nn.Module subclass.
  
     Examples
     --------
