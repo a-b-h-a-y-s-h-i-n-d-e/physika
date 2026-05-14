@@ -130,7 +130,7 @@ class TestBuildClass:
                 mass : ℝ
         """
         result = build_class(None, [("field_decl", "mass", "ℝ")])
-        assert result["constructor_params"] == [("mass", "ℝ")]
+        assert result["class_params"] == [("mass", "ℝ")]
 
         # fields is always an empty list
         assert result["fields"] == []
@@ -142,7 +142,7 @@ class TestBuildClass:
             ("field_decl", "mass", "ℝ"),
         ]
         result = build_class(None, body)
-        names = [p[0] for p in result["constructor_params"]]
+        names = [p[0] for p in result["class_params"]]
         assert names == ["pos", "vel", "mass"]
         assert result["fields"] == []
 
@@ -156,7 +156,7 @@ class TestBuildClass:
         params = [("W", ("tensor", [("M", "invariant"), ("N", "invariant")])),
                   ("b", ("tensor", [("M", "invariant")]))]
         result = build_class(params, [])
-        assert result["constructor_params"] == params
+        assert result["class_params"] == params
         assert result["fields"] == []
 
     def test_methods(self):

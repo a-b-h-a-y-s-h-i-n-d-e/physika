@@ -144,12 +144,12 @@ def build_class(constructor_params: Optional[list], body_items: list) -> dict:
     >>> ke = {"name": "ke", "params": [], "return_type": "ℝ", "statements": [], "body": None}
     >>> body_items = [("field_decl", "mass", "ℝ"), ("method_def", ke)]
     >>> result = build_class(None, body_items)
-    >>> result["constructor_params"]
+    >>> result["class_params"]
     [('mass', 'ℝ')]
     >>> result["fields"]
     []
     >>> result
-    {'constructor_params': [('mass', 'ℝ')], 'fields': [], 'methods': [{'name': 'ke', 'params': [], 'return_type': 'ℝ', 'statements': [], 'body': None}]}  # noqa :E501
+    {'class_params': [('mass', 'ℝ')], 'fields': [], 'methods': [{'name': 'ke', 'params': [], 'return_type': 'ℝ', 'statements': [], 'body': None}]}  # noqa :E501
     """
     fields = [(item[1], item[2]) for item in body_items
               if item[0] == "field_decl"]
@@ -157,9 +157,9 @@ def build_class(constructor_params: Optional[list], body_items: list) -> dict:
 
     if constructor_params is None:
         # no parameters defined, fields becomes constructor params
-        return {"constructor_params": fields, "fields": [], "methods": methods}
+        return {"class_params": fields, "fields": [], "methods": methods}
     return {
-        "constructor_params": list(constructor_params),
+        "class_params": list(constructor_params),
         "fields": fields,
         "methods": methods
     }
@@ -257,7 +257,7 @@ def generate_class(name: str, class_def: dict) -> str:
         Name of a defined Physika class.
     class_def: dict
         Dictionary that contains all the information for the defined Physika class.
-        In order, "constructor_params" and types, methods, statements and body.
+        In order, "class_params" and types, methods, statements and body.
 
     Returns
     -------
@@ -297,7 +297,7 @@ def generate_class(name: str, class_def: dict) -> str:
                         p -= lr * g
     """
     from physika.utils.ast_utils import ast_to_torch_expr, collect_grad_targets
-    constructor_params = class_def["constructor_params"]
+    constructor_params = class_def["class_params"]
     fields = class_def.get("fields", [])
     methods = class_def["methods"]
 
@@ -724,9 +724,8 @@ class StructFeature(ELF):
                 # get class info (fields, methods, returm types)
                 info = class_env.get(obj_type.class_name)
                 if info:
-                    # struct-style classes store fields in constructor_params
                     all_fields = dict(
-                        info.get("constructor_params", []) +
+                        info.get("class_params", []) +
                         info.get("fields", []))
                     if field_name in all_fields:
                         return from_typespec(all_fields[field_name]), s

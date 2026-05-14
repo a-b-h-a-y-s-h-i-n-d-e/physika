@@ -10,20 +10,20 @@ def ke_wrt_vel(vel):
     particle = Particle(pos0, vel, 1.0)
     return particle.kinetic_energy()
 
+def ke_vy(vy):
+    p = Particle(pos0, torch.stack([torch.as_tensor(1.0).float(), torch.as_tensor(vy).float()]), 2.0)
+    return p.kinetic_energy()
+
 def norm_sq_wrt_x(x):
     vec = Vec(x, 4.0)
     return vec.norm_sq()
-
-def ke_of_vy(vy):
-    p = Particle(pos0, torch.stack([torch.as_tensor(1.0).float(), torch.as_tensor(vy).float()]), 2.0)
-    return p.kinetic_energy()
 
 # === Classes ===
 class Vec(nn.Module):
     def __init__(self, x, y):
         super().__init__()
-        self.x = x.float() if isinstance(x, torch.Tensor) else nn.Parameter(torch.tensor(x).float())
-        self.y = y.float() if isinstance(y, torch.Tensor) else nn.Parameter(torch.tensor(y).float())
+        self.x = torch.as_tensor(x).float()
+        self.y = torch.as_tensor(y).float()
 
     def dot(self, other):
         this = self
@@ -34,7 +34,7 @@ class Vec(nn.Module):
         s = torch.as_tensor(s).float()
         return Vec((self.x * s), (self.y * s))
 
-    def norm_sq(self, ):
+    def norm_sq(self):
         this = self
         return ((self.x * self.x) + (self.y * self.y))
 
@@ -51,13 +51,13 @@ class Vec(nn.Module):
 class Particle(nn.Module):
     def __init__(self, pos, vel, mass):
         super().__init__()
-        self.pos = pos.float() if isinstance(pos, torch.Tensor) else nn.Parameter(torch.tensor(pos).float())
-        self.vel = vel.float() if isinstance(vel, torch.Tensor) else nn.Parameter(torch.tensor(vel).float())
-        self.mass = mass.float() if isinstance(mass, torch.Tensor) else nn.Parameter(torch.tensor(mass).float())
+        self.pos = torch.as_tensor(pos).float()
+        self.vel = torch.as_tensor(vel).float()
+        self.mass = torch.as_tensor(mass).float()
 
-    def kinetic_energy(self, ):
+    def kinetic_energy(self):
         this = self
-        return ((0.5 * self.mass) * torch.sum((self.vel * self.vel)))
+        return ((0.5 * self.mass) * torch.sum((self.vel * self.vel) if isinstance((self.vel * self.vel), torch.Tensor) else torch.tensor(float((self.vel * self.vel)))))
 
     def step(self, force, dt):
         this = self
@@ -91,7 +91,7 @@ physika_print(c.y)
 pos0 = torch.tensor([0.0, 10.0])
 vel0 = torch.tensor([1.0, 0.0])
 gravity = torch.tensor([0.0, (-9.81)])
-p = Particle(pos0, vel0, 1.0)
+p = Particle(pos0, vel0, 9.0)
 ke0 = p.kinetic_energy()
 physika_print(ke0)
 p1 = p.step(gravity, 0.5)
@@ -103,15 +103,15 @@ ke0_v = ke_wrt_vel(v)
 physika_print(ke0_v)
 dKE_dv = compute_grad(lambda _dv: ke_wrt_vel(_dv), v)
 physika_print(dKE_dv)
+vy0 = torch.tensor(3.0, requires_grad=True)
+physika_print(ke_vy(vy0))
+physika_print(compute_grad(lambda _dvy0: ke_vy(_dvy0), vy0))
 x0 = torch.tensor(3.0, requires_grad=True)
 physika_print(norm_sq_wrt_x(x0))
 physika_print(compute_grad(lambda _dx0: norm_sq_wrt_x(_dx0), x0))
 x1 = torch.tensor(5.0, requires_grad=True)
 vec = Vec(x1, 4.0)
-physika_print(compute_grad(Vec.norm_sq(), x1))
-vy0 = torch.tensor(3.0, requires_grad=True)
-physika_print(ke_of_vy(vy0))
-physika_print(compute_grad(lambda _dvy0: ke_of_vy(_dvy0), vy0))
+physika_print(compute_grad(vec.norm_sq(), x1))
 x1 = torch.tensor(5.0, requires_grad=True)
 vec = Vec(x1, 4.0)
 physika_print(compute_grad(vec.x, x1))
