@@ -1,0 +1,181 @@
+# ------------------------------------------------
+# Helper functions 
+# ------------------------------------------------
+
+def zero_1d_array(len: ℝ): ℝ[m]:
+    results: ℝ[len] = for i: ℕ(len) -> i*0
+    return results
+
+def zero_2d_array(rows: R, cols: R): R[m, n]:
+    results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+    return results
+
+
+def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+    x: ℝ[n] = zero_1d_array(n)
+    dx: ℝ = (end - start) / (n - 1)
+    for i:ℕ(0, n):
+        x[i] = start + i * dx
+    return x
+
+
+def append(x: R[m], var: R): R[n]:
+    new_length = len(x) + 1
+    results = zero_1d_array(new_length)
+    for i:N(new_length):
+        if i<len(x):
+            results[i] = x[i]
+        else:
+            results[i] = var
+    return results
+
+# ------------------------------------------------
+# parameters
+# ------------------------------------------------
+
+
+dx: R = 0.02
+n: R = 10.0 / dx
+x: R[n] = linspace(0, 10, n)
+
+
+sigma: R = 0.1
+mass: R = 1.0
+x0: R = 3.0
+kx: R = 1.0
+hbar: R = 1.0
+A = 1.0 / (sigma * sqrt(3.14))
+
+dt: R = 0.0003
+psi = [10, 20, 30, 40, 50]
+
+
+# ------------------------------------------------
+# 
+# ------------------------------------------------
+
+def f(psi: R[m], omega: R): R:
+    x_Vmin: R = 5.0
+    k = omega**2 * mass
+    V = 0.5 * k * (x - x_Vmin)**2
+    lap = (roll(psi, -1) - 2 * psi + roll(psi, 1)) / dx**2
+    result = -1j * (-0.5 * hbar / mass * lap + (V / hbar) * psi)
+    return result
+
+
+def rk4_step(state: ℝ[m], omega: ℝ[n]): R[n]:
+    k1: ℝ[2] = f(state, omega)
+    k2_state: ℝ[2] = state + 0.5 * dt * k1
+    k2: ℝ[2] = f(k2_state, omega)
+    k3_state: ℝ[2] = state + 0.5 * dt * k2
+    k3: ℝ[2] = f(k3_state, omega)
+    k4_state: ℝ[2] = state + dt * k3
+    k4: ℝ[2] = f(k4_state, omega)
+    return state + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+
+
+# ------------------------------------------------
+# 
+# ------------------------------------------------
+
+timesteps: R = 5000
+
+def solver(omega: R): R:
+    psi0: R[m] = sqrt(A) * exp(-(x - x0)**2 / (2.0*sigma**2)) * exp(1j*kx*x)
+    psi = psi0
+    psi_array = zero_2d_array(timesteps+1, n)
+    psi_array[0] = psi0
+    counter: N = 0
+    for i:N(0, timesteps):
+        psi = rk4_step(psi, omega)
+        counter += 1
+        if counter == 50:
+            psi_array[i+1] = psi
+            counter = 0
+    return psi_array
+
+
+# ------------------------------------------------
+# 
+# ------------------------------------------------
+
+
+def adam(omega: R, g: R, m: R, v: R, t: R, lr: R): R:
+    beta1: R = 0.9
+    beta2: R = 0.999
+    eps: R = 1e-8
+    m_new: R = beta1 * m + (1.0 - beta1) * g  
+    v_new: R = beta2 * v + (1.0 - beta2) * g**2
+    m_hat: R = m_new / (1.0 - beta1**t)
+    v_hat: R = v_new / (1.0 - beta2**t)
+    omega_new: R = omega - lr * m_hat / (sqrt(v_hat) + eps)
+    return [omega_new, m_new, v_new]
+
+true_omega:R = 6.28
+
+
+true_values = solver(true_omega)
+
+#visualize(true_values)
+
+def calculate_loss(omega: R): R:
+    predictions = solver(omega)
+    loss = mean((abs(predictions)**2 - abs(true_values)**2)**2)
+    return loss
+
+
+omega = 5.0
+epochs = 40
+
+
+m_adam: R = 0.0
+v_adam: R = 0.0
+t_adam: R = 1.0
+lr: R = 0.1
+
+
+for i:N(epochs):
+    g = grad(calculate_loss, omega)
+    result = adam(omega, g, m_adam, v_adam, t_adam, lr)
+    omega = result[0]
+    m_adam = result[1]
+    v_adam = result[2]
+    t_adam += 1.0
+    physika_print(omega)
+
+
+pred_values = solver(omega)
+
+#visualize(true_values, pred_values)
+#def visualize(true_values, pred_values):
+
+#     import matplotlib.pyplot as plt
+#     import numpy as np
+
+#     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+#     for i in range(len(true_values)):
+
+#         axes[0].plot(
+#             np.abs(
+#                 true_values[i].detach().numpy()
+#             )**2,
+#             color="blue"
+#         )
+
+#     axes[0].set_title("True Values")
+
+#     for i in range(len(pred_values)):
+
+#         axes[1].plot(
+#             np.abs(
+#                 pred_values[i].detach().numpy()
+#             )**2,
+#             color="orange",
+#             linestyle="--"
+#         )
+
+#     axes[1].set_title("Predicted Values")
+
+#     plt.tight_layout()
+#     plt.show()
