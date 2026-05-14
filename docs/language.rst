@@ -961,6 +961,36 @@ New bindings from each branch are added to ``ctx.env``::
    # ctx.env["a"] == ℝ
    # ctx.env["b"] == ℝ
 
+
+* **stmt_decl** (``("decl", var, type_spec, expr)``)
+
+  Handles program-level variable declarations which includes type annotation.
+  The expression type is inferred and unified against the declared type::
+
+     a : ℝ = 4.0
+     # AST: ("decl", "a", "ℝ", ("num", 4.0))
+     # after: ctx.env["a"] == ℝ
+
+* **stmt_assign** (``("assign", var, expr)``)
+
+  Since there is no type annotation, the inferred type is stored directly in
+  ``ctx.env``. If the expression type cannot be resolved, a fresh type variable
+  is stored so that later statements can still be checked::
+
+     a = a + 1.0
+     # AST: ("assign", "a", ("add", ("var", "a"), ("num", 1.0)))
+     # after: ctx.env["a"] == ℝ
+
+* **stmt_expr** (``("expr", expr)``)
+
+  Infers standalone expression statements whose result is not bound to any
+  variable. The expression is type checked so that shape or call-signature errors are caught,
+  but the result is discarded and ``ctx.env`` is not modified::
+
+     f(x)
+     # AST: ("expr", ("call", "f", [("var", "x")]))
+     # ctx.env is unchanged; type errors in the call are still reported
+
 **3. Central dispatcher**.
 
 * **infer_stmts** (``infer_stmts(stmts, env, s, func_env, class_env, add_error)``)
