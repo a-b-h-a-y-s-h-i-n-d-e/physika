@@ -937,7 +937,7 @@ def stmt_decl(stmt: Any, ctx: StmtContext) -> None:
     """
     Type checks program level declaration statements.
     """
-    from physika.utils.type_checker_utils import from_typespec, unify, type_to_str
+    from physika.utils.type_checker_utils import from_typespec, unify, type_to_str  # noqa: E501
     _, var_name, var_type_spec, expr, *_ = stmt
     inferred = ctx.infer_type(expr)
     declared = from_typespec(var_type_spec)
@@ -945,11 +945,10 @@ def stmt_decl(stmt: Any, ctx: StmtContext) -> None:
         try:
             ctx.s = unify(declared, inferred, ctx.s)
         except TypeError as e:
-            ctx.add_error(
-                f"'{var_name}' declared {type_to_str(declared)}, "
-                f"inferred {type_to_str(inferred)}: {e}"
-            )
-    ctx.env[var_name] = declared if declared is not None else (inferred or new_var())
+            ctx.add_error(f"'{var_name}' declared {type_to_str(declared)}, "
+                          f"inferred {type_to_str(inferred)}: {e}")
+    ctx.env[var_name] = declared if declared is not None else (inferred
+                                                               or new_var())
 
 
 def stmt_assign(stmt: Any, ctx: StmtContext) -> None:
@@ -1088,7 +1087,13 @@ def infer_stmts(
             if REGISTRY.has_type_rule(stmt[0]):
                 from physika.utils.infer_expr import infer_expr
                 _, ctx.s = REGISTRY.dispatch_type(
-                    stmt[0], stmt, ctx.env, ctx.s,
-                    ctx.func_env, ctx.class_env, ctx.add_error, infer_expr,
+                    stmt[0],
+                    stmt,
+                    ctx.env,
+                    ctx.s,
+                    ctx.func_env,
+                    ctx.class_env,
+                    ctx.add_error,
+                    infer_expr,
                 )
     return ctx.env, ctx.s

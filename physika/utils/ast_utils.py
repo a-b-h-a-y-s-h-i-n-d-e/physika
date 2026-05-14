@@ -1358,7 +1358,6 @@ def emit_for_stmts(
     return result
 
 
-
 def generate_statement(stmt: ASTNode,
                        grad_target_vars: set[str]) -> str | None:
     """Generate a PyTorch code string for a program-level statement.
@@ -1468,7 +1467,7 @@ def generate_statement(stmt: ASTNode,
         return f"{name} = sp.Eq({lhs}, {rhs})"
 
     elif op in ("func_def", "class_def"):
-        return None # Already generated in functions/classes sections
+        return None  # Already generated in functions/classes sections
 
     elif op == "for_loop":
         # For loop: ("for_loop", loop_var, body_statements,
