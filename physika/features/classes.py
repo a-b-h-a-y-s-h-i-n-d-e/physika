@@ -731,13 +731,16 @@ class ClassFeature(ELF):
         ['CLASS', 'DOT']
 
         """
+
         def t_DOT(t: Any) -> Any:
             # regex matches a dot (".") for field and method access
             r"\."
             return t
 
         return {
-            "reserved": {"class": "CLASS"},
+            "reserved": {
+                "class": "CLASS"
+            },
             "tokens": ["CLASS", "DOT"],
             "token_funcs": [t_DOT],
         }
@@ -921,8 +924,7 @@ class ClassFeature(ELF):
                 info = class_env.get(obj_type.class_name)
                 if info:
                     all_fields = dict(
-                        info.get("class_params", []) +
-                        info.get("fields", []))
+                        info.get("class_params", []) + info.get("fields", []))
                     if field_name in all_fields:
                         return from_typespec(all_fields[field_name]), s
                     add_error(
@@ -1099,6 +1101,7 @@ class ClassFeature(ELF):
         >>> code == expected
         True
         """
+
         def emit_field_access(node: tuple, to_expr: Callable, **ctx) -> str:
             """
             Emit a Python string attribute acces given a ``field_access`` ASTNode.

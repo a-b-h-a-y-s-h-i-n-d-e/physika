@@ -107,7 +107,8 @@ def is_unified_ast(ast) -> bool:
     for name, definition in ast["classes"].items():
         if not isinstance(name, str) or not isinstance(definition, dict):
             return False
-        # class defs contain lists (class_params, fields, methods) — not ASTNodes
+        # class defs contain lists (class_params, fields, methods)
+        # not ASTNodes
 
     if not isinstance(ast["program"], list):
         return False
@@ -156,9 +157,7 @@ def test_class_bodies_are_ast_nodes(phyk_file):
     for name, class_def in ast["classes"].items():
         for method in class_def.get("methods", []):
             if method.get("body") is not None:
-                assert is_ast_node(method["body"]), (
-                    f"Class {name!r} method {method['name']!r} body is not a valid ASTNode"
-                )
+                assert is_ast_node(method["body"])
 
 
 @pytest.mark.parametrize("phyk_file", PHYK_FILES, ids=PHYK_IDS)
