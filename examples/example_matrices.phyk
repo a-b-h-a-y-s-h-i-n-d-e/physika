@@ -7,8 +7,8 @@ B: R[2,3] = 2.0 * A
 B
 
 # Element-wise addition
-C: R[2,3] = A + B
-C
+matrix_C: R[2,3] = A + B
+matrix_C
 
 scale: R = 2.0
 

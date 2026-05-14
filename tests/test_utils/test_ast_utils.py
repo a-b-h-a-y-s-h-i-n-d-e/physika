@@ -75,7 +75,7 @@ def is_ast_node(node) -> bool:
     Helper function that return True if *node* is a valid ``ASTNode``
     leaf or composite.
     """
-    if node is None or isinstance(node, (str, int, float, bool)):
+    if node is None or isinstance(node, (str, int, float, bool, complex)):
         return True
     if isinstance(node, list):
         return all(is_ast_node(child) for child in node)

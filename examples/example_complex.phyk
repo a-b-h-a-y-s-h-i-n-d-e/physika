@@ -1,8 +1,39 @@
-x: ℂ = 3 + 1j
-y: ℂ = 5 + 3j
-
+# Basic complex declarations
+x : ℂ = 3 + 1j
+y : ℂ = 5 + 3j
 x
 y
 
+# Addition and Subtraction
 x + y
+x - y
 
+# Multiplication
+# -------------------------------------------
+# (3 + 1j) * (5 + 3j)
+# 3 * (5 + 3j) + 1j * (5 + 3j)
+# 15 + 9j + 5j + 3j**2
+# 15 + 14j + 3j**2
+# since, j**2 = -1
+# 15 + 14j - 3
+# 12 + 14j
+# -------------------------------------------
+
+x * y
+
+
+
+# complex in function (calculating magnitude)
+# -------------------------------------------
+# x = 3 + 1j 
+# formula -> square_root(a**2 + b**2)
+# a = 3
+# b = 1
+# square_root(9 + 1)
+# square_root(10)
+# -> 3.162
+# -------------------------------------------
+def magnitude(z: C): R:
+    return abs(z)
+
+magnitude(x)
