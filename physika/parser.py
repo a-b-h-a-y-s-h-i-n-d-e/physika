@@ -6,7 +6,7 @@ from pathlib import Path
 from physika.elf import REGISTRY
 import physika.lexer as lexer_mod
 if REGISTRY.features != []:
-# At import time registers ELF defined at physika.features.__init__.py
+    # At import time registers ELF defined at physika.features.__init__.py
     import physika.features as _  # noqa: F401
 
 symbol_table: dict[str, dict] = {}
@@ -1802,6 +1802,7 @@ def p_statemet_equation_decl(p):
     #   p[5] — expression on LHS
     #   p[7] — expression on RHS
     p[0] = ("equation_decl", p[1], p[5], p[7])
+
 
 if REGISTRY.features != []:
     REGISTRY.add_lexer_rules(lexer_mod)

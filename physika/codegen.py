@@ -6,6 +6,7 @@ from physika.utils.ast_utils import (ast_uses_solve, ast_uses_func,
                                      ast_uses_sympy, ast_to_torch_expr)
 from physika.elf import REGISTRY
 
+
 def from_ast_to_torch(unified_ast: Dict[str, Any],
                       print_code: bool = True) -> str:
     """Convert a unified AST into a complete, executable Python/PyTorch
@@ -188,9 +189,8 @@ def from_ast_to_torch(unified_ast: Dict[str, Any],
         for name, class_def in unified_ast["classes"].items():
             if REGISTRY.features != []:
                 node = ("class_def", name, class_def)
-                class_code = REGISTRY.dispatch_forward("class_def",
-                                                    node,
-                                                    to_expr=ast_to_torch_expr)
+                class_code = REGISTRY.dispatch_forward(
+                    "class_def", node, to_expr=ast_to_torch_expr)
                 assert class_code is not None
                 code_lines.append(class_code)
             else:

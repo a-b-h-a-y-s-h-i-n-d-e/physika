@@ -781,7 +781,7 @@ def ast_to_torch_expr(node: ASTNode,
     elif op == "string":
         # Equation string literal
         return repr(node[1])
-    
+
     # Adds expression tags from ELF features
     elf_result = REGISTRY.dispatch_forward(
         op,

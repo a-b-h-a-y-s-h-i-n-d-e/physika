@@ -2,6 +2,7 @@ from typing import Any, Callable, Optional, Tuple
 from physika.utils.types import Substitution, Type, TVar, TDim, T_NAT, new_var, new_dim  # noqa: E501
 from physika.elf import REGISTRY
 
+
 class StmtContext:
     """
     Data class that contains the context of a Physika statement that is being
@@ -927,5 +928,5 @@ def infer_stmts(
                     ctx.class_env,
                     ctx.add_error,
                     infer_expr,
-                )   
+                )
     return ctx.env, ctx.s
