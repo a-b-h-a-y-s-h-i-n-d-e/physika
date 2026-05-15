@@ -969,9 +969,6 @@ def stmt_expr(stmt: Any, ctx: StmtContext) -> None:
 
 
 STMT_DISPATCH: dict = {
-    "decl": stmt_decl,
-    "assign": stmt_assign,
-    "expr": stmt_expr,
     "body_decl": stmt_body_decl,
     "body_assign": stmt_body_assign,
     "body_zeros_decl": stmt_body_zeros_decl,
@@ -1083,7 +1080,7 @@ def infer_stmts(
         if handler is not None:
             handler(stmt, ctx)
         else:
-            # ELF type rule dispatcher for new stmts if any
+            # ELF type rule dispatcher for new stmts
             if REGISTRY.has_type_rule(stmt[0]):
                 from physika.utils.infer_expr import infer_expr
                 _, ctx.s = REGISTRY.dispatch_type(
