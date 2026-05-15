@@ -1,7 +1,7 @@
 from typing import Any, Callable, Optional, Tuple, Union, cast
 from physika.utils.types import Substitution, Type, TVar, TDim, TTensor, TInstance, TFunc, TScalar, T_NAT, T_REAL, T_COMPLEX, new_dim  # noqa: E501
 from physika.utils.ast_utils import ASTNode
-
+from physika.elf import REGISTRY
 
 class ExprContext:
     """
@@ -1380,7 +1380,6 @@ def infer_expr(
             return handler(node, ctx, new_dim)
         return handler(node, ctx)
     # ELF type rule dispatcher
-    from physika.elf import REGISTRY
     if REGISTRY.has_type_rule(node[0]):
         result = REGISTRY.dispatch_type(node[0], node, env, s, func_env,
                                         class_env, add_error, infer_expr)
