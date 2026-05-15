@@ -3,90 +3,44 @@ import torch.nn as nn
 import torch.optim as optim
 
 from physika.runtime import physika_print
+from physika.runtime import train
+from physika.runtime import evaluate
 from physika.runtime import compute_grad
 
 # === Functions ===
-def f(x):
-    if x > 0:
-        return (x * x)
-    else:
-        return (-x)
-
-def clamp(x):
-    if x > 1:
-        y = 1
-    else:
-        y = x
-    if y < (-1):
-        y = (-1)
-    return y
-
-def classify(x):
-    if x > 0.5:
-        if x > 1.5:
-            return 2
-        else:
-            return 1
-    else:
-        if x < (-0.5):
-            return (-1)
-        else:
-            return 0
+def tanh(x):
+    return ((torch.exp(x if isinstance(x, torch.Tensor) else torch.tensor(float(x))) - torch.exp((0.0 - x) if isinstance((0.0 - x), torch.Tensor) else torch.tensor(float((0.0 - x))))) / (torch.exp(x if isinstance(x, torch.Tensor) else torch.tensor(float(x))) + torch.exp((0.0 - x) if isinstance((0.0 - x), torch.Tensor) else torch.tensor(float((0.0 - x))))))
 
 # === Classes ===
-class PiecewiseNet(nn.Module):
-    def __init__(self, threshold):
+class HamiltonianNet(nn.Module):
+    def __init__(self, W1, b1, w2, b2):
         super().__init__()
-        self.threshold = nn.Parameter(torch.as_tensor(threshold).float())
+        self.W1 = nn.Parameter(torch.tensor(W1).float() if not isinstance(W1, torch.Tensor) else W1.clone().detach().float())
+        self.b1 = nn.Parameter(torch.tensor(b1).float() if not isinstance(b1, torch.Tensor) else b1.clone().detach().float())
+        self.w2 = nn.Parameter(torch.tensor(w2).float() if not isinstance(w2, torch.Tensor) else w2.clone().detach().float())
+        self.b2 = nn.Parameter(torch.tensor(b2).float() if not isinstance(b2, torch.Tensor) else b2.clone().detach().float())
 
     def forward(self, x):
-        this = self
         x = torch.as_tensor(x).float()
-        if x > self.threshold:
-            y = (x * x)
-        else:
-            y = (-x)
-        return y
+        h = ((self.w2 @ tanh(((self.W1 @ x) + self.b1))) + self.b2)
+        return h
 
-    def loss(self, pred, target):
-        this = self
-        pred = torch.as_tensor(pred).float()
-        target = torch.as_tensor(target).float()
-        return ((pred - target) ** 2)
-
-    @property
-    def params(self):
-        return list(self.parameters())
-
-    def update(self, lr, grads):
-        with torch.no_grad():
-            for p, g in zip(self.parameters(), grads):
-                if g is not None:
-                    p -= lr * g
+    def loss(self, H, target, x):
+        lo = (((compute_grad(H, x)[int(1)] - target[int(0)]) ** 2.0) + (((0.0 - compute_grad(H, x)[int(0)]) - target[int(1)]) ** 2.0))
+        return lo
 
 # === Program ===
-a = torch.tensor(2.0, requires_grad=True)
-b = torch.tensor((-1.5), requires_grad=True)
-physika_print(f(a))
-physika_print(compute_grad(lambda _da: f(_da), a))
-physika_print(f(b))
-physika_print(compute_grad(lambda _db: f(_db), b))
-physika_print(clamp(3))
-physika_print(clamp(0.5))
-physika_print(clamp((-5)))
-physika_print(classify(2))
-physika_print(classify(0))
-physika_print(classify((-1)))
-net = PiecewiseNet(0)
-a = torch.tensor(2.0, requires_grad=True)
-physika_print(net(a))
-physika_print(compute_grad(lambda _da: net(_da), a))
-b = torch.tensor((-1.5), requires_grad=True)
-physika_print(net(b))
-physika_print(compute_grad(lambda _db: net(_db), b))
-x = 0.3
-if x > 0.5:
-    y = (3 * ((x - 0.75) ** 2))
-else:
-    y = ((x ** 2) + 2)
-physika_print(y)
+X = torch.tensor([[0.0, 1.0], [1.0, 0.0], [0.0, (-1.0)], [(-1.0), 0.0], [0.5, 0.5], [(-0.5), (-0.5)], [0.7, (-0.7)], [(-0.7), 0.7]])
+y = torch.tensor([[1.0, 0.0], [0.0, (-1.0)], [(-1.0), 0.0], [0.0, 1.0], [0.5, (-0.5)], [(-0.5), 0.5], [(-0.7), (-0.7)], [0.7, 0.7]])
+W1 = torch.tensor([[0.5, 0.1], [0.1, 0.5], [0.3, 0.3], [0.4, 0.2], [0.2, 0.4], [0.1, 0.1], [0.3, 0.1], [0.1, 0.3], [0.2, 0.2], [0.4, 0.4], [0.5, 0.3], [0.3, 0.5], [0.2, 0.1], [0.1, 0.2], [0.4, 0.1], [0.1, 0.4]])
+b1 = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+w2 = torch.tensor([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+b2 = 0.0
+H_net = HamiltonianNet(W1, b1, w2, b2)
+loss_before = evaluate(H_net, X, y)
+physika_print(loss_before)
+epochs = 500
+lr = 0.01
+H_trained = train(H_net, X, y, epochs, lr)
+loss_after = evaluate(H_trained, X, y)
+physika_print(loss_after)

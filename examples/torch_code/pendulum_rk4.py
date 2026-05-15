@@ -3,45 +3,44 @@ import torch.nn as nn
 import torch.optim as optim
 
 from physika.runtime import physika_print
-from physika.runtime import simulate
+from physika.runtime import train
+from physika.runtime import evaluate
+from physika.runtime import compute_grad
 
 # === Functions ===
-def pendulum(x):
-    return torch.stack([torch.as_tensor(x[int(1)]).float(), torch.as_tensor((0.0 - ((9.81 / 1.0) * torch.sin(x[int(0)] if isinstance(x[int(0)], torch.Tensor) else torch.tensor(float(x[int(0)])))))).float()])
+def tanh(x):
+    return ((torch.exp(x if isinstance(x, torch.Tensor) else torch.tensor(float(x))) - torch.exp((0.0 - x) if isinstance((0.0 - x), torch.Tensor) else torch.tensor(float((0.0 - x))))) / (torch.exp(x if isinstance(x, torch.Tensor) else torch.tensor(float(x))) + torch.exp((0.0 - x) if isinstance((0.0 - x), torch.Tensor) else torch.tensor(float((0.0 - x))))))
 
 # === Classes ===
-class RK4(nn.Module):
-    def __init__(self, f, dt, n):
+class HamiltonianNet(nn.Module):
+    def __init__(self, W1, b1, w2, b2):
         super().__init__()
-        self.f = torch.as_tensor(f).float() if isinstance(f, (int, float, torch.Tensor)) else f
-        self.dt = nn.Parameter(torch.as_tensor(dt).float())
-        self.n = torch.as_tensor(n).float() if isinstance(n, (int, float, torch.Tensor)) else n
+        self.W1 = nn.Parameter(torch.tensor(W1).float() if not isinstance(W1, torch.Tensor) else W1.clone().detach().float())
+        self.b1 = nn.Parameter(torch.tensor(b1).float() if not isinstance(b1, torch.Tensor) else b1.clone().detach().float())
+        self.w2 = nn.Parameter(torch.tensor(w2).float() if not isinstance(w2, torch.Tensor) else w2.clone().detach().float())
+        self.b2 = nn.Parameter(torch.tensor(b2).float() if not isinstance(b2, torch.Tensor) else b2.clone().detach().float())
 
     def forward(self, x):
-        this = self
         x = torch.as_tensor(x).float()
-        for k in range(self.n):
-            k1 = self.f(x)
-            k2 = self.f((x + ((0.5 * self.dt) * k1)))
-            k3 = self.f((x + ((0.5 * self.dt) * k2)))
-            k4 = self.f((x + (self.dt * k3)))
-            x = (x + ((self.dt / 6.0) * (((k1 + (2.0 * k2)) + (2.0 * k3)) + k4)))
-        return x
+        h = ((self.w2 @ tanh(((self.W1 @ x) + self.b1))) + self.b2)
+        return h
 
-    @property
-    def params(self):
-        return list(self.parameters())
-
-    def update(self, lr, grads):
-        with torch.no_grad():
-            for p, g in zip(self.parameters(), grads):
-                if g is not None:
-                    p -= lr * g
+    def loss(self, H, target, x):
+        lo = (((compute_grad(H, x)[int(1)] - target[int(0)]) ** 2.0) + (((0.0 - compute_grad(H, x)[int(0)]) - target[int(1)]) ** 2.0))
+        return lo
 
 # === Program ===
-dt = 0.01
-solver = RK4(pendulum, dt, 1000)
-physika_print(solver(torch.tensor([0.5, 0.0])))
-physika_print(solver(torch.tensor([1.0, 0.0])))
-step = RK4(pendulum, dt, 1)
-simulate(step, torch.tensor([0.5, 0.0]), 1000, dt)
+X = torch.tensor([[0.0, 1.0], [1.0, 0.0], [0.0, (-1.0)], [(-1.0), 0.0], [0.5, 0.5], [(-0.5), (-0.5)], [0.7, (-0.7)], [(-0.7), 0.7]])
+y = torch.tensor([[1.0, 0.0], [0.0, (-1.0)], [(-1.0), 0.0], [0.0, 1.0], [0.5, (-0.5)], [(-0.5), 0.5], [(-0.7), (-0.7)], [0.7, 0.7]])
+W1 = torch.tensor([[0.5, 0.1], [0.1, 0.5], [0.3, 0.3], [0.4, 0.2], [0.2, 0.4], [0.1, 0.1], [0.3, 0.1], [0.1, 0.3], [0.2, 0.2], [0.4, 0.4], [0.5, 0.3], [0.3, 0.5], [0.2, 0.1], [0.1, 0.2], [0.4, 0.1], [0.1, 0.4]])
+b1 = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+w2 = torch.tensor([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+b2 = 0.0
+H_net = HamiltonianNet(W1, b1, w2, b2)
+loss_before = evaluate(H_net, X, y)
+physika_print(loss_before)
+epochs = 500
+lr = 0.01
+H_trained = train(H_net, X, y, epochs, lr)
+loss_after = evaluate(H_trained, X, y)
+physika_print(loss_after)
