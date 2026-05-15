@@ -1094,3 +1094,153 @@ def infer_stmts(
                     infer_expr,
                 )
     return ctx.env, ctx.s
+
+
+
+def stmt_decl(stmt: Any, ctx: StmtContext) -> None:
+    """
+    Type checks program level declaration statements.
+    """
+    from physika.utils.type_checker_utils import from_typespec, unify, type_to_str  # noqa: E501
+    _, var_name, var_type_spec, expr, *_ = stmt
+    inferred = ctx.infer_type(expr)
+    declared = from_typespec(var_type_spec)
+    if declared is not None and inferred is not None:
+        try:
+            ctx.s = unify(declared, inferred, ctx.s)
+        except TypeError as e:
+            ctx.add_error(f"'{var_name}' declared {type_to_str(declared)}, "
+                          f"inferred {type_to_str(inferred)}: {e}")
+    ctx.env[var_name] = declared if declared is not None else (inferred
+                                                               or new_var())
+
+
+def stmt_assign(stmt: Any, ctx: StmtContext) -> None:
+    """
+    Program level assign statements.
+    """
+    _, var_name, expr, *_ = stmt
+    inferred = ctx.infer_type(expr)
+    ctx.env[var_name] = inferred if inferred is not None else new_var()
+
+
+def stmt_expr(stmt: Any, ctx: StmtContext) -> None:
+    """
+    Handle program level expression statements.
+    """
+    _, expr, *_ = stmt
+    ctx.infer_type(expr)
+
+
+STMT_DISPATCH: dict = {
+    "body_decl": stmt_body_decl,
+    "body_assign": stmt_body_assign,
+    "body_zeros_decl": stmt_body_zeros_decl,
+    "decl": stmt_decl,
+    "assign": stmt_assign,
+    "expr": stmt_expr,
+    "body_if_return": stmt_body_if_return,
+    "body_if_else_return": stmt_body_if_else_return,
+    "body_if": stmt_if,
+    "body_if_else": stmt_if,
+    "loop_if": stmt_if,
+    "loop_if_else": stmt_if,
+    "for_if": stmt_if,
+    "for_if_else": stmt_if,
+    "if_only": stmt_if,
+    "if_else": stmt_if,
+    "body_for": stmt_for,
+    "body_for_range": stmt_for,
+    "for_loop": stmt_for,
+    "for_loop_range": stmt_for,
+    "body_for_accum": stmt_body_for_accum,
+    "for_assign": stmt_for_assign,
+    "loop_assign": stmt_for_assign,
+    "for_pluseq": stmt_for_pluseq,
+    "loop_index_pluseq": stmt_for_pluseq,
+}
+
+
+def infer_stmts(
+    stmts: list,
+    env: dict,
+    s: Substitution,
+    func_env: dict,
+    class_env: dict,
+    add_error: Callable,
+    func_name: str = "?",
+    return_type: Optional[Type] = None,
+) -> Tuple[dict, Substitution]:
+    """
+    Infer types for a given statement ASTNode.
+
+    ``infer_stmts`` is called from main type algorithm at inference time
+    when checking types for functions (body) and top-level programs.
+
+    Returns a tuple of updated enviroment, which is a dictionary containing
+    variable names and type annotations, and substitution (``Substitution``)
+    object with resolved types).
+
+    Parameters
+    ----------
+    stmts: list
+        List of statements ASTNodes to check types at body and top-level
+        program. Every `statement` contain operations with `expressions`,
+        so ``infer_expr`` is called.
+    env: dict
+        Dictionary object that represents the current enviroment with
+        declared functions, varibles and types.
+    s: Substitution
+        Substitution object with resolved and unresolved types.
+    func_env: dict
+        Dictionary object representing the enviroment of a user defined
+        function in a physika program. Contains variables names and types
+        , arguments and return types.
+    class_env: dict
+        Dictionary object representing the enviroment of a user defined
+        class in a physika program. Contains variables names and types
+        , arguments and return types.
+    add_error: Callable
+        Callable append function to store collected type checker errors.
+    func_name: str
+        User defined function name for checking body statements. This
+        field is used when calling ``check_function`` from main type
+        checking algorithm and passed to ``s:Substitution`` dict.
+    return_type: Optional[Type]
+        Passed to ``s:Substitution`` dict for checking if-else-body statements.
+
+    Example
+    -------
+    >>> from physika.utils.infer_stmts import infer_stmts
+    >>> from physika.utils.types import Substitution, T_REAL
+    >>> errors = []
+    >>> ctx = StmtContext(
+    ...     env={}, s=Substitution(), func_env={}, class_env={},
+    ...     add_error=errors.append, func_name="f", return_type=T_REAL,
+    ... )
+    >>> t = ctx.infer_type(("num", 1.0))
+    >>> t
+    ℝ
+    >>> errors
+    []
+    >>> stmts = [("num", 1.0), ('body_assign', 'y', ('add', ('var', 'x'), ('num', 1.0)))]  # noqa: E501
+    >>> infer_stmts(stmts, env={}, s=Substitution(), func_env={},
+    ...                   class_env={}, add_error=errors.append)
+    ({'y': ℝ}, {})
+    """
+    ctx = StmtContext(
+        env=dict(env),
+        s=s,
+        func_env=func_env,
+        class_env=class_env,
+        add_error=add_error,
+        func_name=func_name,
+        return_type=return_type,
+    )
+    for stmt in stmts:
+        if stmt is None:
+            continue
+        handler = STMT_DISPATCH.get(stmt[0])
+        if handler is not None:
+            handler(stmt, ctx)
+    return ctx.env, ctx.s
