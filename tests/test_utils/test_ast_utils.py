@@ -1,7 +1,10 @@
 from pathlib import Path
 from typing import Any, get_args
 
+import torch
 import pytest
+
+from tests.conftest import exec_phyk
 
 from physika.lexer import lexer
 from physika.parser import parser, symbol_table
@@ -30,6 +33,8 @@ EXAMPLES_DIR = Path(__file__).parent.parent.parent / "examples"
 AST_DIR = EXAMPLES_DIR / "ast"
 PHYK_FILES = sorted(EXAMPLES_DIR.glob("*.phyk"))
 PHYK_IDS = [f.stem for f in PHYK_FILES]
+
+r_tol = 1e-02
 
 
 def parse_source(source: str):
@@ -795,7 +800,13 @@ class TestAstToTorch:
     ``torch_funcs`` dictionary in ``ast_to_torch_expr`` with scalar `ℝ` values
     """
 
+    @pytest.fixture()
+    def name_space(self):
+        """Call examples/diff_functions.phyk file"""
+        return exec_phyk("diff_functions")
+
     def test_torch_functions(self):
+        """Verify torch function calls are converted into valid torch code."""
         scalar_stmt = ("call", "sin", [("num", "1.0")])
         scalar_expected = "torch.sin('1.0' if isinstance('1.0', torch.Tensor) else torch.tensor(float('1.0')))"  # noqa
         scalar_output = ast_to_torch_expr(scalar_stmt)
@@ -806,3 +817,16 @@ class TestAstToTorch:
         tensor_expected = "torch.cos(torch.tensor([1.0, 2.0]) if isinstance(torch.tensor([1.0, 2.0]), torch.Tensor) else torch.tensor(float(torch.tensor([1.0, 2.0]))))"  # noqa
         tensor_output = ast_to_torch_expr(tensor_stmt)
         assert tensor_output == tensor_expected
+
+    @pytest.mark.parametrize("x_val, expected_values", [
+        (1.0, [0.8414, 0.5403, 2.7182, 1.0, 0.0, 1.0]),
+        (5.0, [-0.9589, 0.2836, 148.4132, 2.2360, 1.6094, 5.0]),
+    ])
+    def test_torch_funcs_correctness(self, name_space, x_val, expected_values):
+        """Verify generated torch functions match analytical torch outputs."""
+        f = name_space["torch_funcs_with_scalar_R"]
+        x = torch.tensor(x_val)
+        true_values = f(x)
+        assert all(
+            abs(exp - true) < r_tol
+            for exp, true in zip(expected_values, true_values))
