@@ -6,6 +6,15 @@ from physika.runtime import physika_print
 from physika.runtime import compute_grad
 
 # === Functions ===
+def torch_funcs_with_scalar_R(x):
+    result_sin = torch.sin(x if isinstance(x, torch.Tensor) else torch.tensor(float(x)))
+    result_cos = torch.cos(x if isinstance(x, torch.Tensor) else torch.tensor(float(x)))
+    result_exp = torch.exp(x if isinstance(x, torch.Tensor) else torch.tensor(float(x)))
+    result_sqrt = torch.sqrt(x if isinstance(x, torch.Tensor) else torch.tensor(float(x)))
+    result_log = torch.log(x if isinstance(x, torch.Tensor) else torch.tensor(float(x)))
+    result_abs = torch.abs(x if isinstance(x, torch.Tensor) else torch.tensor(float(x)))
+    return torch.stack([torch.as_tensor(result_sin).float(), torch.as_tensor(result_cos).float(), torch.as_tensor(result_exp).float(), torch.as_tensor(result_sqrt).float(), torch.as_tensor(result_log).float(), torch.as_tensor(result_abs).float()])
+
 def f(x):
     if x > 0:
         return torch.cos(x if isinstance(x, torch.Tensor) else torch.tensor(float(x)))
@@ -13,6 +22,7 @@ def f(x):
         return torch.sin(x if isinstance(x, torch.Tensor) else torch.tensor(float(x)))
 
 # === Program ===
+physika_print(torch_funcs_with_scalar_R(1.0))
 x0 = torch.tensor((-1.5), requires_grad=True)
 physika_print(f(x0))
 physika_print(compute_grad(lambda _dx0: f(_dx0), x0))

@@ -1,9 +1,22 @@
+def torch_funcs_with_scalar_R(x: R): R[m]:
+    result_sin: R = sin(x)
+    result_cos: R = cos(x)
+    result_exp: R = exp(x)
+    result_sqrt: R = sqrt(x)
+    result_log: R = log(x)
+    result_abs: R = abs(x)
+    return [result_sin, result_cos, result_exp, result_sqrt, result_log, result_abs]
+
+
+torch_funcs_with_scalar_R(1.0)
+
+# -------------------------------------------------
 # Differentiable sin/cos in conditional statement
 # if x > 0:
 #     f(x) = cos(x) -> f'(x) = -sin(x)
 # else:
 #     f(x) = sin(x) -> f'(x) = -cos(x)
-
+# -------------------------------------------------
 
 def f(x: ℝ): ℝ:
     if x > 0:
