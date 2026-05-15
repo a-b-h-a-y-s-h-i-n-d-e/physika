@@ -77,8 +77,8 @@ class TestDiffIfCosSin:
 
     @pytest.fixture()
     def name_space(self):
-        """Call examples/diff_sincos.phyk file"""
-        return compile("diff_sincos")
+        """Call examples/diff_functions.phyk file"""
+        return compile("diff_functions")
 
     @pytest.mark.parametrize(
         "x_val, expected_grad",
