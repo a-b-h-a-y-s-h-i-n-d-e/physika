@@ -1691,6 +1691,15 @@ def generate_statement(stmt: ASTNode,
 
         return "\n".join(branch_lines)
 
+    # Adds ELF features statement tags
+    elf_result = REGISTRY.dispatch_forward(
+        op,
+        stmt,
+        to_expr=lambda n: ast_to_torch_expr(n),
+        indent=0,
+    )
+    if elf_result is not None:
+        return elf_result
     return f"# Unknown: {stmt}"
 
 
