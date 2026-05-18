@@ -7,8 +7,13 @@ def torch_funcs_with_scalar_R(x: R): R[m]:
     result_abs: R = abs(x)
     return [result_sin, result_cos, result_exp, result_sqrt, result_log, result_abs]
 
+def check_diff_torch_funcs(x: R): R[m]:
+    results = grad(torch_funcs_with_scalar_R, x)
+    return results
 
-torch_funcs_with_scalar_R(1.0)
+x: R = 1.0
+torch_funcs_with_scalar_R(x)
+check_diff_torch_funcs(5.0)
 
 # -------------------------------------------------
 # Differentiable sin/cos in conditional statement
