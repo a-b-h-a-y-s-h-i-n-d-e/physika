@@ -156,3 +156,83 @@ new_barrier_height
 new_V = make_potential(new_barrier_height)
 pre_results = solver(new_V)
 create_plot(pre_results, psi0, x, V)
+
+
+
+# def append_row(arr, val):
+#     if isinstance(val, torch.Tensor) and val.dim() >= 1:
+#         # val is an array — stack as new row
+#         if isinstance(arr, torch.Tensor) and arr.dim() == 1 and arr.shape[0] != val.shape[0]:
+#             # first call — arr is placeholder [0], start fresh
+#             return val.unsqueeze(0)
+#         elif isinstance(arr, torch.Tensor) and arr.dim() == 2:
+#             return torch.cat([arr, val.unsqueeze(0)], dim=0)
+#         else:
+#             return val.unsqueeze(0)
+#     else:
+#         # scalar append — original behavior
+#         new_length = len(arr) + 1
+#         results = torch.zeros(new_length)
+#         results[:-1] = arr
+#         results[-1] = float(val)
+#         return results
+    
+
+# def update(frame, true_values, psi, line_prob, line_re, line_im):
+#     """
+#     Evolves the wave function for several time steps per frame to smooth the animation,
+#     and updates the probability density and real/imaginary parts of the wave function.
+#     """
+#     psi = true_values[frame]
+
+#     # print((psi.real**2+psi.imag**2).sum())
+#     line_prob.set_ydata(np.abs(psi) ** 2)
+#     line_re.set_ydata(np.real(psi))
+#     line_im.set_ydata(np.imag(psi))
+#     return line_prob, line_re, line_im
+
+
+# def initialize_plot(psi0, x, V):
+#     """
+#     Sets up the figure and initial plots for the animation.
+#     """
+#     fig, (ax_prob, ax_reim) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+
+#     V_scale_prob = np.max(np.abs(psi0)) ** 2 * 1.5
+#     V_scale_reim = np.max(np.abs(psi0)) * 1.5
+
+#     ax_prob.plot(x, V / 1.8 * V_scale_prob, "k--", lw=1.5, label="Potential")
+#     (line_prob,) = ax_prob.plot(
+#         x, np.abs(psi0) ** 2, "b-", lw=2, label=r"$|\psi(x,t)|^2$"
+#     )
+#     ax_prob.set_ylabel(r"$|\psi(x,t)|^2$")
+#     ax_prob.set_title("Quantum Tunneling")
+#     ax_prob.legend(loc="upper right")
+
+#     ax_reim.plot(x, V / 1.8 * V_scale_reim, "k--", lw=1.5, label="Potential")
+#     (line_re,) = ax_reim.plot(x, np.real(psi0), "b-", lw=2, label=r"Re{$\psi$}")
+#     (line_im,) = ax_reim.plot(x, np.imag(psi0), "r-", lw=2, label=r"Im{$\psi$}")
+
+#     return fig, line_prob, line_re, line_im
+
+
+# def create_plot(true_values, psi0, x, V):
+#     true_values = true_values.detach().cpu().numpy()
+#     psi0 = psi0.detach().cpu().numpy()
+#     x = x.detach().cpu().numpy()
+#     V = V.detach().cpu().numpy()
+#     fig, line_prob, line_re, line_im = initialize_plot(psi0, x, V)
+
+#     # Create animation for the live display.
+#     ani = animation.FuncAnimation(
+#         fig,
+#         update,
+#         fargs=(true_values, psi0, line_prob, line_re, line_im),
+#         frames= len(true_values),
+#         interval=30,
+#         blit=False,
+#     )
+
+#     plt.tight_layout()
+#     plt.show()
+
