@@ -5,6 +5,7 @@ import torch
 import pytest
 
 from tests.conftest import exec_phyk
+from physika.runtime import compute_grad
 
 from physika.lexer import lexer
 from physika.parser import parser, symbol_table
@@ -827,6 +828,20 @@ class TestAstToTorch:
         f = name_space["torch_funcs_with_scalar_R"]
         x = torch.tensor(x_val)
         true_values = f(x)
+        assert all(
+            abs(exp - true) < r_tol
+            for exp, true in zip(expected_values, true_values))
+
+    @pytest.mark.parametrize("x_val, expected_values", [
+        (1.0, [0.5403, -0.8414, 2.7182, 0.5, 1.0, 1.0]),
+        (5.0, [0.2836, 0.9589, 148.4131, 0.2236, 0.2000, 1.0]),
+    ])
+    def test_torch_funcs_diff_correctness(self, name_space, x_val,
+                                          expected_values):
+        """Verify correctness of gradients of torch functions."""
+        f = name_space["torch_funcs_with_scalar_R"]
+        x = torch.tensor(x_val)
+        true_values = compute_grad(f, x)
         assert all(
             abs(exp - true) < r_tol
             for exp, true in zip(expected_values, true_values))
