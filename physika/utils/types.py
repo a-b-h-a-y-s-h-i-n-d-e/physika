@@ -608,7 +608,7 @@ def check_function(
 
     Examples
     --------
-    >>> from physika.utils.type import check_function
+    >>> from physika.utils.types import check_function
     >>> errors = []
     >>> fdef = {"params": [("x", "ℝ")], "statements": [], "body": ("var", "x"), "return_type": "ℝ"}  # noqa: E501
     >>> check_function("identity", fdef, {}, {}, errors.append)
