@@ -1034,6 +1034,12 @@ Physika's type checker performs three passes over the unified AST:
 
 Type mismatches are accumulated in ``self.errors`` as plain strings.
 
+Below is a figure of Physika's ``TypeChecker`` describing the mentioned workflow:
+
+.. image:: _static/type-checker.png
+   :alt: TypeChecker workflow diagram
+   :align: center
+
 Symbolic methods
 ----------------
 
