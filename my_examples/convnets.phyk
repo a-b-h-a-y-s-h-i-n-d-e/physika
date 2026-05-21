@@ -1,0 +1,249 @@
+def get_1d_array_length(x: ℝ[m]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+def zero_1d_array(len: ℝ): ℝ[m]:
+    results: ℝ[len] = for i: ℕ(len) -> i*0
+    return results
+
+def zero_2d_array(rows: R, cols: R): R[m, n]:
+    results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+    return results
+
+def get_sum_of_1d_array(x: R[m]): R:
+    total = 0
+    for i:
+        total += x[i]
+    return total
+
+def max(x: R, y: R): R:
+    if x>y:
+        return x
+    else:
+        return y
+
+
+def relu(x: R): R:
+    if x>0:
+        return x
+    else: 
+        return 0.0
+
+def relu2d(x: R[H, W]): R[H, W]:
+    rows = get_1d_array_length(x)
+    cols = get_1d_array_length(x[0])
+    results: R[rows, cols] = zero_2d_array(rows, cols)
+    for i:N(rows):
+        for j:N(cols):
+            results[i, j] = relu(x[i, j])
+    return results
+
+def softmax(x: R[m]): R[m]:
+    len_x = get_1d_array_length(x)
+    exps_array: R[m] = for i:N(len_x) -> exp(x[i])
+    total: R = get_sum_of_1d_array(exps_array)
+    results: R[len_x] = for i:N(len_x) -> exps_array[i] / total
+    return results
+
+
+def cross_entropy(probs: R[m], label: R): R:
+    p: R = probs[label]
+    return -log(p)
+
+
+
+class ConvNets:
+    kernel: R[m, n]
+    b1: R
+    w: R[p, q]
+    b2: R[s]
+    def conv2d(input: R[H, W], kernel: R[K, K], bias: R): R[m, n]:
+        out_H = get_1d_array_length(input) - get_1d_array_length(kernel) + 1
+        out_W = get_1d_array_length(input[0]) - get_1d_array_length(kernel[0]) + 1
+        results: R[out_H, out_W] = zero_2d_array(out_H, out_W)
+        for i:N(out_H):
+            for j:N(out_W):
+                acc = 0
+                for ki:N(len(kernel)):
+                    for kj:N(len(kernel[0])):
+                        acc += input[i+ki, j+kj] * kernel[ki, kj]
+                results[i, j] = acc + bias
+        return results
+    def maxpool2d(x: R[H, W]): R[m, n]:
+        stride = 2
+        rows = get_1d_array_length(x) / 2
+        cols = get_1d_array_length(x[0]) / 2
+        results: R[rows, cols] = zero_2d_array(rows, cols)
+        for i:N(rows):
+            for j:N(cols):
+                a = x[i*stride, j*stride]
+                b = x[i*stride, j*stride + 1]
+                c = x[i*2+1, j*2]
+                d = x[i*2+1, j*2+1]
+                results[i, j] = max(a, max(b, max(c, d)))
+        return results
+    def flatten(x: R[H, W]): R[n]:
+        rows = get_1d_array_length(x)
+        cols = get_1d_array_length(x[0])
+        new_len = rows*cols
+        results: R[new_len] = zero_1d_array(new_len)
+        for i:N(rows):
+            for j:N(cols):
+                results[i*cols + j] = x[i, j]
+        return results
+    def linear(x: R[m], weight: R[m, n], bias: R[n]): R[n]:
+        out = get_1d_array_length(bias)
+        inp = get_1d_array_length(x)
+        results: R[out] = zero_1d_array(out)
+        for i:N(out):
+            acc = 0
+            for j:N(inp):
+                acc += weight[i, j] * x[j]
+            results[i] = acc + bias[i]
+        return results
+    def λ(input: R[m, n]) -> R[m]:
+        conv1 = this.conv2d(input, this.kernel, this.b1)
+        relu1 = relu2d(conv1)
+        pool1 = this.maxpool2d(relu1)
+        flat = this.flatten(pool1)
+        out = this.linear(flat, this.w, this.b2)
+        results = softmax(out)
+        return results
+
+
+kernel: R[3, 3] = [
+    [1,0,-1],
+    [1,0,-1],
+    [1,0,-1]
+]
+
+b1: R = 0
+
+w : ℝ[10,169] = for i : ℕ(10) -> for j : ℕ(169) -> sin(3.14 * i / 9) * cos(3.14 * j / 168)
+
+b2: R = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+
+
+
+cnn_object = ConvNets(kernel, b1, w, b2)
+
+
+
+
+dataset = create_dataset(1)
+X = dataset[0]
+y = dataset[1]
+
+
+
+epochs: N = 10
+lr: R = 0.1
+
+for i:N(epochs):
+    loss = 0
+    for j:N(10):
+        input = X[j]
+        label = y[j]
+        z = cnn_object(input)
+        current_loss = cross_entropy(z, label)
+        loss += current_loss
+        dk = grad(current_loss, cnn_object.kernel)
+        db1 = grad(current_loss, cnn_object.b1)
+        dw = grad(current_loss, cnn_object.w)
+        db2 = grad(current_loss, cnn_object.b2)
+        new_kernel = cnn_object.kernel - lr * dk
+        new_b1 = cnn_object.b1 - lr * db1
+        new_w = cnn_object.w - lr * dw
+        new_b2 = cnn_object.b2 - lr * db2
+        cnn_object = ConvNets(new_kernel, new_b1, new_w, new_b2)
+    loss = loss / 10
+    physika_print(loss)
+
+
+
+
+
+
+
+def argmax(iterable: R[m]): R:
+    idx = 0
+    max_val = iterable[0]
+    len_iterable = get_1d_array_length(iterable)
+    for i:N(1, len_iterable):
+        if iterable[i] > max_val:
+            max_val = iterable[i]
+            idx = i
+    return idx
+
+
+test_input = X[5]
+test_label = y[5]
+
+test_results = cnn_object(test_input)
+
+
+
+# import torch
+# from torchvision import datasets, transforms
+
+
+# def create_dataset(dummy):
+#     transform = transforms.ToTensor()
+
+#     mnist = datasets.MNIST(
+#         root="./data",
+#         train=True,
+#         download=True,
+#         transform=transform
+#     )
+
+#     X = []
+#     y = []
+
+#     found = [False] * 10
+
+#     for image, label in mnist:
+
+#         # only take first occurrence of each digit
+#         if found[label] == False:
+
+#             image = image.squeeze(0)
+
+#             X.append(image)
+#             y.append(label)
+
+#             found[label] = True
+
+#         # stop once we have digits 0-9
+#         done = True
+
+#         for i in range(10):
+#             if found[i] == False:
+#                 done = False
+
+#         if done:
+#             break
+
+#     X = torch.stack(X)   # [10, 28, 28]
+#     y = torch.tensor(y)  # [10]
+
+#     return [X, y]
+
+
+
+
+# def plot_single_image(X):
+#     import matplotlib.pyplot as plt
+#     plt.imshow(X, cmap="gray")
+#     plt.show()
+
+
+pred_index = argmax(test_results)
+pred_index
+test_label
