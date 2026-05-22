@@ -71,7 +71,7 @@ for i in range(int(0), int(nx)):
 true_values = solver(true_c, u0, dx, dt, nt)
 c = torch.tensor(0.1, requires_grad=True)
 learning_rate = 0.01
-epochs = 200
+epochs = 1
 for i in range(int(0), int(epochs)):
     physika_print(i)
     g = compute_grad(calculate_loss, c)

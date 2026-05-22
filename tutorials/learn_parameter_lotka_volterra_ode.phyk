@@ -85,7 +85,12 @@ def adjoint_grad(θ: ℝ[4]): ℝ:
 
 θ: ℝ[4] = [1.0, 0.7, 2.5, 0.7]  
 learning_rate: ℝ = 0.0005
-epochs: ℕ = 2000
+
+# ------------------------------------------------------------------
+# set epoch value to 2000, here we have set it to 1 to just test 
+# physika code through tests/test_tutorials.py
+# ------------------------------------------------------------------
+epochs: ℕ = 1
 
 for i:ℕ(epochs):
     g = adjoint_grad(θ)

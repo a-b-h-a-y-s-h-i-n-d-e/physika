@@ -55,7 +55,7 @@ true_theta = 2.0
 y_true = solver(true_theta)
 θ = torch.tensor(1.0, requires_grad=True)
 learning_rate = 0.1
-epochs = 1000
+epochs = 1
 for i in range(int(0), int(epochs)):
     g = compute_grad(calculate_loss, θ)
     θ = (θ - (learning_rate * g))

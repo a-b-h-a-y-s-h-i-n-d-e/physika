@@ -64,7 +64,7 @@ for i in range(int(0), int(nx)):
 true_values = solver(true_alpha, T0, dx, dt, nt)
 α = torch.tensor(0.1, requires_grad=True)
 learning_rate = 0.1
-epochs = 500
+epochs = 1
 for i in range(int(0), int(epochs)):
     g = compute_grad(calculate_loss, α)
     α = (α - (learning_rate * g))

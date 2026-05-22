@@ -88,7 +88,7 @@ true_x = true_results[int(0)]
 true_y = true_results[int(1)]
 θ = torch.tensor([1.0, 0.7, 2.5, 0.7])
 learning_rate = 0.0005
-epochs = 2000
+epochs = 1
 for i in range(int(0), int(epochs)):
     g = adjoint_grad(θ)
     θ = (θ - (learning_rate * g))

@@ -52,7 +52,12 @@ def calculate_loss(θ: ℝ): ℝ:
 
 θ: ℝ = 1.0
 learning_rate: ℝ = 0.1
-epochs: ℝ = 1000
+
+# ------------------------------------------------------------------
+# set epoch value to 1000, here we have set it to 1 to just test 
+# physika code through tests/test_tutorials.py
+# ------------------------------------------------------------------
+epochs: ℝ = 1
 
 for i:ℕ(epochs):
     g = grad(calculate_loss, θ)
