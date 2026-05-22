@@ -9,7 +9,6 @@ from pathlib import Path
 import pytest
 import subprocess
 
-
 HEADER = "import torch\nimport torch.nn as nn\nimport torch.optim as optim\n"
 TUTORIALS_DIR = Path(__file__).parent.parent / "tutorials"
 PHYK_FILES = sorted(TUTORIALS_DIR.glob("*.phyk"))
@@ -78,9 +77,9 @@ def test_codegen_matches_reference(phyk_file):
 def test_physika_cli(phyk_file):
     """Test which runs all physika files through subprocess"""
     result = subprocess.run(
-    ["physika", str(phyk_file)],
-    capture_output=True,
-    text=True,
+        ["physika", str(phyk_file)],
+        capture_output=True,
+        text=True,
     )
 
     assert result.returncode == 0
