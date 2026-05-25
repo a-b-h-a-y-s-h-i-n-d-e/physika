@@ -43,7 +43,7 @@ complex_mul
 # square_root(10)
 # -> 3.162
 # -------------------------------------------
-def magnitude(z: C): R:
+def magnitude(z: C): C:
     return abs(z)
 
 magnitude(x)
@@ -55,11 +55,11 @@ magnitude(x)
 # Array of complex numbers
 # -------------------------------------------
 
-array_imag: ℂ = [1j, 2j, 3j]
+array_imag: ℂ[3] = [1j, 2j, 3j]
 
-array_complex: ℂ = [1 + 9j, 7 + 2j, 3 + 5j]
+array_complex: ℂ[3] = [1 + 9j, 7 + 2j, 3 + 5j]
 
-nested_complex: ℂ = [
+nested_complex: ℂ[2, 2] = [
     [1 + 2j, 3 + 4j],
     [4 + 9j, 7 + 2j]
 ]
