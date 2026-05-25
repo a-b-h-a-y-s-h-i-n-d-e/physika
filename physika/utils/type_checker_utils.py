@@ -360,7 +360,7 @@ def type_infer(
 
     if op == "num":
         return "ℝ"
-    
+
     elif op == "complex":
         return "ℂ"
 
@@ -1047,12 +1047,12 @@ def type_promotion(t1: Type, t2: Type) -> Type:
         First scalar type.
     t2 : Type
         Second scalar type.
-    
+
     Returns
     -------
     Type
         The promoted type with highest numeric priority.
-    
+
     Examples
     --------
     >>> from physika.utils.type_checker_utils import type_promotion
@@ -1073,7 +1073,6 @@ def type_promotion(t1: Type, t2: Type) -> Type:
     p2 = priority.get(t2, -1)
 
     return t1 if p1 >= p2 else t2
-
 
 
 def broadcast_op(t1: Optional[Type], t2: Optional[Type]) -> Optional[Type]:

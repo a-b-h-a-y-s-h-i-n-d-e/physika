@@ -78,7 +78,7 @@ def expr_num(node: Any,
 
 
 def expr_complex(node: Any,
-             ctx: ExprContext) -> Tuple[Optional[Type], Substitution]:
+                 ctx: ExprContext) -> Tuple[Optional[Type], Substitution]:
     """
     The type of a complex literal is always ``ℂ``.
 
@@ -97,7 +97,8 @@ def expr_complex(node: Any,
 
     Examples
     --------
-    >>> from physika.utils.infer_expr import ExprContext, expr_complex, T_COMPLEX
+    >>> from physika.utils.infer_expr import ExprContext, expr_complex
+    >>> from physika.utils.infer_expr import T_COMPLEX
     >>> from physika.utils.types import Substitution
     >>> ctx = ExprContext({}, Substitution(), {}, {}, [].append)
     >>> t, _= expr_complex(("complex", 3j), ctx)
