@@ -1,11 +1,11 @@
 import ply.lex as lex
 
-tokens = ("ID", "NUMBER", "TYPE", "STRING", "PLUS", "MINUS", "TIMES", "DIVIDE",
-          "INTDIV", "MATMUL", "POWER", "EQUALS", "EQEQ", "NEQ", "LT", "GT",
-          "LEQ", "GEQ", "PLUSEQ", "COLON", "COMMA", "ARROW", "LPAREN",
-          "RPAREN", "LBRACKET", "RBRACKET", "NEWLINE", "INDENT", "DEDENT",
-          "DEF", "RETURN", "FOR", "IF", "ELSE", "CLASS", "LAMBDA", "TANGENT",
-          "IMAGINARY", "SYMBOL", "FUNCTION", "EQUATION", "WALRUS")
+tokens = ("ID", "NUMBER", "COMPLEX", "TYPE", "STRING", "PLUS", "MINUS",
+          "TIMES", "DIVIDE", "INTDIV", "MATMUL", "POWER", "EQUALS", "EQEQ",
+          "NEQ", "LT", "GT", "LEQ", "GEQ", "PLUSEQ", "COLON", "COMMA", "ARROW",
+          "LPAREN", "RPAREN", "LBRACKET", "RBRACKET", "NEWLINE", "INDENT",
+          "DEDENT", "DEF", "RETURN", "FOR", "IF", "ELSE", "CLASS", "LAMBDA",
+          "TANGENT", "IMAGINARY", "SYMBOL", "FUNCTION", "EQUATION", "WALRUS")
 
 reserved = {
     "def": "DEF",
@@ -86,10 +86,9 @@ def t_TYPE(t):
     return t
 
 
-def t_COMPLEX_NUM(t):
+def t_COMPLEX(t):
     r'\d+(\.\d+)?j'
     t.value = complex(0, float(t.value[:-1]))
-    t.type = "NUMBER"
     return t
 
 
