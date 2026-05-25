@@ -1,8 +1,8 @@
 Convolutional Neural Networks 
 =============================
 
-In this tutorial we will implement Convolutional Neural networks in physika
-then train it on simple classification task with MNIST dataset.
+In this tutorial we implemented Convolutional Neural networks in physika
+and trained it on simple classification task with MNIST dataset.
 
 Dataset
 --------
@@ -108,8 +108,8 @@ Helper functions
         results: ℝ[len] = for i: ℕ(len) -> i*0
         return results
 
-    def zero_2d_array(rows: ℝ, cols: ℝ): R[m, n]:
-        results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+    def zero_2d_array(rows: ℝ, cols: ℝ): ℝ[m, n]:
+        results: ℝ[rows, cols] = for i:ℕ(rows) -> for j:N(cols) -> j*0
         return results
 
     def get_sum_of_1d_array(x: ℝ[m]): ℝ:
@@ -129,8 +129,11 @@ Helper functions
 Activation functions
 ------------------------
 
-After each conv layer we use relu activation function
-which helps model to learn non-linear patterns.
+After the convolution operation produces an output feature map,
+we apply the ReLU activation function element-wise to every value.
+
+ReLU helps the model learn non-linear patterns by removing negative values.
+
 Mathematically, ReLU is defined as:
 
 .. math::
@@ -142,8 +145,8 @@ Mathematically, ReLU is defined as:
     \end{cases}
 
 
-In the last layer of convnets which produces raw model scores commonly known as logits. we use softmax to convert it into 
-probability distribution
+In the final layer of a convolutional neural network, the model produces raw output scores known as logits. We apply the softmax function to convert these 
+logits into a probability distribution over the output classes.
 Mathematically:
 
 .. math::
@@ -160,19 +163,19 @@ Mathematically:
             return 0.0
 
     def relu2d(x: ℝ[H, W]): ℝ[H, W]:
-        rows = get_2d_array_num_rows(x)
-        cols = get_1d_array_length(x[0])
+        rows: ℝ = get_2d_array_num_rows(x)
+        cols: ℝ = get_1d_array_length(x[0])
         results: ℝ[rows, cols] = zero_2d_array(rows, cols)
-        for i:N(rows):
-            for j:N(cols):
+        for i:ℕ(rows):
+            for j:ℕ(cols):
                 results[i, j] = relu(x[i, j])
         return results
 
     def softmax(x: ℝ[m]): ℝ[m]:
-        len_x = get_1d_array_length(x)
-        exps_array: ℝ[m] = for i:N(len_x) -> exp(x[i])
+        len_x: ℝ = get_1d_array_length(x)
+        exps_array: ℝ[m] = for i:ℕ(len_x) -> exp(x[i])
         total: ℝ = get_sum_of_1d_array(exps_array)
-        results: ℝ[len_x] = for i:N(len_x) -> exps_array[i] / total
+        results: ℝ[len_x] = for i:ℕ(len_x) -> exps_array[i] / total
         return results
 
 
@@ -195,7 +198,7 @@ network.
 
 It expects:
 
-- an input image or feature map
+- an input image or feature map  (shape :- 28x28 for this dataset)
 - a convolution kernel
 - a bias term
 
@@ -259,14 +262,14 @@ Here we assume padding as 1 and stride as 1
 .. code-block:: text
 
     def conv2d(input: ℝ[H, W], kernel: ℝ[K, K], bias: ℝ): ℝ[m, n]:
-        out_H = get_2d_array_num_rows(input) - get_2d_array_num_rows(kernel) + 1
-        out_W = get_1d_array_length(input[0]) - get_1d_array_length(kernel[0]) + 1
+        out_H: ℝ = get_2d_array_num_rows(input) - get_2d_array_num_rows(kernel) + 1
+        out_W: ℝ = get_1d_array_length(input[0]) - get_1d_array_length(kernel[0]) + 1
         results: ℝ[out_H, out_W] = zero_2d_array(out_H, out_W)
-        for i:N(out_H):
-            for j:N(out_W):
+        for i:ℕ(out_H):
+            for j:ℕ(out_W):
                 acc = 0
-                for ki:N(len(kernel)):
-                    for kj:N(len(kernel[0])):
+                for ki:ℕ(len(kernel)):
+                    for kj:ℕ(len(kernel[0])):
                         acc += input[i+ki, j+kj] * kernel[ki, kj]
                 results[i, j] = acc + bias
         return results
@@ -308,12 +311,12 @@ where:
 .. code-block:: text
 
     def maxpool2d(x: ℝ[m, n]): ℝ[m, n]:
-        stride = 2
-        rows = get_2d_array_num_rows(x) / 2
-        cols = get_1d_array_length(x[0]) / 2
+        stride: ℝ = 2
+        rows: ℝ = get_2d_array_num_rows(x) / 2
+        cols: ℝ = get_1d_array_length(x[0]) / 2
         results: ℝ[rows, cols] = zero_2d_array(rows, cols)
-        for i:N(rows):
-            for j:N(cols):
+        for i:ℕ(rows):
+            for j:ℕ(cols):
                 a = x[i*stride, j*stride]
                 b = x[i*stride, j*stride + 1]
                 c = x[i*2+1, j*2]
@@ -370,21 +373,21 @@ Visualization of Convolution block + pooling block + neural network
 .. code-block:: text
 
     def flatten(x: ℝ[m, n]): ℝ[n]:
-        rows = get_2d_array_num_rows(x)
-        cols = get_1d_array_length(x[0])
-        new_len = rows*cols
+        rows: ℝ = get_2d_array_num_rows(x)
+        cols: ℝ = get_1d_array_length(x[0])
+        new_len: ℝ = rows*cols
         results: ℝ[new_len] = zero_1d_array(new_len)
-        for i:N(rows):
-            for j:N(cols):
+        for i:ℕ(rows):
+            for j:ℕ(cols):
                 results[i*cols + j] = x[i, j]
         return results
     def linear(x: ℝ[n], weight: ℝ[m, n], bias: ℝ[m]): ℝ[m]:
-        out = get_1d_array_length(bias)
-        inp = get_1d_array_length(x)
+        out: ℝ = get_1d_array_length(bias)
+        inp: ℝ = get_1d_array_length(x)
         results: ℝ[out] = zero_1d_array(out)
-        for i:N(out):
+        for i:ℕ(out):
             acc = 0
-            for j:N(inp):
+            for j:ℕ(inp):
                 acc += weight[i, j] * x[j]
             results[i] = acc + bias[i]
         return results
@@ -406,12 +409,12 @@ The Physika implementation is:
 .. code-block:: text
 
     def λ(input: ℝ[H, W]) -> ℝ[m]:
-        conv1 = this.conv2d(input, this.kernel, this.b1)
-        relu1 = relu2d(conv1)
-        pool1 = this.maxpool2d(relu1)
-        flat = this.flatten(pool1)
-        out = this.linear(flat, this.w, this.b2)
-        results = softmax(out)
+        conv1: ℝ[m, n] = this.conv2d(input, this.kernel, this.b1)
+        relu1: ℝ[H, W] = relu2d(conv1)
+        pool1: ℝ[m, n] = this.maxpool2d(relu1)
+        flat: ℝ[n] = this.flatten(pool1)
+        out: ℝ[m] = this.linear(flat, this.w, this.b2)
+        results: ℝ[m] = softmax(out)
         return results
 
 For an MNIST image:
@@ -512,8 +515,8 @@ where:
 .. code-block:: text
 
     def cross_entropy(probs: ℝ[m], label: ℝ): ℝ:
-    p: ℝ = probs[label]
-    return -log(p)
+        p: ℝ = probs[label]
+        return -log(p)
 
 
 Training the Model
@@ -533,14 +536,14 @@ where:
 
 .. code-block:: text
 
-    len_train_X = get_1d_array_length(train_X)
+    len_train_X: ℝ = get_1d_array_length(train_X)
 
-    epochs: N = 20
-    lr: R = 0.1
+    epochs: ℕ = 20
+    lr: ℝ = 0.1
 
-    for i:N(epochs):
+    for i:ℕ(epochs):
         loss = 0
-        for j:N(len_train_X):
+        for j:ℕ(len_train_X):
             input = train_X[j]
             label = train_y[j]
             z = cnn_object(input)
@@ -580,10 +583,10 @@ The final classification accuracy is computed as:
 .. code-block:: text
 
     def argmax(iterable: R[m]): R:
-        idx = 0
-        max_val = iterable[0]
-        len_iterable = get_1d_array_length(iterable)
-        for i:N(1, len_iterable):
+        idx: ℝ = 0
+        max_val: ℝ = iterable[0]
+        len_iterable: ℝ = get_1d_array_length(iterable)
+        for i:ℕ(1, len_iterable):
             if iterable[i] > max_val:
                 max_val = iterable[i]
                 idx = i
@@ -594,7 +597,215 @@ The final classification accuracy is computed as:
     len_test_X = get_1d_array_length(test_X)
     y_true: R = 0
 
-    for i:N(len_test_X):
+    for i:ℕ(len_test_X):
+        x = test_X[i]
+        y_true = test_y[i]
+        y_pred = cnn_object(x)
+        pred_class = argmax(y_pred)
+        if pred_class == y_true:
+            correct += 1
+    accuracy = correct / len_test_X
+
+
+
+Full Code
+---------
+
+
+.. code-block:: text
+
+    def get_1d_array_length(x: ℝ[m]): ℝ:
+        total: ℝ = 0
+        temp: ℝ = 0
+        for i:
+            temp = x[i]
+            total += 1
+        return total
+
+    def get_2d_array_num_rows(x: ℝ[m, n]): ℝ:
+        total: ℝ = 0
+        temp: ℝ = 0
+        for i:
+            temp = x[i]
+            total += 1
+        return total
+
+    def zero_1d_array(len: ℝ): ℝ[m]:
+        results: ℝ[len] = for i: ℕ(len) -> i*0
+        return results
+
+    def zero_2d_array(rows: ℝ, cols: ℝ): ℝ[m, n]:
+        results: ℝ[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+        return results
+
+    def get_sum_of_1d_array(x: ℝ[m]): ℝ:
+        total = 0
+        for i:
+            total += x[i]
+        return total
+
+    def max(x: ℝ, y: ℝ): ℝ:
+        if x>y:
+            return x
+        else:
+            return y
+
+    def relu(x: ℝ): ℝ:
+        if x>0:
+            return x
+        else: 
+            return 0.0
+
+    def relu2d(x: ℝ[H, W]): ℝ[H, W]:
+        rows: ℝ = get_2d_array_num_rows(x)
+        cols: ℝ = get_1d_array_length(x[0])
+        results: ℝ[rows, cols] = zero_2d_array(rows, cols)
+        for i:N(rows):
+            for j:N(cols):
+                results[i, j] = relu(x[i, j])
+        return results
+
+    def softmax(x: ℝ[m]): ℝ[m]:
+        len_x: ℝ = get_1d_array_length(x)
+        exps_array: ℝ[m] = for i:N(len_x) -> exp(x[i])
+        total: ℝ = get_sum_of_1d_array(exps_array)
+        results: ℝ[len_x] = for i:N(len_x) -> exps_array[i] / total
+        return results
+
+
+
+    class ConvNets:
+        kernel: ℝ[K, K]
+        b1: ℝ
+        w: ℝ[m, n]
+        b2: ℝ[m]
+        def conv2d(input: ℝ[H, W], kernel: ℝ[K, K], bias: ℝ): ℝ[m, n]:
+            out_H: ℝ = get_2d_array_num_rows(input) - get_2d_array_num_rows(kernel) + 1
+            out_W: ℝ = get_1d_array_length(input[0]) - get_1d_array_length(kernel[0]) + 1
+            results: ℝ[out_H, out_W] = zero_2d_array(out_H, out_W)
+            for i:ℕ(out_H):
+                for j:ℕ(out_W):
+                    acc = 0
+                    for ki:ℕ(len(kernel)):
+                        for kj:ℕ(len(kernel[0])):
+                            acc += input[i+ki, j+kj] * kernel[ki, kj]
+                    results[i, j] = acc + bias
+            return results
+        def maxpool2d(x: ℝ[m, n]): ℝ[m, n]:
+            stride: ℝ = 2
+            rows: ℝ = get_2d_array_num_rows(x) / 2
+            cols: ℝ = get_1d_array_length(x[0]) / 2
+            results: ℝ[rows, cols] = zero_2d_array(rows, cols)
+            for i:ℕ(rows):
+                for j:ℕ(cols):
+                    a = x[i*stride, j*stride]
+                    b = x[i*stride, j*stride + 1]
+                    c = x[i*2+1, j*2]
+                    d = x[i*2+1, j*2+1]
+                    results[i, j] = max(a, max(b, max(c, d)))
+            return results
+        def flatten(x: ℝ[m, n]): ℝ[n]:
+            rows: ℝ = get_2d_array_num_rows(x)
+            cols: ℝ = get_1d_array_length(x[0])
+            new_len: ℝ = rows*cols
+            results: ℝ[new_len] = zero_1d_array(new_len)
+            for i:ℕ(rows):
+                for j:ℕ(cols):
+                    results[i*cols + j] = x[i, j]
+            return results
+        def linear(x: ℝ[n], weight: ℝ[m, n], bias: ℝ[m]): ℝ[m]:
+            out: ℝ = get_1d_array_length(bias)
+            inp: ℝ = get_1d_array_length(x)
+            results: ℝ[out] = zero_1d_array(out)
+            for i:ℕ(out):
+                acc = 0
+                for j:ℕ(inp):
+                    acc += weight[i, j] * x[j]
+                results[i] = acc + bias[i]
+            return results
+        def λ(input: ℝ[H, W]) -> ℝ[m]:
+            conv1: ℝ[m, n] = this.conv2d(input, this.kernel, this.b1)
+            relu1: ℝ[H, W] = relu2d(conv1)
+            pool1: ℝ[m, n] = this.maxpool2d(relu1)
+            flat: ℝ[n] = this.flatten(pool1)
+            out: ℝ[m] = this.linear(flat, this.w, this.b2)
+            results: ℝ[m] = softmax(out)
+            return results
+
+
+
+    kernel: ℝ[3, 3] = [
+        [1,0,-1],
+        [1,0,-1],
+        [1,0,-1]
+    ]
+
+    b1: ℝ = 0
+
+    w : ℝ[10,169] = for i : ℕ(10) -> for j : ℕ(169) -> sin(3.14 * i / 9) * cos(3.14 * j / 168)
+
+    b2: ℝ[10] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    cnn_object = ConvNets(kernel, b1, w, b2)
+
+
+
+    dataset = create_dataset(80, 100)
+    train_dataset = dataset[0]
+    test_dataset = dataset[1]
+
+    train_X = train_dataset[0]
+    train_y = train_dataset[1]
+    test_X = test_dataset[0]
+    test_y = test_dataset[1]
+
+
+    def cross_entropy(probs: ℝ[m], label: ℝ): ℝ:
+        p: ℝ = probs[label]
+        return -log(p)
+
+
+    len_train_X: ℝ = get_1d_array_length(train_X)
+    epochs: ℕ = 20
+    lr: ℝ = 0.1
+
+    for i:ℕ(epochs):
+        loss = 0
+        for j:ℕ(len_train_X):
+            input = train_X[j]
+            label = train_y[j]
+            z = cnn_object(input)
+            current_loss = cross_entropy(z, label)
+            loss += current_loss
+            dk = grad(current_loss, cnn_object.kernel)
+            db1 = grad(current_loss, cnn_object.b1)
+            dw = grad(current_loss, cnn_object.w)
+            db2 = grad(current_loss, cnn_object.b2)
+            new_kernel = cnn_object.kernel - lr * dk
+            new_b1 = cnn_object.b1 - lr * db1
+            new_w = cnn_object.w - lr * dw
+            new_b2 = cnn_object.b2 - lr * db2
+            cnn_object = ConvNets(new_kernel, new_b1, new_w, new_b2)
+        loss = loss / len_train_X
+        physika_print(loss)
+
+
+    def argmax(iterable: R[m]): R:
+        idx: ℝ = 0
+        max_val: ℝ = iterable[0]
+        len_iterable: ℝ = get_1d_array_length(iterable)
+        for i:ℕ(1, len_iterable):
+            if iterable[i] > max_val:
+                max_val = iterable[i]
+                idx = i
+        return idx
+
+
+    correct: R = 0
+    len_test_X = get_1d_array_length(test_X)
+    y_true: R = 0
+
+    for i:ℕ(len_test_X):
         x = test_X[i]
         y_true = test_y[i]
         y_pred = cnn_object(x)
