@@ -13,7 +13,7 @@ def extract_dist_args(args: List[Tuple],
     of output sampled vector (empty mean to sample one element).
 
     ``"reparam"`` and ``"score"`` refers to two estimators used in stochastic
-    graph computation described in [1].
+    graph computation described in [1]_.
 
     Parameters
     ----------
@@ -71,21 +71,20 @@ def sample(dist_expr: str, shape_args: List[Tuple], mode: str,
     Emit PyTorch source code for a stochastic node in a Physika program.
 
     Physika models probabilistic programs as Stochastic Computation Graphs
-    (SCGs) [1].  In an SCG, random variables are known as stochastic node and
+    (SCGs) [1]_.  In an SCG, random variables are known as stochastic node and
     other operations, not related with randomness, are deterministic nodes.
     Gradients flow through deterministic nodes by backpropagation, but stochastic
     nodes require a dedicated estimator to propagate gradients when sampling from
     a distribution.
 
-    Physika supports two estimators as described in [1]:
+    Physika supports two estimators:
 
     - Pathwise Estimator (``"reparam"``, default for continuous
-    distributions):
-        The sample is written as a deterministic transformation of a
-        random variable. For example,
-          ``z: ℝ = μ + σ·ε``, where ``ε : ℝ ~ N(0,1)``.
-        PyTorch's ``rsample()`` allows gradients to flow through ``μ``
-        and ``σ``.
+      distributions): the sample is written as a deterministic
+      transformation of a noise variable, e.g.
+      ``z: ℝ = μ + σ·ε`` where ``ε : ℝ ~ N(0,1)``.
+      PyTorch's ``rsample()`` allows gradients to flow through ``μ``
+      and ``σ``.
 
     - Score Function Estimator (``"score"``, for non-continous distributions):
         ``∇ log p(x, θ)`` is used to estimate the gradient without needing a
@@ -111,12 +110,6 @@ def sample(dist_expr: str, shape_args: List[Tuple], mode: str,
     -------
     str
         A Python code string that evaluates to a sampled tensor.
-
-    References
-    ----------
-    .. [1] John Schulman, Nicolas Heess, Theophane Weber, and Pieter Abbeel.
-           Gradient estimation using stochastic computation graphs. Advances
-           in neural information processing systems, 28, 2015.
 
     Example
     -------
