@@ -1101,7 +1101,7 @@ def broadcast_op(t1: Optional[Type], t2: Optional[Type]) -> Optional[Type]:
 
     Examples
     --------
-    >>> from physika.utils.type_checker_utils import broadcast_op
+    >>> from physika.utils.ty Optional[Type]pe_checker_utils import broadcast_op
     >>> from physika.utils.types import T_REAL, TTensor
     >>> broadcast_op(T_REAL, T_REAL)
     ℝ
@@ -1114,8 +1114,9 @@ def broadcast_op(t1: Optional[Type], t2: Optional[Type]) -> Optional[Type]:
         return t1
     if isinstance(t2, TTensor):
         return t2
-
-    return type_promotion(t1, t2)
+    if isinstance(t1, TScalar) and isinstance(t2, TScalar):
+        return type_promotion(t1, t2)
+    return t1
 
 
 def matmul_op(t1: Optional[Type], t2: Optional[Type],
