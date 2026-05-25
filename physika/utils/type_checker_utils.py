@@ -360,6 +360,9 @@ def type_infer(
 
     if op == "num":
         return "ℝ"
+    
+    elif op == "complex":
+        return "ℂ"
 
     elif op == "var":
         var_name = expr[1]
@@ -1034,6 +1037,45 @@ def unify_dim(d1: Any, d2: Any, s: Substitution) -> Substitution:
     return s
 
 
+def type_promotion(t1: Type, t2: Type) -> Type:
+    """
+    Promote two scalar numeric types to correct output type.
+
+    Parameters
+    ----------
+    t1 : Type
+        First scalar type.
+    t2 : Type
+        Second scalar type.
+    
+    Returns
+    -------
+    Type
+        The promoted type with highest numeric priority.
+    
+    Examples
+    --------
+    >>> from physika.utils.type_checker_utils import type_promotion
+    >>> from physika.utils.types import T_REAL, T_COMPLEX, T_NAT
+    >>> type_promotion(T_REAL, T_COMPLEX)
+    ℂ
+    >>> type_promotion(T_REAL, T_NAT)
+    ℝ
+    >>> type_promotion(T_NAT, T_COMPLEX)
+    ℂ
+    """
+    priority = {
+        T_NAT: 0,
+        T_REAL: 1,
+        T_COMPLEX: 2,
+    }
+    p1 = priority.get(t1, -1)
+    p2 = priority.get(t2, -1)
+
+    return t1 if p1 >= p2 else t2
+
+
+
 def broadcast_op(t1: Optional[Type], t2: Optional[Type]) -> Optional[Type]:
     """
     Return the result type of a broadcast operation.
@@ -1073,7 +1115,8 @@ def broadcast_op(t1: Optional[Type], t2: Optional[Type]) -> Optional[Type]:
         return t1
     if isinstance(t2, TTensor):
         return t2
-    return t1  # t1 and t2 are scalars
+
+    return type_promotion(t1, t2)
 
 
 def matmul_op(t1: Optional[Type], t2: Optional[Type],

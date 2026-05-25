@@ -527,6 +527,10 @@ def ast_to_torch_expr(node: ASTNode,
         if isinstance(val, float) and val == int(val):
             return f"{val}"
         return repr(val)
+    
+    elif op == "complex":
+        val = node[1]
+        return repr(val)
 
     elif op == "var":
         return node[1]
@@ -573,7 +577,7 @@ def ast_to_torch_expr(node: ASTNode,
 
         # helper function to recursively check if number is complex
         def _has_complex(node):
-            if (isinstance(node, tuple) and len(node) >= 2 and node[0] == "num"
+            if (isinstance(node, tuple) and len(node) >= 2 and node[0] == "complex"
                     and isinstance(node[1], complex)):
                 return True
             # recursively traverse tuples/lists (nested arrays)
