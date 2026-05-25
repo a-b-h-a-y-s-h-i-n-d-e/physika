@@ -1037,7 +1037,7 @@ def unify_dim(d1: Any, d2: Any, s: Substitution) -> Substitution:
     return s
 
 
-def type_promotion(t1: Type, t2: Type) -> Type:
+def type_promotion(t1: TScalar, t2: TScalar) -> TScalar:
     """
     Promote two scalar numeric types to correct output type.
 
