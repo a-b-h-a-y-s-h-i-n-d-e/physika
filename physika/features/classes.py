@@ -112,18 +112,10 @@ def build_class(constructor_params: Optional[list], body_items: list) -> dict:
     Parameters
     ----------
     constructor_params: Optional[list]
-        - None for empty physika classes params:
-            For example:
-            class Particle:
-                .
-                .
-                .
-       - List of params and types for non-empty Physika classes:
-            For example:
-            class HamiltonianNet(W1: ℝ[M,N], b1: ℝ[M], w2: ℝ[M], b2: ℝ):
-                .
-                .
-                .
+        ``None`` when fields are declared in the class body (e.g.
+        ``class Particle: mass : ℝ``).
+        A list of ``(name, type)`` pairs when params appear in the header
+        (e.g. ``class HamiltonianNet(W1: ℝ[M,N], b1: ℝ[M], ...):``).
     body_items: list
         Body expressions and statemetns that could be declarations, assignments,
         methods, fields, for-loops, if-else, etc.
@@ -136,6 +128,8 @@ def build_class(constructor_params: Optional[list], body_items: list) -> dict:
 
     Examples
     --------
+    ::
+
         class Particle:
             mass : ℝ
             def ke() : ℝ: ...
@@ -266,7 +260,7 @@ def generate_class(name: str, class_def: dict) -> str:
  
     Examples
     --------
-    Physika class:
+    Physika class::
 
         class Particle:
             mass : ℝ
@@ -690,7 +684,7 @@ class ClassFeature(ELF):
     ...     ast = build_unified_ast(parser.parse(src, lexer=lexer), symbol_table)
     ...     exec(from_ast_to_torch(ast, print_code=False), {})
 
-    # Physika class example
+    >>> # Physika class example
     >>> src = '''
     ... class Vec:
     ...     x : ℝ
@@ -703,7 +697,7 @@ class ClassFeature(ELF):
     ... a.norm_sq()
     ... '''
 
-    # Execute code and verify outputs
+    >>> # Execute code and verify outputs
     >>> run_phyk(src)
     3.0 ∈ ℝ
     4.0 ∈ ℝ
@@ -1077,9 +1071,9 @@ class ClassFeature(ELF):
         >>> class_def = build_class([("mass", "ℝ")], [])
         >>> code = rules["class_def"](("class_def", "Particle", class_def), **{})
         
-        # Physika code:
-        # class Particle:
-        #   mass: ℝ
+        >>> # Physika code:
+        >>> # class Particle:
+        >>> #   mass: ℝ
 
         >>> nl = chr(10) # unicode for \n
         >>> expected = nl.join([

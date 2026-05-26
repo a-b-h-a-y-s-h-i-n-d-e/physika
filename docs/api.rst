@@ -1,6 +1,22 @@
 API Reference
 =============
 
+physika.features.classes
+------------------------
+
+.. automodule:: physika.features.classes
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physika.features.randomness
+---------------------------
+
+.. automodule:: physika.features.randomness
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 physika.parser
 --------------
 
