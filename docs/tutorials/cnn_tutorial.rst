@@ -16,10 +16,10 @@ We trained CNN model on simple MNIST dataset for classifications task, for 10 cl
     train_dataset = dataset[0]
     test_dataset = dataset[1]
 
-    train_X = train_dataset[0]
-    train_y = train_dataset[1]
-    test_X = test_dataset[0]
-    test_y = test_dataset[1]
+    train_X: ℝ[80, 28, 28] = train_dataset[0]
+    train_y: ℝ[80] = train_dataset[1]
+    test_X: ℝ[20, 28, 28] = test_dataset[0]
+    test_y: ℝ[20] = test_dataset[1]
 
 
 .. note::
@@ -544,8 +544,8 @@ where:
     for i:ℕ(epochs):
         loss = 0
         for j:ℕ(len_train_X):
-            input = train_X[j]
-            label = train_y[j]
+            input: ℝ[28, 28] = train_X[j]
+            label: ℝ = train_y[j]
             z = cnn_object(input)
             current_loss = cross_entropy(z, label)
             loss += current_loss
@@ -754,10 +754,10 @@ Full Code
     train_dataset = dataset[0]
     test_dataset = dataset[1]
 
-    train_X = train_dataset[0]
-    train_y = train_dataset[1]
-    test_X = test_dataset[0]
-    test_y = test_dataset[1]
+    train_X: ℝ[80, 28, 28] = train_dataset[0]
+    train_y: ℝ[80] = train_dataset[1]
+    test_X: ℝ[20, 28, 28] = test_dataset[0]
+    test_y: ℝ[20] = test_dataset[1]
 
 
     def cross_entropy(probs: ℝ[m], label: ℝ): ℝ:
@@ -772,8 +772,8 @@ Full Code
     for i:ℕ(epochs):
         loss = 0
         for j:ℕ(len_train_X):
-            input = train_X[j]
-            label = train_y[j]
+            input: ℝ[28, 28] = train_X[j]
+            label: ℝ = train_y[j]
             z = cnn_object(input)
             current_loss = cross_entropy(z, label)
             loss += current_loss
@@ -813,3 +813,13 @@ Full Code
         if pred_class == y_true:
             correct += 1
     accuracy = correct / len_test_X
+
+
+References
+----------
+
+- `CS231n Convolutional Networks (Stanford) <https://cs231n.github.io/convolutional-networks/>`_
+- `MNIST Dataset (mlxtend) <https://rasbt.github.io/mlxtend/user_guide/data/mnist_data/>`_
+- `Apply a 2D Max Pooling in PyTorch (GeeksForGeeks) <https://www.geeksforgeeks.org/computer-vision/apply-a-2d-max-pooling-in-pytorch/>`_
+- `CNN Tutorial (DeepLizard) <https://deeplizard.com/resource/pavq7noze2>`_
+- `Convolutional Neural Networks (Pinecone) <https://www.pinecone.io/learn/series/image-search/cnn/>`_
