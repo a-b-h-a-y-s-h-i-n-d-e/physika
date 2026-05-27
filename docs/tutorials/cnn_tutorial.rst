@@ -492,7 +492,7 @@ Initializing Convnet object
 
     b2: ℝ[10] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-    cnn_object = ConvNets(kernel, b1, w, b2)
+    cnn_object: ConvNets = ConvNets(kernel, b1, w, b2)
 
 
 Define loss
