@@ -5,6 +5,7 @@ from physika.codegen import from_ast_to_torch
 from physika.utils.ast_utils import build_unified_ast
 from physika.parser import parser, symbol_table
 from physika.lexer import lexer
+from physika.import_manager import resolve_imports
 from pathlib import Path
 import pytest
 
@@ -24,11 +25,17 @@ def load_expected_ast(stem: str) -> dict:
     return ns["EXPECTED"]
 
 
-def parse_source_to_ast(source: str) -> dict:
+def parse_source_to_ast(source: str, source_path=None) -> dict:
     """Run lexer/parser and build_unified_ast on a Physika source string."""
     symbol_table.clear()
     lexer.lexer.lineno = 1  # reset PLY line counter for deterministic output
     program_ast = parser.parse(source, lexer=lexer)
+
+    if source_path is not None and any(
+            isinstance(node, tuple) and node[0] == "import"
+            for node in program_ast):
+        program_ast = resolve_imports(program_ast, source_path)
+
     return build_unified_ast(program_ast, symbol_table)
 
 
@@ -50,7 +57,9 @@ def test_from_ast_to_torch(phyk_file):
     ast = load_expected_ast(phyk_file.stem)
     code_ast = from_ast_to_torch(ast, print_code=False)
     src = phyk_file.read_text()
-    code_phyk = from_ast_to_torch(parse_source_to_ast(src), print_code=False)
+    code_phyk = from_ast_to_torch(parse_source_to_ast(src,
+                                                      phyk_file.resolve()),
+                                  print_code=False)
 
     assert HEADER in code_ast
     assert HEADER in code_phyk
@@ -64,7 +73,9 @@ def test_codegen_matches_reference(phyk_file):
     python file in torch_code dir
     """
     src = phyk_file.read_text()
-    code_phyk = from_ast_to_torch(parse_source_to_ast(src), print_code=False)
+    code_phyk = from_ast_to_torch(parse_source_to_ast(src,
+                                                      phyk_file.resolve()),
+                                  print_code=False)
     code_torch = (TORCH_CODE_DIR / f"{phyk_file.stem}.py").read_text()
 
     assert HEADER in code_phyk
