@@ -1285,3 +1285,26 @@ Lowercase Letters
    * - ω
      - U+03C9
      - omega
+
+
+Import statements
+-----------------
+
+Physika provides module import support to enable code reuse across files.
+
+Import statements are resolved during AST construction. Imported modules
+are parsed, and only the requested symbols are injected into the current program AST.
+
+.. code-block:: text
+
+   # simple import statement
+   from factorial import fact
+
+   fact(1.0)
+
+
+   # import multiple symbols
+   from diff_functions import f, torch_funcs_with_scalar_R
+
+   f(1.0)
+   torch_funcs_with_scalar_R(1.0)
