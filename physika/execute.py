@@ -16,7 +16,6 @@ def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
 
     source_file_path = Path(args[0]).resolve()
-    print(source_file_path)
     with open(args[0], "r", encoding="utf-8") as f:
         source = f.read()
 
