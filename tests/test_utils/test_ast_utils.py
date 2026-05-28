@@ -9,6 +9,7 @@ from physika.runtime import compute_grad
 
 from physika.lexer import lexer
 from physika.parser import parser, symbol_table
+from physika.import_manager import resolve_imports
 from physika.utils.ast_utils import (
     build_unified_ast,
     ExprTag,
@@ -39,11 +40,17 @@ PHYK_IDS = [f.stem for f in PHYK_FILES]
 r_tol = 1e-02
 
 
-def parse_source(source: str):
+def parse_source(source: str, source_path=None):
     """Helper function that runs lexer/parser on a Physika source string."""
     symbol_table.clear()
     lexer.lexer.lineno = 1  # reset PLY line counter for deterministic output
     program_ast = parser.parse(source, lexer=lexer)
+
+    if source_path is not None and any(
+            isinstance(node, tuple) and node[0] == "import"
+            for node in program_ast):
+        program_ast = resolve_imports(program_ast, source_path)
+
     return program_ast, symbol_table
 
 
@@ -129,7 +136,7 @@ def test_build_unified_ast(phyk_file):
     dict[str, Union[dict[str, ASTNode], list[ASTNode]]].
     """
     src = phyk_file.read_text()
-    program_ast, sym_tb = parse_source(src)
+    program_ast, sym_tb = parse_source(src, phyk_file.resolve())
     ast = build_unified_ast(program_ast, sym_tb)
     assert is_unified_ast(ast)
 
@@ -138,7 +145,7 @@ def test_build_unified_ast(phyk_file):
 def test_program_stmts_have_valid_tags(phyk_file):
     """Verify every program statement tuple starts with a known tag."""
     src = phyk_file.read_text()
-    program_ast, sym_tb = parse_source(src)
+    program_ast, sym_tb = parse_source(src, phyk_file.resolve())
     ast = build_unified_ast(program_ast, sym_tb)
     for stmt in ast["program"]:
         assert isinstance(stmt, tuple)
@@ -148,7 +155,7 @@ def test_program_stmts_have_valid_tags(phyk_file):
 def test_function_bodies_are_ast_nodes(phyk_file):
     """Verify every function body is a valid ASTNode."""
     src = phyk_file.read_text()
-    program_ast, sym_tb = parse_source(src)
+    program_ast, sym_tb = parse_source(src, phyk_file.resolve())
     ast = build_unified_ast(program_ast, sym_tb)
     for name, func_def in ast["functions"].items():
         assert is_ast_node(
@@ -159,7 +166,7 @@ def test_function_bodies_are_ast_nodes(phyk_file):
 def test_class_bodies_are_ast_nodes(phyk_file):
     """Verify every class method body is a valid ASTNode."""
     src = phyk_file.read_text()
-    program_ast, sym_tb = parse_source(src)
+    program_ast, sym_tb = parse_source(src, phyk_file.resolve())
     ast = build_unified_ast(program_ast, sym_tb)
     for name, class_def in ast["classes"].items():
         for method in class_def.get("methods", []):
@@ -173,7 +180,7 @@ def test_ast_matches_expected(phyk_file):
     Verify build_unified_ast output matches the expected AST in examples/ast/.
     """
     src = phyk_file.read_text()
-    program_ast, sym_tb = parse_source(src)
+    program_ast, sym_tb = parse_source(src, phyk_file.resolve())
     actual = build_unified_ast(program_ast, sym_tb)
     expected = load_expected_ast(phyk_file.stem)
     assert actual == expected
