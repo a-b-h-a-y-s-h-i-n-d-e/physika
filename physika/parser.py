@@ -113,8 +113,45 @@ def p_dimension_type_as_symbol(p):
 
 
 def p_statement_import(p):
-    """statement : FROM ID IMPORT ID NEWLINE"""
+    """statement : FROM ID IMPORT import_list NEWLINE"""
+    # import statement basic syntax
+    # Example:
+    #   from factorial import fact
+    #   fact(1.0)
+    # Parameters:
+    # p[2] — module name
+    # p[4] — array of imported symbols
+    # Returns:
+    #   ("import", module_name, [symbols])
     p[0] = ("import", p[2], p[4])
+
+
+def p_import_list_single(p):
+    """import_list : ID"""
+    # import statement with single symbol
+    # Example:
+    #   from factorial import fact
+    #   fact(1.0)
+    # Parameters:
+    # p[1] — imported symbol name
+    # Returns:
+    #   ["symbol"]
+    p[0] = [p[1]]
+
+
+def p_import_list_multiple(p):
+    """import_list : import_list COMMA ID"""
+    # import statement with multiple symbols
+    # Example:
+    #   from diff_functions import f, torch_funcs_with_scalar_R
+    #   f(1.0)
+    #   torch_funcs_with_scalar_R(1.0)
+    # Parameters:
+    # p[1] — existing imported symbol list
+    # p[3] — next imported symbol
+    # Returns:
+    #   ["symbols"]
+    p[0] = p[1] + [p[3]]
 
 
 # Statements
