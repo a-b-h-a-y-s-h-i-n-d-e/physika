@@ -70,7 +70,15 @@ def p_type_tangent(p):
 
 def p_type_tensor(p):
     """type_spec : TYPE LBRACKET dimension_list RBRACKET"""
-    p[0] = ("tensor", p[3])
+    if p[1] == "ℤ":
+        base_type = "ℤ"
+    elif p[1] == "ℕ":
+        base_type = "ℕ"
+    elif p[1] == "ℂ":
+        base_type = "ℂ"
+    else:
+        base_type = "ℝ"
+    p[0] = ("tensor",base_type, p[3])
 
 
 def p_dimension_list_single(p):
