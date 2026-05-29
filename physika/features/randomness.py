@@ -303,7 +303,7 @@ def get_shape_args(call_args: List[Tuple], env: dict) -> List[Tuple]:
     args specify the output shape.  This function is a helper for type checker
     algorithm to get shape args without requiring explicit knowledge of how
     many params each distribution takes.
-    
+
     Starts from the end of distribution args and stopping at the first
     distribution parameter rather than a size.
 
@@ -343,24 +343,26 @@ def get_shape_args(call_args: List[Tuple], env: dict) -> List[Tuple]:
     >>> get_shape_args([("var", "mu"), ("var", "sigma"), ("var", "n")], env_n)
     [('var', 'n')]
 
-    >>> get_shape_args([("num", 0.0), ("num", 1.0), ("num", 50), ("string", "reparam")], env)
+    >>> get_shape_args([("num", 0.0), ("num", 1.0), ("num", 50), ("string", "reparam")], env)  # noqa: E501
     [('num', 50)]
     """
     args = list(call_args)
-    if args and isinstance(args[-1], tuple) and args[-1][0] in ("string", "equation_string"):
+    if args and isinstance(
+            args[-1], tuple) and args[-1][0] in ("string", "equation_string"):
         args = args[:-1]
-    shape = []
+    shape: List[Tuple] = []
     for a in reversed(args):
         if isinstance(a, tuple) and a[0] == "num" and isinstance(a[1], int):
             shape.insert(0, a)
-        elif isinstance(a, tuple) and a[0] == "var" and isinstance(env.get(("__val__", a[1])), int):
+        elif isinstance(a, tuple) and a[0] == "var" and isinstance(
+                env.get(("__val__", a[1])), int):
             shape.insert(0, a)
         else:
             break
     return shape
 
 
-def get_dim(val: Tuple, env: dict) -> Optional[Union[int , str]]:
+def get_dim(val: Tuple, env: dict) -> Optional[Union[int, str]]:
     """
     Get the dimension value, int or string, from a distribution shape
     argument.
@@ -373,7 +375,7 @@ def get_dim(val: Tuple, env: dict) -> Optional[Union[int , str]]:
     env: dict
         Enviroment dictionary with variables, classes, functions,
         and types accumulated so far.
-    
+
     Example
     -------
     >>> from physika.features.randomness import get_dim
@@ -416,7 +418,7 @@ class RandomnessFeature(ELF):
     - Beta(α, β, n, mode)
     - Gamma(concentration, rate, n, mode)
     - Bernoulli(p, n, mode)
-    
+
     Examples
     --------
     >>> from physika.features.randomness import RandomnessFeature
@@ -459,10 +461,11 @@ class RandomnessFeature(ELF):
         >>> rules["token_funcs"][4].__name__
         't_DIST_UNIFORM'
         """
+
         def t_TILDE(t):
             r"~"
             return t
-        
+
         # Distribution aliases
         def t_DIST_NORMAL(t):
             # syntax: x ~ 𝒩(0, 1)
@@ -496,8 +499,13 @@ class RandomnessFeature(ELF):
             t.value = "Beta"
             return t
 
-        return {"tokens": ["TILDE"], "token_funcs": [t_TILDE, t_DIST_NORMAL, t_DIST_GAMMA, t_DIST_BETA, t_DIST_UNIFORM]}
-
+        return {
+            "tokens": ["TILDE"],
+            "token_funcs": [
+                t_TILDE, t_DIST_NORMAL, t_DIST_GAMMA, t_DIST_BETA,
+                t_DIST_UNIFORM
+            ]
+        }
 
     def parser_rules(self) -> list:
         """
@@ -510,7 +518,8 @@ class RandomnessFeature(ELF):
         Returns
         -------
         list
-            List of PLY grammar functions to be injected into ``physika.parser``.
+            List of PLY grammar functions to be injected into
+            ``physika.parser``.
 
         Examples
         --------
@@ -521,6 +530,7 @@ class RandomnessFeature(ELF):
         >>> rules[0].__name__
         'p_sample_untyped'
         """
+
         def p_sample_untyped(p):
             """sample : ID TILDE func_factor"""
             p[0] = ("sample_rhs", p[1], None, p[3], p.lineno(1))
@@ -559,7 +569,7 @@ class RandomnessFeature(ELF):
 
         def p_for_sample(p):
             """func_factor : FOR ID COLON TYPE LPAREN func_expr RPAREN ARROW sample
-               factor : FOR ID COLON TYPE LPAREN func_expr RPAREN ARROW sample"""
+               factor : FOR ID COLON TYPE LPAREN func_expr RPAREN ARROW sample"""  # noqa: E501
             _, samp_name, type_spec, call_node, _ = p[9]
             if type_spec:
                 body = ("typed_sample_expr", samp_name, type_spec, call_node)
@@ -567,25 +577,26 @@ class RandomnessFeature(ELF):
                 body = ("sample_expr", samp_name, call_node)
             p[0] = ("for_expr", p[2], p[6], body)
 
-        return [p_sample_untyped, p_sample_typed,
-                p_statement_sample, p_func_body_stmt_sample,
-                p_for_statement_sample, p_func_factor_sample_expr,
-                p_for_sample]
+        return [
+            p_sample_untyped, p_sample_typed, p_statement_sample,
+            p_func_body_stmt_sample, p_for_statement_sample,
+            p_func_factor_sample_expr, p_for_sample
+        ]
 
     def type_rules(self) -> dict:
         """
         Adds two type checker rules that verifies the declared and inferred
         type of random sampling:
-        - ``typed_sample_type``: checks for statemens, declarations, and
-            assignments.
-        - ``sample_expr_type``: intended for expressions (e.g., inside inline
-            for-loops) 
+
+        - ``typed_sample_type``: checks for statements, declarations, and assignments.
+        - ``sample_expr_type``: intended for expressions (e.g., inside inline for-loops).
 
         Returns
         -------
         dict
-            Dispatch table mapping ``"typed_sample_type"`` and ``"sample_expr_type"`` AST
-            tags to their type inference handlers.
+            Dispatch table mapping ``"typed_sample_type"`` and
+            ``"sample_expr_type"`` AST tags to their type
+            inference handlers.
 
         Examples
         --------
@@ -594,16 +605,17 @@ class RandomnessFeature(ELF):
         >>> sorted(rules.keys())
         ['sample_expr', 'typed_sample', 'typed_sample_expr']
         """
-        
 
-        def typed_sample_type(node: tuple, env: dict, s: Substitution, func_env: dict, class_env: dict, add_error: Callable, infer_expr: Callable):
+        def typed_sample_type(node: tuple, env: dict, s: Substitution,
+                              func_env: dict, class_env: dict,
+                              add_error: Callable, infer_expr: Callable):
             """
             Checks correct types of a sample statement like:
                 ``name : type ~ Dist(...)``.
 
             Validates that the declared type is same as the type produced by
             the distribution call.
-            
+
             ``typed_sample_type`` checks for rank and dimension correctness.
             Rank check verifies the number of size arguments in the
             distribution call must match the rank of the declared type.  A
@@ -641,7 +653,7 @@ class RandomnessFeature(ELF):
             >>> errors = []
             >>> env = {("__val__", "n"): 100}
             >>> node = ("typed_sample", "x", ("tensor", [(100, "invariant")]),
-            ...         ("call", "Normal", [("var", "mu"), ("var", "sigma"), ("var", "n")]))
+            ...         ("call", "Normal", [("var", "mu"), ("var", "sigma"), ("var", "n")]))  # noqa: E501
             >>> t, _ = check(node, env, s, errors.append)
             >>> isinstance(t, TTensor)
             True
@@ -666,32 +678,36 @@ class RandomnessFeature(ELF):
                 # case rank mismatch
                 if declared_rank != expected_rank:
                     dims_desc = ", ".join(["n"] * expected_rank)
-                    sample_desc = "ℝ" if expected_rank == 0 else f"ℝ[{dims_desc}]"
+                    sample_desc = "ℝ" if expected_rank == 0 else f"ℝ[{dims_desc}]"  # noqa: E501
                     add_error(
                         f"'{name}': declared {declared_type} but "
-                        f"{func_name}(...) produces a {sample_desc} sample"
-                    )
+                        f"{func_name}(...) produces a {sample_desc} sample")
                 else:
                     # check for dimension type mismatch
-                    for i, shape_arg in enumerate(shape_args):
-                        actual = get_dim(shape_arg, env)
-                        declared = get_dim(declared_type.dims[i][0], env)
-                        if declared != actual:
-                            if isinstance(declared, int) and isinstance(actual, int):
-                                add_error(
-                                    f"'{name}': declared {declared_type}. "
-                                    f"{func_name}(...) in dim[{i}] infers {actual} but declared {declared}"
-                                )
-                            elif isinstance(declared, str) and isinstance(actual, str):
-                                add_error(
-                                    f"'{name}': declared {declared_type}. "
-                                    f"{func_name}(...) in dim[{i}] infers {actual} but declared {declared}"
-                                )
+                    if isinstance(declared_type, TTensor):
+                        for i, shape_arg in enumerate(shape_args):
+                            actual = get_dim(shape_arg, env)
+                            declared = get_dim(declared_type.dims[i][0], env)
+                            if declared != actual:
+                                if isinstance(declared, int) and isinstance(
+                                        actual, int):
+                                    add_error(
+                                        f"'{name}': declared {declared_type}. "
+                                        f"{func_name}(...) in dim[{i}] infers {actual} but declared {declared}"  # noqa: E501
+                                    )
+                                elif isinstance(declared, str) and isinstance(
+                                        actual, str):
+                                    add_error(
+                                        f"'{name}': declared {declared_type}. "
+                                        f"{func_name}(...) in dim[{i}] infers {actual} but declared {declared}"  # noqa: E501
+                                    )
 
             env[name] = declared_type
             return declared_type, s
 
-        def sample_expr_type(node: tuple, env: dict, s: Substitution, func_env: dict, class_env: dict, add_error: Callable, infer_expr: Callable):
+        def sample_expr_type(node: tuple, env: dict, s: Substitution,
+                             func_env: dict, class_env: dict,
+                             add_error: Callable, infer_expr: Callable):
             """
             Type checking for sampling inside an expression rather than an
             assignment statement.
@@ -734,12 +750,12 @@ class RandomnessFeature(ELF):
             >>> check = rules["sample_expr"]
             >>> s = Substitution()
             >>> # Scalar: ε ~ Normal(0.0, 1.0)
-            >>> node = ("sample_expr", "ε", ("call", "Normal", [("num", 0.0), ("num", 1.0)]))
+            >>> node = ("sample_expr", "ε", ("call", "Normal", [("num", 0.0), ("num", 1.0)]))  # noqa: E501
             >>> t, _ = check(node, {}, s, {}, {}, None, None)
             >>> t is T_REAL
             True
             >>> # Vector: ε ~ Normal(0.0, 1.0, 20) — size arg present
-            >>> node = ("sample_expr", "ε", ("call", "Normal", [("num", 0.0), ("num", 1.0), ("num", 20)]))
+            >>> node = ("sample_expr", "ε", ("call", "Normal", [("num", 0.0), ("num", 1.0), ("num", 20)]))  # noqa: E501
             >>> t, _ = check(node, {}, s, {}, {}, None, None)
             >>> isinstance(t, TTensor)
             True
@@ -760,15 +776,14 @@ class RandomnessFeature(ELF):
                         dim = shape_args[0][1]
                     else:
                         dim = shape_args[0]
-                    return TTensor(((dim, "invariant"),)), s
+                    return TTensor(((dim, "invariant"), )), s
             return T_REAL, s
 
         return {
-            "typed_sample":      typed_sample_type,
-            "sample_expr":       sample_expr_type,
+            "typed_sample": typed_sample_type,
+            "sample_expr": sample_expr_type,
             "typed_sample_expr": sample_expr_type,
         }
-
 
     def forward_rules(self) -> dict:
         """
@@ -798,7 +813,7 @@ class RandomnessFeature(ELF):
 
         >>> # Physika code:
         >>> # x ~ Normal(0.0, 1.0)
-        >>> node = ("sample", "x", ("call", "Normal", [("num", 0.0), ("num", 1.0)]))
+        >>> node = ("sample", "x", ("call", "Normal", [("num", 0.0), ("num", 1.0)]))  # noqa: E501
         >>> rules["sample"](node, ast_to_torch_expr)
         'x = torch.distributions.Normal(0.0, 1.0).rsample()'
         """
@@ -829,7 +844,7 @@ class RandomnessFeature(ELF):
             >>> from physika.features import RandomnessFeature
             >>> from physika.utils.ast_utils import ast_to_torch_expr
             >>> rules = RandomnessFeature().forward_rules()
-            >>> node = ("sample_expr", "ε", ("call", "Normal", [("num", 0.0), ("num", 1.0), ("num", 2)]))
+            >>> node = ("sample_expr", "ε", ("call", "Normal", [("num", 0.0), ("num", 1.0), ("num", 2)]))  # noqa: E501
             >>> rules["sample_expr"](node, ast_to_torch_expr)
             'torch.distributions.Normal(0.0, 1.0).rsample((int(2),))'
             """
@@ -867,7 +882,7 @@ class RandomnessFeature(ELF):
             >>> from physika.features import RandomnessFeature
             >>> from physika.utils.ast_utils import ast_to_torch_expr
             >>> rules = RandomnessFeature().forward_rules()
-            >>> node = ("sample", "x", ("call", "Normal", [("num", 0.0), ("num", 1.0)]))
+            >>> node = ("sample", "x", ("call", "Normal", [("num", 0.0), ("num", 1.0)]))  # noqa: E501
             >>> rules["sample"](node, ast_to_torch_expr)
             'x = torch.distributions.Normal(0.0, 1.0).rsample()'
             """
@@ -883,13 +898,14 @@ class RandomnessFeature(ELF):
             Parameters
             ----------
             fn : Callable
-                Distribution emitter such as ``normal_dist`` or ``bernoulli_dist``.
+                Distribution emitter such as ``normal_dist`` or
+                ``bernoulli_dist``.
 
             Returns
             -------
             Callable
-                Handler with signature ``(node, to_expr, **ctx) -> str`` suitable
-                for ELF forward dispatch table.
+                Handler with signature ``(node, to_expr, **ctx) -> str``
+                suitable for ELF forward dispatch table.
 
             Examples
             --------
@@ -901,6 +917,7 @@ class RandomnessFeature(ELF):
             >>> rules["call:Normal"](node, ast_to_torch_expr)
             'torch.distributions.Normal(0.0, 1.0).rsample()'
             """
+
             def wrapper(node: Tuple, to_expr: Callable, **ctx):
                 """
                  ``node[2]`` is the arg list. this wrapper unpacks
@@ -919,20 +936,21 @@ class RandomnessFeature(ELF):
                     PyTorch sampling expression produced by ``fn``.
                 """
                 return fn(node[2], to_expr, **ctx)
+
             return wrapper
 
         return {
-            "sample":              sample_stmt_emit,
-            "body_sample":         sample_stmt_emit,
-            "for_sample":          sample_stmt_emit,
-            "sample_expr":         sample_expr_emit,
-            "typed_sample_expr":   sample_expr_emit,
-            "typed_sample":        sample_stmt_emit,
-            "body_typed_sample":   sample_stmt_emit,
-            "for_typed_sample":    sample_stmt_emit,
-            "call:Normal":         make_call_emit(normal_dist),
-            "call:Uniform":        make_call_emit(uniform_dist),
-            "call:Beta":           make_call_emit(beta_dist),
-            "call:Gamma":          make_call_emit(gamma_dist),
-            "call:Bernoulli":      make_call_emit(bernoulli_dist),
+            "sample": sample_stmt_emit,
+            "body_sample": sample_stmt_emit,
+            "for_sample": sample_stmt_emit,
+            "sample_expr": sample_expr_emit,
+            "typed_sample_expr": sample_expr_emit,
+            "typed_sample": sample_stmt_emit,
+            "body_typed_sample": sample_stmt_emit,
+            "for_typed_sample": sample_stmt_emit,
+            "call:Normal": make_call_emit(normal_dist),
+            "call:Uniform": make_call_emit(uniform_dist),
+            "call:Beta": make_call_emit(beta_dist),
+            "call:Gamma": make_call_emit(gamma_dist),
+            "call:Bernoulli": make_call_emit(bernoulli_dist),
         }

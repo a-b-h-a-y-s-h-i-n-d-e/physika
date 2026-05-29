@@ -9,6 +9,7 @@ from physika.utils.types import T_REAL, TTensor, Substitution
 from tests.conftest import exec_phyk
 from physika.codegen import from_ast_to_torch
 
+
 def parse_physika(src):
     """Parse a Physika source string and return the unified AST."""
     import physika.parser as pm
@@ -276,9 +277,9 @@ class TestProbDistributionsCodegen:
 class TestGetShapeArgs:
     """
     Tests for ``get_shape_args``.
-    
-    Verify that shape arguments are collected from distribution calls starting from
-    the right.
+
+    Verify that shape arguments are collected from distribution calls starting
+    from the right.
     """
 
     def test_shape_arg(self):
@@ -291,29 +292,31 @@ class TestGetShapeArgs:
         assert result == [("num", 100)]
 
         # multiple shapes
-        result = get_shape_args(
-            [("num", 0.0), ("num", 1.0), ("num", 20), ("num", 3)], {})
+        result = get_shape_args([("num", 0.0), ("num", 1.0), ("num", 20),
+                                 ("num", 3)], {})
         assert result == [("num", 20), ("num", 3)]
 
     def test_var_shape_arg(self):
         """
-        Test that variables are collected as shape args when they have tracked values.
+        Test that variables are collected as shape args when they have tracked
+        values.
         """
         # Variable n with value 100 is registered in env
         env = {("__val__", "n"): 100}
-        result = get_shape_args(
-            [("var", "mu"), ("var", "sigma"), ("var", "n")], env)
+        result = get_shape_args([("var", "mu"), ("var", "sigma"),
+                                 ("var", "n")], env)
         assert result == [("var", "n")]
 
-        # a var that is not registered in env is treated as a distribution param
-        result = get_shape_args(
-            [("var", "mu"), ("var", "sigma"), ("var", "n")], {})
+        # a var that is not registered in env is treated as a distribution
+        # param
+        result = get_shape_args([("var", "mu"), ("var", "sigma"),
+                                 ("var", "n")], {})
         assert result == []
 
 
 class TestGetDim:
     """
-    Tests for ``get_dim`` which resolves an AST node with "num" or "var" 
+    Tests for ``get_dim`` which resolves an AST node with "num" or "var"
     to an integer dimension size or a symbolic string name.
     """
 
@@ -329,7 +332,7 @@ class TestGetDim:
     def test_var_node(self):
         """
         Verifies that "var" nodes are resolved to tracked values in the env
-        when present, and left as symbolic names when not present.        
+        when present, and left as symbolic names when not present.
         """
         # Variable n with value 100 is registered in env
         env = {("__val__", "n"): 100}
@@ -357,7 +360,6 @@ class TestLexerParserRules:
             # functions must be p_-prefixed
             assert rule.__name__.startswith("p_")
 
-
     def test_lexer_rules(self):
         """TILDE token and distribution alias functions are registered."""
         rules = RandomnessFeature().lexer_rules()
@@ -377,7 +379,8 @@ class TestLexerParserRules:
         """
         ast = parse_physika("x ~ Normal(0.0, 1.0)\n")
         stmt = ast["program"][0]
-        assert ('sample', 'x', ('call', 'Normal', [('num', 0.0), ('num', 1.0)]), 1) == stmt
+        assert ('sample', 'x', ('call', 'Normal', [('num', 0.0),
+                                                   ('num', 1.0)]), 1) == stmt
 
     def test_sample_typed(self):
         """
@@ -386,32 +389,33 @@ class TestLexerParserRules:
         ast = parse_physika("x : ℝ ~ Normal(0.0, 1.0)\n")
         stmt = ast["program"][0]
         print(stmt)
-        assert ('typed_sample', 'x', 'ℝ', ('call', 'Normal', [('num', 0.0), ('num', 1.0)]), 1) == stmt
+        assert ('typed_sample', 'x', 'ℝ', ('call', 'Normal', [('num', 0.0),
+                                                              ('num', 1.0)]),
+                1) == stmt
 
     def test_func_body_stmt_sample(self):
         """
         Test for parsing an untyped sample physika statement inside a function.
         """
-        ast = parse_physika(
-            "def f(μ: ℝ) : ℝ:\n"
-            "    z ~ Normal(μ, 1.0)\n"
-            "    return z\n"
-        )
+        ast = parse_physika("def f(μ: ℝ) : ℝ:\n"
+                            "    z ~ Normal(μ, 1.0)\n"
+                            "    return z\n")
         stmts = ast["functions"]["f"]["statements"]
-        assert [('sample', 'z', ('call', 'Normal', [('var', 'μ'), ('num', 1.0)]))] == stmts
+        assert [('sample', 'z', ('call', 'Normal', [('var', 'μ'),
+                                                    ('num', 1.0)]))] == stmts
 
     def test_func_body_stmt_sample_typed(self):
         """
         Test for parsing an typed sample physika statement inside a function.
         """
-        ast = parse_physika(
-            "def f(μ: ℝ) : ℝ[5]:\n"
-            "    z : ℝ[5] ~ Normal(μ, 1.0, 5)\n"
-            "    return z\n"
-        )
+        ast = parse_physika("def f(μ: ℝ) : ℝ[5]:\n"
+                            "    z : ℝ[5] ~ Normal(μ, 1.0, 5)\n"
+                            "    return z\n")
         stmts = ast["functions"]["f"]["statements"]
         print(stmts)
-        assert [('typed_sample', 'z', ('tensor', [(5, 'invariant')]), ('call', 'Normal', [('var', 'μ'), ('num', 1.0), ('num', 5)]))] == stmts
+        assert [('typed_sample', 'z', ('tensor', [(5, 'invariant')]),
+                 ('call', 'Normal', [('var', 'μ'), ('num', 1.0),
+                                     ('num', 5)]))] == stmts
 
     def test_for_sample(self):
         """
@@ -419,32 +423,43 @@ class TestLexerParserRules:
         for-loops.
         """
         ast = parse_physika(
-            "z : ℝ[10, 2] = for i : ℕ(10) → ε : ℝ[2] ~ Normal(0.0, 1.0, 2)\n"
-        )
+            "z : ℝ[10, 2] = for i : ℕ(10) → ε : ℝ[2] ~ Normal(0.0, 1.0, 2)\n")
         stmt = ast["program"][0]
 
         print(stmt)
-        assert ('decl', 'z', ('tensor', [(10, 'invariant'), (2, 'invariant')]), # z : ℝ[10, 2] 
-                    ('for_expr', 'i', ('num', 10), # for i : ℕ(10)
-                        ('typed_sample_expr', 'ε', ('tensor', [(2, 'invariant')]), # ε : ℝ[2]
-                            ('call', 'Normal', #  Normal(...)
-                                [('num', 0.0), ('num', 1.0), ('num', 2)]))), 1) == stmt # Normal(0.0, 1.0, 2)
-   
+        assert (
+            'decl',
+            'z',
+            ('tensor', [(10, 'invariant'), (2, 'invariant')]),
+            # z : ℝ[10, 2]
+            (
+                'for_expr',
+                'i',
+                ('num', 10),  # for i : ℕ(10)
+                (
+                    'typed_sample_expr',
+                    'ε',
+                    ('tensor', [(2, 'invariant')]),  # ε : ℝ[2]
+                    (
+                        'call',
+                        'Normal',  # Normal(...)
+                        [('num', 0.0), ('num', 1.0), ('num', 2)]))),
+            1) == stmt  # Normal(0.0, 1.0, 2)
 
     def test_func_factor_sample_expr(self):
         """
         Test for parsing a sample physika statement used inside a function
         and passed direclty as return.
         """
-        ast = parse_physika(
-            "def f(mu: ℝ) : ℝ[2]:\n"
-            "    return ε ~ Normal(mu, 1.0, 2.0)\n"
-        )
+        ast = parse_physika("def f(mu: ℝ) : ℝ[2]:\n"
+                            "    return ε ~ Normal(mu, 1.0, 2.0)\n")
         f_statements = ast["functions"]["f"]["statements"]
         f_return_expr = ast["functions"]["f"]["body"]
         assert f_statements == []
-        assert ('sample_expr', 'ε', ('call', 'Normal', [('var', 'mu'), ('num', 1.0), ('num', 2.0)])) == f_return_expr
-  
+        assert ('sample_expr', 'ε', ('call', 'Normal', [('var', 'mu'),
+                                                        ('num', 1.0),
+                                                        ('num', 2.0)
+                                                        ])) == f_return_expr
 
 
 class TestTypeRules:
@@ -459,19 +474,17 @@ class TestTypeRules:
         # declared ℝ with scalar sampling
         check = RandomnessFeature().type_rules()["typed_sample"]
         errors = []
-        node = ("typed_sample", "x", "ℝ",
-                ("call", "Normal", [("num", 0.0), ("num", 1.0)]))
+        node = ("typed_sample", "x", "ℝ", ("call", "Normal", [("num", 0.0),
+                                                              ("num", 1.0)]))
         t, _ = check(node, {}, Substitution(), {}, {}, errors.append, None)
         assert errors == []
         assert t is T_REAL
-
 
         # declared ℝ[100] with normal distribution sampling
         check = RandomnessFeature().type_rules()["typed_sample"]
         errors = []
         env = {("__val__", "n"): 100}
-        node = ("typed_sample", "x",
-                ("tensor", [(100, "invariant")]),
+        node = ("typed_sample", "x", ("tensor", [(100, "invariant")]),
                 ("call", "Normal", [("num", 0.0), ("num", 1.0), ("num", 100)]))
         t, _ = check(node, env, Substitution(), {}, {}, errors.append, None)
         assert errors == []
@@ -484,32 +497,33 @@ class TestTypeRules:
         # declared ℝ but Normal(mu, sigma, n) produces ℝ[n]
         check = RandomnessFeature().type_rules()["typed_sample"]
         errors = []
-        node = ("typed_sample", "x", "ℝ",
-                ("call", "Normal", [("num", 0.0), ("num", 1.0), ("num", 10)]))
+        node = ("typed_sample", "x", "ℝ", ("call", "Normal", [("num", 0.0),
+                                                              ("num", 1.0),
+                                                              ("num", 10)]))
         check(node, {}, Substitution(), {}, {}, errors.append, None)
         assert len(errors) == 1
-        assert errors[0] == "'x': declared ℝ but Normal(...) produces a ℝ[n] sample"
+        assert errors[
+            0] == "'x': declared ℝ but Normal(...) produces a ℝ[n] sample"
 
         # declared ℝ[n] but Normal(mu, sigma) produces scalar
         check = RandomnessFeature().type_rules()["typed_sample"]
         errors = []
-        node = ("typed_sample", "x",
-                ("tensor", [(100, "invariant")]),
+        node = ("typed_sample", "x", ("tensor", [(100, "invariant")]),
                 ("call", "Normal", [("num", 0.0), ("num", 1.0)]))
         check(node, {}, Substitution(), {}, {}, errors.append, None)
         assert len(errors) == 1
-        assert errors[0] == "'x': declared ℝ[100] but Normal(...) produces a ℝ sample"
-
+        assert errors[
+            0] == "'x': declared ℝ[100] but Normal(...) produces a ℝ sample"
 
         # declared ℝ[2] but produces ℝ[3]
         check = RandomnessFeature().type_rules()["typed_sample"]
         errors = []
-        node = ("typed_sample", "x",
-                ("tensor", [(2, "invariant")]),
+        node = ("typed_sample", "x", ("tensor", [(2, "invariant")]),
                 ("call", "Normal", [("num", 0.0), ("num", 1.0), ("num", 3)]))
         check(node, {}, Substitution(), {}, {}, errors.append, None)
         assert len(errors) == 1
-        assert errors[0] == "'x': declared ℝ[2]. Normal(...) in dim[0] infers 3 but declared 2"
+        assert errors[
+            0] == "'x': declared ℝ[2]. Normal(...) in dim[0] infers 3 but declared 2"  # noqa: E501
 
     def test_sample_expr(self):
         """
@@ -518,15 +532,16 @@ class TestTypeRules:
         """
         # scalar case
         check = RandomnessFeature().type_rules()["sample_expr"]
-        node = ("sample_expr", "ε",
-                ("call", "Normal", [("num", 0.0), ("num", 1.0)]))
+        node = ("sample_expr", "ε", ("call", "Normal", [("num", 0.0),
+                                                        ("num", 1.0)]))
         t, _ = check(node, {}, Substitution(), {}, {}, None, None)
         assert t is T_REAL
 
         # vector case
         check = RandomnessFeature().type_rules()["sample_expr"]
-        node = ("sample_expr", "ε",
-                ("call", "Normal", [("num", 0.0), ("num", 1.0), ("num", 20)]))
+        node = ("sample_expr", "ε", ("call", "Normal", [("num", 0.0),
+                                                        ("num", 1.0),
+                                                        ("num", 20)]))
         t, _ = check(node, {}, Substitution(), {}, {}, None, None)
         assert isinstance(t, TTensor)
 
@@ -553,15 +568,15 @@ class TestForwardRules:
 
     def test_typed_sample_stmt_emit(self):
         """
-        Check top-level typed sample statement emits correct PyTorch code for Normal
-        distribution.
+        Check top-level typed sample statement emits correct PyTorch code
+        for Normal distribution.
         """
         rules = RandomnessFeature().forward_rules()
         ast = parse_physika("x : ℝ[5] ~ 𝒩(0.0, 1.0, 5)\n")
         node = ast["program"][0]
         assert node[0] == "typed_sample"
         result = rules["typed_sample"](node, ast_to_torch_expr)
-        assert result == "x = torch.distributions.Normal(0.0, 1.0).rsample((int(5),))"
+        assert result == "x = torch.distributions.Normal(0.0, 1.0).rsample((int(5),))"  # noqa: E501
 
     def test_sample_expr_emit(self):
         """
@@ -569,14 +584,12 @@ class TestForwardRules:
         PyTorch code for Normal distribution.
         """
         rules = RandomnessFeature().forward_rules()
-        ast = parse_physika(
-            "def f(mu: ℝ) : ℝ[2]:\n"
-            "    return ε ~ 𝒩(mu, 1.0, 2.0)\n"
-        )
+        ast = parse_physika("def f(mu: ℝ) : ℝ[2]:\n"
+                            "    return ε ~ 𝒩(mu, 1.0, 2.0)\n")
         node = ast["functions"]["f"]["body"]
         assert node[0] == "sample_expr"
         result = rules["sample_expr"](node, ast_to_torch_expr)
-        assert result == "torch.distributions.Normal(mu, 1.0).rsample((int(2.0),))"
+        assert result == "torch.distributions.Normal(mu, 1.0).rsample((int(2.0),))"  # noqa: E501
 
     def test_typed_sample_expr_emit(self):
         """
@@ -584,15 +597,14 @@ class TestForwardRules:
         typed sample expression is correct.
         """
         ast = parse_physika(
-            "z : ℝ[3, 3] = for i : ℕ(3) → ε : ℝ[3] ~ 𝒩(0.0, 1.0, 3)\n"
-        )
+            "z : ℝ[3, 3] = for i : ℕ(3) → ε : ℝ[3] ~ 𝒩(0.0, 1.0, 3)\n")
         code = from_ast_to_torch(ast, print_code=False)
         expected = (
             "z = torch.stack(["
-            "torch.distributions.Normal(0.0, 1.0).rsample((int(3),)) " # ε : ℝ[3] ~ 𝒩(0.0, 1.0, 3)
-            "for _fi_i in range(int(3)) " # for i : ℕ(3)
-            "for i in [torch.tensor(float(_fi_i))]])"
-        )
+            "torch.distributions.Normal(0.0, 1.0).rsample((int(3),)) "
+            # ε : ℝ[3] ~ 𝒩(0.0, 1.0, 3)
+            "for _fi_i in range(int(3)) "  # for i : ℕ(3)
+            "for i in [torch.tensor(float(_fi_i))]])")
         assert expected in code
 
 
@@ -614,7 +626,8 @@ class TestRandomnessIntegration:
         z = ns_dict["z"]
         assert z.shape == torch.Size([10, 2])
         # Physika code:
-        # z_3d: ℝ[10, 5, 2]= for i : ℕ(10) → for j : ℕ(5) → ε : ℝ[2] ~ Normal(μ, σ, 2)
+        # z_3d: ℝ[10, 5, 2]= for i : ℕ(10) → for j : ℕ(5) → ε : ℝ[2]  # noqa: E501
+        # ~ Normal(μ, σ, 2)
         z_3d = ns_dict["z_3d"]
         assert z_3d.shape == torch.Size([10, 5, 2])
         # Physika code:
@@ -627,8 +640,10 @@ class TestRandomnessIntegration:
         # after 300 epochs loss should be close to 0
         assert loss.item() <= 1e-03
         # learned parameters
-        assert ns_dict["μ"].item() - (-1) <= 1e-02 # learned μ should be close to -1
-        assert ns_dict["σ"].item() - (0) <= 1e-02 # learned σ should be close to 0
+        assert ns_dict["μ"].item() - (
+            -1) <= 1e-02  # learned μ should be close to -1
+        assert ns_dict["σ"].item() - (
+            0) <= 1e-02  # learned σ should be close to 0
 
         # u : ℝ ~ 𝒩(0.0, 1.0)
         u = ns_dict["u"]
