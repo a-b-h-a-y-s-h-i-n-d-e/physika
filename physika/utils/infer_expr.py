@@ -235,7 +235,7 @@ def expr_array(node: Any,
     # Example node: ("array", [("num", 1.0), ("num", 2.0), ("num", 3.0)])
     elements = node[1]
     if not elements:
-        return make_tensor("ℝ", [0]), ctx.s  # empty array literal
+        return make_tensor(T_REAL, [0]), ctx.s  # empty array literal
 
     elem_types = []
     cur = ctx.s
@@ -339,7 +339,8 @@ def expr_index(node: Any,
     if len(shape) == 1:
         return (arr_t.base_type, s)
     else:
-        return (TTensor(arr_t.base_type, tuple((d, "invariant") for d in shape[1:])), s)
+        return (TTensor(arr_t.base_type,
+                        tuple((d, "invariant") for d in shape[1:])), s)
 
 
 def expr_indexN(node: Any,
@@ -493,7 +494,7 @@ def expr_chain_index(node: Any,
         return T_REAL, cur
 
     # Higher-rank Tensor (peel one dimension)
-    return make_tensor(shape[1:]), cur
+    return make_tensor(obj_t.base_type, shape[1:]), cur
 
 
 def expr_slice(node: Any,
@@ -606,12 +607,13 @@ def expr_slice(node: Any,
         if len(shape) == 1:
             return make_tensor(arr_t.base_type, [length]), ctx.s
         else:
-            return make_tensor(arr_t.base_type, [length] + list(shape[1:])), ctx.s
+            return make_tensor(arr_t.base_type,
+                               [length] + list(shape[1:])), ctx.s
 
     # introduce a fresh symbolic dimension for the sliced
     # leading dim so the rank and trailing dims are still correct.
     fresh_dim = VarCounter().new_dim()
-    return make_tensor([fresh_dim] + list(shape[1:])), ctx.s
+    return make_tensor(arr_t.base_type, [fresh_dim] + list(shape[1:])), ctx.s
 
 
 def expr_add_sub(node: Any,
@@ -1123,7 +1125,7 @@ def expr_for_expr(
     >>> from physika.utils.infer_expr import ExprContext, expr_for_expr
     >>> from physika.utils.types import Substitution, new_dim
     >>> ctx = ExprContext({}, Substitution(), {}, {}, [].append)
-    >>> t, _= expr_for_expr(("for_expr", "i", ("num", 3.0), ("num", 4.0)), ctx, new_dim)  #  ℝ[3]  # noqa: E501
+    >>> t, _= expr_for_expr(("for_expr", "i", ("num", 3.0), ("imaginary", )), ctx, new_dim)  #  ℝ[3]  # noqa: E501
     >>> t
     ℝ[3]
     >>> inner_body = ("array", [("num", 1.0), ("num", 2.0)])  #  ℝ[2]
@@ -1160,6 +1162,7 @@ def expr_for_expr(
     if isinstance(body_t, TTensor):
         return TTensor(T_REAL, ((outer_dim, "invariant"), ) + body_t.dims), s
     return make_tensor(T_REAL, [outer_dim]), s
+
 
 def expr_for_expr_range(
         node: Any, ctx: ExprContext,
@@ -1200,9 +1203,9 @@ def expr_for_expr_range(
     >>> from physika.utils.infer_expr import ExprContext, expr_for_expr_range
     >>> from physika.utils.types import Substitution, new_dim
     >>> ctx = ExprContext({}, Substitution(), {}, {}, [].append)
-    >>> t, _= expr_for_expr_range(("for_expr_range", "i", ("num", 0.0), ("num", 4.0), ("num", 2.0)), ctx, new_dim)
+    >>> t, _= expr_for_expr_range(("for_expr_range", "i", ("num", 0.0), ("num", 4.0), ("imaginary", )), ctx, new_dim)
     >>> t  # ℝ[4]
-    ℝ[4]
+    ℕ[4]
     >>> inner_body = ("array", [("num", 0.0), ("num", 1.0), ("num", 2.0)])  # body produces ℝ[3]
     >>> t, _= expr_for_expr_range(("for_expr_range", "k", ("num", 0.0), ("num", 2.0), inner_body), ctx, new_dim)  # noqa: E501
     >>> t  # ℝ[2,3]
@@ -1211,7 +1214,6 @@ def expr_for_expr_range(
     from physika.utils.type_checker_utils import make_tensor
 
     _, loop_var, start_expr, end_expr, body_expr = node
-
     # Bind loop variable as ℕ
     body_t, s = infer_expr(node=body_expr,
                            env={
@@ -1231,10 +1233,9 @@ def expr_for_expr_range(
 
     # Case nested for-loops
     if isinstance(body_t, TTensor):
-        return TTensor(body_t.base_type, ((outer_dim, "invariant"), ) + body_t.dims), s
-    if isinstance(body_t, TScalar):
-        return TTensor(body_t, ((outer_dim, "invariant"),)), s
-    raise TypeError(f"Unsupported body type: {body_t}")
+        return TTensor(body_t.base_type,
+                       ((outer_dim, "invariant"), ) + body_t.dims), s
+    return make_tensor(body_t, [outer_dim]), s
 
 
 def expr_cond(node, ctx):
