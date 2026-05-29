@@ -589,9 +589,9 @@ class RandomnessFeature(ELF):
         type of random sampling:
 
         - ``typed_sample_type``: checks for statements, declarations,
-        and assignments.
-        - ``sample_expr_type``: intended for expressions (e.g., inside inline
-        for-loops).
+          and assignments.
+        - ``sample_expr_type``: intended for expressions
+          (e.g., inside inline for-loops).
 
         Returns
         -------
