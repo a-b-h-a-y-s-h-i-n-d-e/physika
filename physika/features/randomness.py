@@ -588,8 +588,10 @@ class RandomnessFeature(ELF):
         Adds two type checker rules that verifies the declared and inferred
         type of random sampling:
 
-        - ``typed_sample_type``: checks for statements, declarations, and assignments.
-        - ``sample_expr_type``: intended for expressions (e.g., inside inline for-loops).
+        - ``typed_sample_type``: checks for statements, declarations,
+        and assignments.
+        - ``sample_expr_type``: intended for expressions (e.g., inside inline
+        for-loops).
 
         Returns
         -------

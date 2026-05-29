@@ -1193,12 +1193,14 @@ def emit_body_stmts(
                 lines.append(f"{prefix}{tensor_name} = {inner_expr}")
         else:
             elf_line = REGISTRY.dispatch_forward(
-                stmt_op, stmt,
+                stmt_op,
+                stmt,
                 to_expr=expr_fn,
             )
             if elf_line is not None:
                 lines.append(f"{prefix}{elf_line}")
-                var_name = stmt[1] if len(stmt) > 1 and isinstance(stmt[1], str) else None
+                var_name = stmt[1] if len(stmt) > 1 and isinstance(
+                    stmt[1], str) else None
                 if var_name:
                     known_vars.append(var_name)
 
@@ -1431,8 +1433,10 @@ def emit_for_stmts(
             result.extend(emit_for_stmts(else_body, indent + 4, loop_var))
         else:
             elf_line = REGISTRY.dispatch_forward(
-                body_op, s,
-                to_expr=lambda n: ast_to_torch_expr(n, current_loop_var=loop_var),
+                body_op,
+                s,
+                to_expr=lambda n: ast_to_torch_expr(n,
+                                                    current_loop_var=loop_var),
                 indent=indent,
             )
             if elf_line is not None:
