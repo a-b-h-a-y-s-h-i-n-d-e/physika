@@ -1,0 +1,110 @@
+
+# Differentiable linear regression with stochastic inputs
+# Parameters
+m_true : ℝ = 3.0
+b_true: ℝ = 1.0
+m_hat: ℝ = 2.0
+b_hat: ℝ = 0.0
+
+
+# Stochastic parameters
+μ: ℝ = 2.0
+σ: ℝ = 0.5
+
+# Forward pass
+n : ℤ = 100
+x : ℝ[n] ~ 𝒩(μ, σ, n)
+y_true = m_true * x + b_true
+y_pred = m_hat * x + b_hat
+loss : ℝ = sum((y_pred - y_true)**2) / n
+loss
+# Initial gradients
+grad_mu : ℝ = grad(loss, μ)
+grad_sigma : ℝ = grad(loss, σ)
+grad_mu
+grad_sigma
+
+# recompute loss from updated mu and sigma via gradient descent
+lr : ℝ = 0.01
+for step : ℕ(300):
+    x : ℝ[n]~ 𝒩(μ, σ, n)
+    y_true = m_true * x + b_true
+    y_pred = m_hat * x + b_hat
+    loss = sum((y_pred - y_true)**2) / n
+    grad_mu = grad(loss, μ)
+    grad_sigma = grad(loss, σ)
+    μ = μ - lr * grad_mu
+    σ = σ - lr * grad_sigma
+
+μ
+σ
+# resample x with learned mu and sigma
+# values of y_true and y_pred should be close
+x: ℝ[n] ~ 𝒩(μ, σ, n)
+y_true = m_true * x + b_true
+y_pred = m_hat * x + b_hat
+loss : ℝ = sum((y_pred - y_true)**2) / n
+loss
+
+
+# Constructing a 2D matrix with random sampling from a normal
+# distribution and for expressions
+z: ℝ[10,2]= for i : ℕ(10) → ε : ℝ[2] ~ Normal(μ, σ, 2)
+z
+
+# Constructing a 3D matrix with random sampling from a normal
+# distribution and for expressions
+z_3d: ℝ[10, 5, 2]= for i : ℕ(10) → for j : ℕ(5) → ε : ℝ[2] ~ Normal(μ, σ, 2)
+z_3d
+
+# Random sampling inside functions
+def sample_normal1D(x: ℝ): ℝ[m]:
+    t ~ 𝒩(0, 1, x)
+    return t
+
+def sample_normal2D(x: ℝ): ℝ[p, m]:
+    t: ℝ[x, 2] = for i : ℕ(x) → ε : ℝ[2] ~ Normal(μ, σ, 2)
+    return t
+
+x: ℝ = 3
+y : ℝ[3] = sample_normal1D(x)
+y
+
+y : ℝ[3, 2] = sample_normal2D(x)
+y
+
+# Supported probability distributions
+# Normal distribution (𝒩)
+u : ℝ ~ 𝒩(0.0, 1.0)
+u
+u_vec : ℝ[5] ~ 𝒩(0.0, 1.0, 5)
+u_vec
+
+# Uniform distribution (𝒰)
+v : ℝ ~ 𝒰(0.0, 1.0)
+v
+v_vec : ℝ[5] ~ 𝒰(0.0, 1.0, 5)
+v_vec
+
+# Beta distribution (ℬ)
+α : ℝ = 2.0
+β_b : ℝ = 5.0
+bs : ℝ ~ ℬ(α, β_b)
+bs
+bs_vec : ℝ[5] ~ ℬ(α, β_b, 5)
+bs_vec
+
+# Gamma distribution
+conc : ℝ = 2.0
+rate : ℝ = 1.0
+gs : ℝ ~ Gamma(conc, rate)
+gs
+gs_vec : ℝ[5] ~ Gamma(conc, rate, 5)
+gs_vec
+
+# Bernoulli distribution
+p : ℝ = 0.5
+coin : ℝ ~ Bernoulli(p)
+coin
+coin_vec : ℝ[10] ~ Bernoulli(p, 10)
+coin_vec

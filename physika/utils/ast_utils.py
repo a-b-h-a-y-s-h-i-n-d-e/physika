@@ -554,6 +554,7 @@ def ast_to_torch_expr(node: ASTNode,
     if not isinstance(node, tuple):
         return repr(node)
     op = node[0]
+    call_fallback = None
 
     if op == "num":
         val = node[1]
@@ -768,7 +769,8 @@ def ast_to_torch_expr(node: ASTNode,
             return f"sp.solve({', '.join(arg_strs)})"
 
         else:
-            return f"{func_name}({', '.join(arg_strs)})"
+            op = f"call:{func_name}"
+            call_fallback = f"{func_name}({', '.join(arg_strs)})"
 
     elif op == "call_index":
         # Indexed function call: func(args)[index]
@@ -852,6 +854,8 @@ def ast_to_torch_expr(node: ASTNode,
     if elf_result is not None:
         return elf_result
 
+    if call_fallback is not None:
+        return call_fallback
     return f"/* unknown: {node} */"
 
 
@@ -1187,6 +1191,16 @@ def emit_body_stmts(
                     inner_expr = (f"torch.stack([{inner_expr}"
                                   f" for {ov} in range({ranges[ov]})])")
                 lines.append(f"{prefix}{tensor_name} = {inner_expr}")
+        else:
+            elf_line = REGISTRY.dispatch_forward(
+                stmt_op, stmt,
+                to_expr=expr_fn,
+            )
+            if elf_line is not None:
+                lines.append(f"{prefix}{elf_line}")
+                var_name = stmt[1] if len(stmt) > 1 and isinstance(stmt[1], str) else None
+                if var_name:
+                    known_vars.append(var_name)
 
 
 def generate_function(name: str, func_def: dict[str, Any]) -> str:
@@ -1415,6 +1429,14 @@ def emit_for_stmts(
             result.extend(emit_for_stmts(then_body, indent + 4, loop_var))
             result.append(f"{prefix}else:")
             result.extend(emit_for_stmts(else_body, indent + 4, loop_var))
+        else:
+            elf_line = REGISTRY.dispatch_forward(
+                body_op, s,
+                to_expr=lambda n: ast_to_torch_expr(n, current_loop_var=loop_var),
+                indent=indent,
+            )
+            if elf_line is not None:
+                result.append(f"{prefix}{elf_line}")
     return result
 
 

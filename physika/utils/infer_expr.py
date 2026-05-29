@@ -1064,6 +1064,20 @@ def expr_call(node: Any,
             ret = from_typespec(ret_type)
         else:
             ret = ret_type
+        # Resolve symbolic dimension names (e.g. TDim("n") or "n") to their
+        # concrete integer values from env so unification catches mismatches.
+        if isinstance(ret, TTensor):
+            resolved_dims = []
+            for dim, variance in ret.dims:
+                dim_name = dim.name if isinstance(dim, TDim) else (
+                    dim if isinstance(dim, str) else None)
+                if dim_name is not None:
+                    val = ctx.env.get(("__val__", dim_name))
+                    resolved_dims.append(
+                        (int(val) if val is not None else dim, variance))
+                else:
+                    resolved_dims.append((dim, variance))
+            ret = TTensor(tuple(resolved_dims))
         return ret, s
 
     # Unknown call

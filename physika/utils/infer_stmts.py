@@ -740,6 +740,9 @@ def stmt_decl(stmt: Any, ctx: StmtContext) -> None:
             ctx.env[name] = ctx.s.apply(inferred)
         else:
             ctx.env[name] = new_var()
+    # Track literal int/real values so dimension checks can compare them
+    if isinstance(expr, tuple) and expr[0] == "num":
+        ctx.env[("__val__", name)] = expr[1]
 
 
 def stmt_assign(stmt: tuple, ctx: StmtContext) -> None:
