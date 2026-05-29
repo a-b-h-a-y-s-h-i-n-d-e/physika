@@ -169,6 +169,7 @@ class TTensor:
     >>> TTensor(((TDim("δ0"), "invariant"), (TDim("δ1"), "invariant")))
     ℝ[δ0,δ1]
     """
+    base_type: TScalar
     dims: tuple
 
     def __post_init__(self) -> None:
@@ -214,7 +215,7 @@ class TTensor:
         'ℝ[n]'
         """
         ds = [str(d) for d, _ in self.dims]
-        return f"ℝ[{','.join(ds)}]"
+        return f"{self.base_type}[{','.join(ds)}]"
 
 
 @dataclass(frozen=True)
@@ -463,7 +464,7 @@ class Substitution(dict):
         if isinstance(t, TScalar):
             return t
         if isinstance(t, TTensor):
-            return TTensor(tuple((self.apply_dim(d), v) for d, v in t.dims))
+            return TTensor(t.base_type, tuple((self.apply_dim(d), v) for d, v in t.dims))
         if isinstance(t, TFunc):
             return TFunc(tuple(self.apply(p) for p in t.params),
                          self.apply(t.ret))

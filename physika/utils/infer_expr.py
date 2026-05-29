@@ -144,7 +144,7 @@ def expr_var(node: Any,
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_var
     >>> from physika.utils.types import Substitution, T_REAL, TTensor
-    >>> ctx = ExprContext({"x": TTensor(((3, "invariant"),))}, Substitution(), {}, {}, [].append)  # noqa: E501
+    >>> ctx = ExprContext({"x": TTensor(T_REAL, ((3, "invariant"),))}, Substitution(), {}, {}, [].append)  # noqa: E501
     >>> t, _= expr_var(("var", "x"), ctx)
     >>> t
     ℝ[3]
@@ -204,7 +204,7 @@ def expr_array(node: Any,
     # Example node: ("array", [("num", 1.0), ("num", 2.0), ("num", 3.0)])
     elements = node[1]
     if not elements:
-        return make_tensor([0]), ctx.s  # empty array literal
+        return make_tensor("ℝ", [0]), ctx.s  # empty array literal
 
     elem_types = []
     cur = ctx.s
@@ -226,8 +226,8 @@ def expr_array(node: Any,
     n = len(elements)
     # For a nested array, prepend the outer length as a new leading dimension.
     if isinstance(base, TTensor):
-        return TTensor(((n, "invariant"), ) + base.dims), cur
-    return make_tensor([n]), cur
+        return TTensor(base.base_type, ((n, "invariant"), ) + base.dims), cur
+    return make_tensor(base, [n]), cur
 
 
 def expr_index(node: Any,
@@ -266,12 +266,12 @@ def expr_index(node: Any,
     Examples
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_index, TTensor
-    >>> from physika.utils.types import Substitution
-    >>> ctx = ExprContext({"v": TTensor(((3, "invariant"),))}, Substitution(), {}, {}, [].append)  # noqa: E501
+    >>> from physika.utils.types import Substitution, T_REAL
+    >>> ctx = ExprContext({"v": TTensor(T_REAL, ((3, "invariant"),))}, Substitution(), {}, {}, [].append)  # noqa: E501
     >>> t, _= expr_index(("index", "v", ("num", 0.0)), ctx)  # ℝ[3][0] → ℝ
     >>> t
     ℝ
-    >>> ctx2 = ExprContext({"A": TTensor(((3, "invariant"), (4, "invariant")))}, Substitution(), {}, {}, [].append)  # noqa: E501
+    >>> ctx2 = ExprContext({"A": TTensor(T_REAL, ((3, "invariant"), (4, "invariant")))}, Substitution(), {}, {}, [].append)  # noqa: E501
     >>> t, _= expr_index(("index", "A", ("num", 0.0)), ctx2)  # ℝ[3,4][0] → ℝ[4]  # noqa: E501
     >>> t
     ℝ[4]
@@ -306,9 +306,9 @@ def expr_index(node: Any,
 
     # Return the leading dimension: ℝ[n] → ℝ, ℝ[n,m] → ℝ[m], etc
     if len(shape) == 1:
-        return (T_REAL, s)
+        return (arr_t.base_type, s)
     else:
-        return (TTensor(tuple((d, "invariant") for d in shape[1:])), s)
+        return (TTensor(arr_t.base_type, tuple((d, "invariant") for d in shape[1:])), s)
 
 
 def expr_indexN(node: Any,
@@ -348,8 +348,8 @@ def expr_indexN(node: Any,
     Examples
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_indexN, TTensor
-    >>> from physika.utils.types import Substitution
-    >>> ctx = ExprContext({"T": TTensor(((2, "invariant"), (3, "invariant"), (4, "invariant")))}, Substitution(), {}, {}, [].append)
+    >>> from physika.utils.types import Substitution, T_REAL
+    >>> ctx = ExprContext({"T": TTensor(T_REAL, ((2, "invariant"), (3, "invariant"), (4, "invariant")))}, Substitution(), {}, {}, [].append)
     >>> t, _= expr_indexN(("indexN", "T", [("num", 0.0), ("num", 1.0)]), ctx)  # ℝ[2,3,4][0,1] → ℝ[4]  # noqa: E501
     >>> t
     ℝ[4]
@@ -393,7 +393,7 @@ def expr_indexN(node: Any,
     if n_idx == len(shape):
         return T_REAL, s
     # partial indexed
-    return make_tensor(shape[n_idx:]), s
+    return make_tensor(arr_t.base_type, shape[n_idx:]), s
 
 
 def expr_chain_index(node: Any,
@@ -430,8 +430,8 @@ def expr_chain_index(node: Any,
     Examples
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_chain_index, TTensor
-    >>> from physika.utils.types import Substitution
-    >>> ctx = ExprContext({"A": TTensor(((3, "invariant"), (4, "invariant")))}, Substitution(), {}, {}, [].append)  # noqa: E501
+    >>> from physika.utils.types import Substitution, T_REAL
+    >>> ctx = ExprContext({"A": TTensor(T_REAL, ((3, "invariant"), (4, "invariant")))}, Substitution(), {}, {}, [].append)  # noqa: E501
     >>> inner = ("index", "A", ("num", 0.0))  # A[0] → ℝ[4]
     >>> t, _= expr_chain_index(("chain_index", inner), ctx)  # A[0][k] → ℝ
     >>> t
@@ -510,12 +510,12 @@ def expr_slice(node: Any,
     Examples
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_slice, TTensor
-    >>> from physika.utils.types import Substitution
-    >>> ctx = ExprContext({"v": TTensor(((6, "invariant"),))}, Substitution(), {}, {}, [].append)
+    >>> from physika.utils.types import Substitution, T_REAL
+    >>> ctx = ExprContext({"v": TTensor(T_REAL, ((6, "invariant"),))}, Substitution(), {}, {}, [].append)
     >>> t, _= expr_slice(("slice", "v", ("num", 0.0), ("num", 3.0)), ctx)  # v[0:3] → ℝ[3]
     >>> t
     ℝ[3]
-    >>> ctx2 = ExprContext({"A": TTensor(((3, "invariant"), (4, "invariant")))}, Substitution(), {}, {}, [].append)
+    >>> ctx2 = ExprContext({"A": TTensor(T_REAL, ((3, "invariant"), (4, "invariant")))}, Substitution(), {}, {}, [].append)
     >>> t, _= expr_slice(("slice", "A", ("num", 0.0), ("num", 2.0)), ctx2)  # A[0:2] → ℝ[2,4]  # noqa: E501
     >>> t
     ℝ[2,4]
@@ -573,9 +573,9 @@ def expr_slice(node: Any,
 
         length = e_val - s_val
         if len(shape) == 1:
-            return make_tensor([length]), ctx.s
+            return make_tensor(arr_t.base_type, [length]), ctx.s
         else:
-            return make_tensor([length] + list(shape[1:])), ctx.s
+            return make_tensor(arr_t.base_type, [length] + list(shape[1:])), ctx.s
 
     # introduce a fresh symbolic dimension for the sliced
     # leading dim so the rank and trailing dims are still correct.
@@ -618,7 +618,7 @@ def expr_add_sub(node: Any,
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_add_sub, T_REAL, TTensor
     >>> from physika.utils.types import Substitution
-    >>> ctx = ExprContext({"x": TTensor(((3, "invariant"),)), "y": TTensor(((3, "invariant"),))}, Substitution(), {}, {}, [].append)
+    >>> ctx = ExprContext({"x": TTensor(T_REAL, ((3, "invariant"),)), "y": TTensor(T_REAL, ((3, "invariant"),))}, Substitution(), {}, {}, [].append)
     >>> t, _= expr_add_sub(("add", ("var", "x"), ("var", "y")), ctx)  # ℝ[3] + ℝ[3] → ℝ[3]
     >>> t
     ℝ[3]
@@ -682,8 +682,8 @@ def expr_mul(node: Any,
     Examples
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_mul, T_REAL, TTensor
-    >>> from physika.utils.types import Substitution
-    >>> ctx = ExprContext({"x": TTensor(((3, "invariant"),))}, Substitution(), {}, {}, [].append)  # noqa: E501
+    >>> from physika.utils.types import Substitution, T_REAL
+    >>> ctx = ExprContext({"x": TTensor(T_REAL, ((3, "invariant"),))}, Substitution(), {}, {}, [].append)  # noqa: E501
     >>> t, _=expr_mul(("mul", ("var", "x"), ("num", 2.0)), ctx)  # ℝ[3] * ℝ → ℝ[3]
     >>> t
     ℝ[3]
@@ -748,8 +748,8 @@ def expr_div(node: Any,
     Examples
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_div, TTensor
-    >>> from physika.utils.types import Substitution
-    >>> ctx = ExprContext({"x": TTensor(((3, "invariant"),)), "y": TTensor(((3, "invariant"),))}, Substitution(), {}, {}, [].append)
+    >>> from physika.utils.types import Substitution, T_REAL
+    >>> ctx = ExprContext({"x": TTensor(T_REAL, ((3, "invariant"),)), "y": TTensor(T_REAL, ((3, "invariant"),))}, Substitution(), {}, {}, [].append)
     >>> t, _= expr_div(("div", ("var", "x"), ("num", 2.0)), ctx)  # ℝ[3] / ℝ → ℝ[3]
     >>> t
     ℝ[3]
@@ -760,7 +760,7 @@ def expr_div(node: Any,
     >>> t
     ℝ[3]
     >>> errors = []
-    >>> ctx2 = ExprContext({"x": TTensor(((3, "invariant"),)), "z": TTensor(((2, "invariant"),))}, Substitution(), {}, {}, errors.append)  # noqa: E501
+    >>> ctx2 = ExprContext({"x": TTensor(T_REAL, ((3, "invariant"),)), "z": TTensor(T_REAL, ((2, "invariant"),))}, Substitution(), {}, {}, errors.append)  # noqa: E501
     >>> t, _= expr_div(("div", ("var", "x"), ("var", "z")), ctx2)  # ℝ[3] / ℝ[2] → error
     >>> errors
     ['Shape mismatch in div: ℝ[3] vs ℝ[2]']
@@ -817,13 +817,13 @@ def expr_matmul(node: Any,
     Examples
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_matmul, TTensor
-    >>> from physika.utils.types import Substitution
-    >>> env = {"A": TTensor(((2, "invariant"), (3, "invariant"))), "B": TTensor(((3, "invariant"), (4, "invariant")))}  # noqa: E501
+    >>> from physika.utils.types import Substitution, T_REAL
+    >>> env = {"A": TTensor(T_REAL, ((2, "invariant"), (3, "invariant"))), "B": TTensor(T_REAL, ((3, "invariant"), (4, "invariant")))}  # noqa: E501
     >>> ctx = ExprContext(env, Substitution(), {}, {}, [].append)
     >>> t, _= expr_matmul(("matmul", ("var", "A"), ("var", "B")), ctx)  # ℝ[2,3] @ ℝ[3,4] → ℝ[2,4]
     >>> t
     ℝ[2,4]
-    >>> env2 = {"u": TTensor(((3, "invariant"),)), "v": TTensor(((3, "invariant"),))}  # noqa: E501
+    >>> env2 = {"u": TTensor(T_REAL, ((3, "invariant"),)), "v": TTensor(T_REAL, ((3, "invariant"),))}  # noqa: E501
     >>> ctx2 = ExprContext(env2, Substitution(), {}, {}, [].append)
     >>> t, _= expr_matmul(("matmul", ("var", "u"), ("var", "v")), ctx2)  # ℝ[3] @ ℝ[3] → ℝ (dot)  # noqa: E501
     >>> t
@@ -870,8 +870,8 @@ def expr_pow(node: Any,
     Examples
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_pow, TTensor
-    >>> from physika.utils.types import Substitution
-    >>> ctx = ExprContext({"x": TTensor(((3, "invariant"),))}, Substitution(), {}, {}, [].append)
+    >>> from physika.utils.types import Substitution, T_REAL
+    >>> ctx = ExprContext({"x": TTensor(T_REAL, ((3, "invariant"),))}, Substitution(), {}, {}, [].append)
     >>> t, _= expr_pow(("pow", ("var", "x"), ("num", 2.0)), ctx)  # ℝ[3] ** ℝ → ℝ[3]  # noqa: E501
     >>> t
     ℝ[3]
@@ -914,8 +914,8 @@ def expr_neg(node: Any,
     Examples
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_neg, TTensor, T_REAL
-    >>> from physika.utils.types import Substitution
-    >>> ctx = ExprContext({"x": TTensor(((3, "invariant"),))}, Substitution(), {}, {}, [].append)  # noqa: E501
+    >>> from physika.utils.types import Substitution, T_REAL
+    >>> ctx = ExprContext({"x": TTensor(T_REAL, ((3, "invariant"),))}, Substitution(), {}, {}, [].append)  # noqa: E501
     >>> t, _= expr_neg(("neg", ("var", "x")), ctx)  # -ℝ[3] → ℝ[3]
     >>> t
     ℝ[3]
@@ -966,7 +966,7 @@ def expr_call(node: Any,
     --------
     >>> from physika.utils.infer_expr import ExprContext, expr_call, T_REAL, TTensor  # noqa: E501
     >>> from physika.utils.types import Substitution
-    >>> ctx = ExprContext({"x": TTensor(((3, "invariant"),))}, Substitution(), {}, {}, [].append)  # noqa: E501
+    >>> ctx = ExprContext({"x": TTensor(T_REAL, ((3, "invariant"),))}, Substitution(), {}, {}, [].append)  # noqa: E501
     >>> t, _= expr_call(("call", "sin", [("var", "x")]), ctx)  # element-wise
     >>> t
     ℝ[3]
@@ -976,8 +976,8 @@ def expr_call(node: Any,
     >>> t, _= expr_call(("call", "grad", [("num", 1.0), ("var", "x")]), ctx)
     >>> t
     ℝ[3]
-    >>> func_env = {"f": ([TTensor(((3, "invariant"),))], TTensor(((3, "invariant"),)))}  # noqa: E501
-    >>> ctx2 = ExprContext({"x": TTensor(((3, "invariant"),))}, Substitution(), func_env, {}, [].append)  # noqa: E501
+    >>> func_env = {"f": ([TTensor(T_REAL, ((3, "invariant"),))], TTensor(T_REAL, ((3, "invariant"),)))}  # noqa: E501
+    >>> ctx2 = ExprContext({"x": TTensor(T_REAL, ((3, "invariant"),))}, Substitution(), func_env, {}, [].append)  # noqa: E501
     >>> t, _= expr_call(("call", "f", [("var", "x")]), ctx2)
     >>> t
     ℝ[3]
@@ -1078,7 +1078,7 @@ def expr_for_expr(
     >>> from physika.utils.infer_expr import ExprContext, expr_for_expr
     >>> from physika.utils.types import Substitution, new_dim
     >>> ctx = ExprContext({}, Substitution(), {}, {}, [].append)
-    >>> t, _= expr_for_expr(("for_expr", "i", ("num", 3.0), ("imaginary")), ctx, new_dim)  #  ℝ[3]  # noqa: E501
+    >>> t, _= expr_for_expr(("for_expr", "i", ("num", 3.0), ("num", 4.0)), ctx, new_dim)  #  ℝ[3]  # noqa: E501
     >>> t
     ℝ[3]
     >>> inner_body = ("array", [("num", 1.0), ("num", 2.0)])  #  ℝ[2]
@@ -1101,7 +1101,6 @@ def expr_for_expr(
                            func_env=ctx.func_env,
                            class_env=ctx.class_env,
                            add_error=ctx.add_error)
-
     # Use a concrete dim when the size is a literal, otherwise a fresh TDim.
     outer_dim: Union[int, TDim]
     if isinstance(size_expr, tuple) and size_expr[0] == "num":
@@ -1114,9 +1113,8 @@ def expr_for_expr(
     # tensor body → ℝ[n, etc]
     # for 1-level for loops body_t ==  ℕ -> True
     if isinstance(body_t, TTensor):
-        return TTensor(((outer_dim, "invariant"), ) + body_t.dims), s
-    return make_tensor([outer_dim]), s
-
+        return TTensor(T_REAL, ((outer_dim, "invariant"), ) + body_t.dims), s
+    return make_tensor(T_REAL, [outer_dim]), s
 
 def expr_for_expr_range(
         node: Any, ctx: ExprContext,
@@ -1157,7 +1155,7 @@ def expr_for_expr_range(
     >>> from physika.utils.infer_expr import ExprContext, expr_for_expr_range
     >>> from physika.utils.types import Substitution, new_dim
     >>> ctx = ExprContext({}, Substitution(), {}, {}, [].append)
-    >>> t, _= expr_for_expr_range(("for_expr_range", "i", ("num", 0.0), ("num", 4.0), ("imaginary")), ctx, new_dim)
+    >>> t, _= expr_for_expr_range(("for_expr_range", "i", ("num", 0.0), ("num", 4.0), ("num", 2.0)), ctx, new_dim)
     >>> t  # ℝ[4]
     ℝ[4]
     >>> inner_body = ("array", [("num", 0.0), ("num", 1.0), ("num", 2.0)])  # body produces ℝ[3]
@@ -1188,8 +1186,10 @@ def expr_for_expr_range(
 
     # Case nested for-loops
     if isinstance(body_t, TTensor):
-        return TTensor(((outer_dim, "invariant"), ) + body_t.dims), s
-    return make_tensor([outer_dim]), s
+        return TTensor(body_t.base_type, ((outer_dim, "invariant"), ) + body_t.dims), s
+    if isinstance(body_t, TScalar):
+        return TTensor(body_t, ((outer_dim, "invariant"),)), s
+    raise TypeError(f"Unsupported body type: {body_t}")
 
 
 def expr_cond(node, ctx):
