@@ -429,7 +429,7 @@ class RandomnessFeature(ELF):
     >>> def run_phyk(src):
     ...     symbol_table.clear()
     ...     lexer.lexer.lineno = 1
-    ...     ast = build_unified_ast(parser.parse(src, lexer=lexer), symbol_table)
+    ...     ast = build_unified_ast(parser.parse(src, lexer=lexer), symbol_table)  # noqa: E501
     ...     exec(from_ast_to_torch(ast, print_code=False), {})
 
     >>> # Physika scalar Normal and Bernoulli samples
