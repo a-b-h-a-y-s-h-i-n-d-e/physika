@@ -80,7 +80,7 @@ def get_tensor_shape(t: TypeSpec) -> List[int] | None:
     [3]
     >>> get_tensor_shape(TTensor(T_REAL, ((2, "invariant"), (4, "invariant"))))
     [2, 4]
-    >>> get_tensor_shape(TTensor(T_REAL, ((TDim("n"), "invariant"), (3, "invariant"))))
+    >>> get_tensor_shape(TTensor(T_REAL, ((TDim("n"), "invariant"), (3, "invariant"))))  # noqa
     [n, 3]
     >>> get_tensor_shape(T_REAL) is None
     True
@@ -765,6 +765,8 @@ def from_typespec(ts: Any) -> Optional[Type]:
     >>> from_typespec(None) is None
     True
     """
+    if isinstance(ts, (TScalar, TTensor, TFunc, TInstance)):
+        return ts
     if ts is None:
         return None
     if ts in ("ℝ", "R"):
@@ -777,7 +779,7 @@ def from_typespec(ts: Any) -> Optional[Type]:
         return T_STRING
     if isinstance(ts, tuple):
         if ts[0] == "tensor":
-            base_type = ts[1]
+            base_type = from_typespec(ts[1])
             # Converts dimensions to TDim
             dims = tuple(
                 (TDim(d) if isinstance(d, str) else d, v) for d, v in ts[2])
@@ -963,7 +965,6 @@ def unify(t1: Type, t2: Type, s: Substitution) -> Substitution:
         if t1.class_name != t2.class_name:
             raise TypeError(f"Instance mismatch: {t1} vs {t2}")
         return s
-
     raise TypeError(f"Cannot unify {type_to_str(t1)} with {type_to_str(t2)}")
 
 
