@@ -421,9 +421,26 @@ class RandomnessFeature(ELF):
 
     Examples
     --------
-    >>> from physika.features.randomness import RandomnessFeature
-    >>> RandomnessFeature().name
-    'randomness'
+    >>> import torch
+    >>> from physika.lexer import lexer
+    >>> from physika.parser import parser, symbol_table
+    >>> from physika.utils.ast_utils import build_unified_ast
+    >>> from physika.codegen import from_ast_to_torch
+    >>> def run_phyk(src):
+    ...     symbol_table.clear()
+    ...     lexer.lexer.lineno = 1
+    ...     ast = build_unified_ast(parser.parse(src, lexer=lexer), symbol_table)
+    ...     exec(from_ast_to_torch(ast, print_code=False), {})
+
+    >>> # Physika scalar Normal and Bernoulli samples
+    >>> src = '''
+    ... μ : ℝ = 0.0
+    ... σ : ℝ = 1.0
+    ... x : ℝ ~ Normal(μ, σ)
+    ... coin : ℝ ~ Bernoulli(0.5)
+    ... '''
+    >>> # Execute code
+    >>> run_phyk(src)
     """
 
     name = "randomness"
