@@ -464,7 +464,8 @@ class Substitution(dict):
         if isinstance(t, TScalar):
             return t
         if isinstance(t, TTensor):
-            return TTensor(t.base_type, tuple((self.apply_dim(d), v) for d, v in t.dims))
+            return TTensor(t.base_type,
+                           tuple((self.apply_dim(d), v) for d, v in t.dims))
         if isinstance(t, TFunc):
             return TFunc(tuple(self.apply(p) for p in t.params),
                          self.apply(t.ret))
