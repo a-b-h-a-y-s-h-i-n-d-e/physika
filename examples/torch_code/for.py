@@ -27,20 +27,20 @@ def partial_sum(arr, low, high):
     return total
 
 def outer_accum(u, v):
-    array_C = torch.stack([torch.stack([(u[int(i)] * v[int(j)]) for j in range(v.shape[0])]) for i in range(u.shape[0])])
-    return array_C
+    C = torch.stack([torch.stack([(u[int(i)] * v[int(j)]) for j in range(v.shape[0])]) for i in range(u.shape[0])])
+    return C
 
 def matmul_physika(A, B):
-    array_C = torch.stack([torch.stack([torch.sum(torch.stack([(A[int(i), int(k)] * B[int(k), int(j)]) for k in range(A.shape[1])])) for j in range(B.shape[1])]) for i in range(A.shape[0])])
-    return array_C
+    C = torch.stack([torch.stack([torch.sum(torch.stack([(A[int(i), int(k)] * B[int(k), int(j)]) for k in range(A.shape[1])])) for j in range(B.shape[1])]) for i in range(A.shape[0])])
+    return C
 
 def chain_mm(A, B):
-    array_C = torch.stack([torch.stack([torch.sum(torch.stack([(A[int(i), int(k)] * B[int(k), int(j)]) for k in range(A.shape[1])])) for j in range(B.shape[1])]) for i in range(A.shape[0])])
-    D = torch.stack([torch.stack([torch.sum(torch.stack([(array_C[int(i), int(k)] * A[int(k), int(j)]) for k in range(array_C.shape[1])])) for j in range(A.shape[1])]) for i in range(array_C.shape[0])])
+    C = torch.stack([torch.stack([torch.sum(torch.stack([(A[int(i), int(k)] * B[int(k), int(j)]) for k in range(A.shape[1])])) for j in range(B.shape[1])]) for i in range(A.shape[0])])
+    D = torch.stack([torch.stack([torch.sum(torch.stack([(C[int(i), int(k)] * A[int(k), int(j)]) for k in range(C.shape[1])])) for j in range(A.shape[1])]) for i in range(C.shape[0])])
     return D
 
-def tensor_contraction(A, B, array_C):
-    T = torch.stack([torch.stack([torch.stack([torch.sum(torch.stack([((A[int(i), int(k)] * B[int(k), int(j)]) * array_C[int(k), int(l)]) for k in range(A.shape[1])])) for l in range(array_C.shape[1])]) for j in range(B.shape[1])]) for i in range(A.shape[0])])
+def tensor_contraction(A, B, C):
+    T = torch.stack([torch.stack([torch.stack([torch.sum(torch.stack([((A[int(i), int(k)] * B[int(k), int(j)]) * C[int(k), int(l)]) for k in range(A.shape[1])])) for l in range(C.shape[1])]) for j in range(B.shape[1])]) for i in range(A.shape[0])])
     return T
 
 def sum_or_sum_sq(arr, sq):

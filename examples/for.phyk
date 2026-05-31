@@ -130,18 +130,18 @@ partial_sum(data, 2, 5)
 # 5. Function body with accumulation loops
 # 5.1 2 iter variables
 def outer_accum(u : ℝ[n], v : ℝ[m]): ℝ[n, m]:
-    array_C : ℝ[n, m]
+    C : ℝ[n, m]
     for i j:
-        array_C[i, j] += u[i] * v[j]
-    return array_C
+        C[i, j] += u[i] * v[j]
+    return C
 outer_accum(p, q)
 
 # 5.2 3 iter variables
 def matmul_physika(A : ℝ[n, m], B : ℝ[m, o]): ℝ[n, o]:
-    array_C : ℝ[n, o]
+    C : ℝ[n, o]
     for i j k:
-        array_C[i, j] += A[i, k] * B[k, j]
-    return array_C
+        C[i, j] += A[i, k] * B[k, j]
+    return C
 
 A : ℝ[2, 4] = [[1, 2, 3, 4], [0, 1, 1, 2]]
 B : ℝ[4, 1] = [[1], [0], [0], [2]]
@@ -152,12 +152,12 @@ matmul_physika(A, B)
 A2 : ℝ[2, 2] = [[1, 2], [0, 1]]
 B2 : ℝ[2, 2] = [[1, 0], [0, 2]]
 def chain_mm(A : ℝ[m, n], B : ℝ[n, o]): ℝ[m, o]:
-    array_C : ℝ[2, 2]
+    C : ℝ[2, 2]
     for i j k:
-        array_C[i, j] += A[i, k] * B[k, j]
+        C[i, j] += A[i, k] * B[k, j]
     D : ℝ[2, 2]
     for i j k:
-        D[i, j] += array_C[i, k] * A[k, j]
+        D[i, j] += C[i, k] * A[k, j]
     return D
 chain_mm(A2, B2)
 
@@ -166,10 +166,10 @@ chain_mm(A2, B2)
 # 5.5 Four iteration variables and one reduction dimension
 # 3D tensor contraction T[i,j,l] = Σ_k A[i,k]*B[k,j]*C[k,l]
 C_mat : ℝ[2, 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]
-def tensor_contraction(A : ℝ[m, n], B : ℝ[n, o], array_C : ℝ[n, r]): ℝ[m, o, r]:
+def tensor_contraction(A : ℝ[m, n], B : ℝ[n, o], C : ℝ[n, r]): ℝ[m, o, r]:
     T : ℝ[m, o, r]
     for i j l k:
-        T[i, j, l] += A[i, k] * B[k, j] * array_C[k, l]
+        T[i, j, l] += A[i, k] * B[k, j] * C[k, l]
     return T
 tensor_contraction(A2, B2, C_mat)
 
