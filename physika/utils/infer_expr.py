@@ -227,7 +227,9 @@ def expr_array(node: Any,
     # For a nested array, prepend the outer length as a new leading dimension.
     if isinstance(base, TTensor):
         return TTensor(base.base_type, ((n, "invariant"), ) + base.dims), cur
-    return make_tensor(base, [n]), cur
+    if isinstance(base, TScalar):
+        return make_tensor(base, [n]), cur
+    raise TypeError(f"Unsupported array element type: {base}")
 
 
 def expr_index(node: Any,
@@ -304,6 +306,8 @@ def expr_index(node: Any,
         except TypeError as e:
             ctx.add_error(f"Index mismatch for '{arr_name}': {e}")
 
+    if not isinstance(arr_t, TTensor):
+        return None, s
     # Return the leading dimension: ℝ[n] → ℝ, ℝ[n,m] → ℝ[m], etc
     if len(shape) == 1:
         return (arr_t.base_type, s)
@@ -393,6 +397,8 @@ def expr_indexN(node: Any,
     # fully indexed
     if n_idx == len(shape):
         return T_REAL, s
+    if not isinstance(arr_t, TTensor):
+        return None, s
     # partial indexed
     return make_tensor(arr_t.base_type, shape[n_idx:]), s
 
@@ -461,7 +467,8 @@ def expr_chain_index(node: Any,
     # 1D Tensor
     if len(shape) <= 1:
         return T_REAL, cur
-
+    if not isinstance(obj_t, TTensor):
+        return None, cur
     # Higher-rank Tensor (peel one dimension)
     return make_tensor(obj_t.base_type, shape[1:]), cur
 
@@ -573,6 +580,8 @@ def expr_slice(node: Any,
             return None, ctx.s
 
         length = e_val - s_val
+        if not isinstance(arr_t, TTensor):
+            return None, ctx.s
         if len(shape) == 1:
             return make_tensor(arr_t.base_type, [length]), ctx.s
         else:
@@ -582,6 +591,8 @@ def expr_slice(node: Any,
     # introduce a fresh symbolic dimension for the sliced
     # leading dim so the rank and trailing dims are still correct.
     fresh_dim = VarCounter().new_dim()
+    if not isinstance(arr_t, TTensor):
+        return None, ctx.s
     return make_tensor(arr_t.base_type, [fresh_dim] + list(shape[1:])), ctx.s
 
 
@@ -1186,6 +1197,8 @@ def expr_for_expr_range(
     else:
         outer_dim = new_dim()
 
+    if not isinstance(body_t, TTensor):
+        return None, s
     # Case nested for-loops
     if isinstance(body_t, TTensor):
         return TTensor(body_t.base_type,
