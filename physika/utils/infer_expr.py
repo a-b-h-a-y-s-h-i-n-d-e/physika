@@ -1197,13 +1197,13 @@ def expr_for_expr_range(
     else:
         outer_dim = new_dim()
 
-    if not isinstance(body_t, TTensor):
-        return None, s
     # Case nested for-loops
     if isinstance(body_t, TTensor):
         return TTensor(body_t.base_type,
                        ((outer_dim, "invariant"), ) + body_t.dims), s
-    return make_tensor(body_t, [outer_dim]), s
+    if isinstance(body_t, TScalar):
+        return make_tensor(body_t, [outer_dim]), s
+    raise TypeError(f"Unsupported body type: {body_t}")
 
 
 def expr_cond(node, ctx):

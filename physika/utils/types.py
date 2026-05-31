@@ -161,7 +161,7 @@ class TTensor:
     >>> # str symbolic size from a generic parameter annotation:
     >>> TTensor(T_REAL, (("n", "invariant"),))       # u : ℝ[n]
     ℝ[n]
-    >>> TTensor(T_REAL, (("n", "invariant"), ("m", "invariant")))  # A : ℝ[n, m]
+    >>> TTensor(T_REAL, (("n", "invariant"), ("m", "invariant")))  # A : ℝ[n, m]  # noqa
     ℝ[n,m]
     >>> # TDim unknown dimension, resolved at unification step:
     >>> TTensor(T_REAL, ((TDim("δ0"), "invariant"),))
