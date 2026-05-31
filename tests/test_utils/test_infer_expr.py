@@ -1521,9 +1521,9 @@ class TestExprForExprRange:
     def test_dynamic_bounds_give_tdim(self):
         """Dynamic end bound introduces a fresh TDim."""
         ctx = make_ctx(env={"n": T_NAT})
-        t, _ = expr_for_expr_range(
-            ("for_expr_range", "i", ("num", 0.0), ("var", "n"), ('imaginary', )),
-            ctx, new_dim)
+        t, _ = expr_for_expr_range(("for_expr_range", "i", ("num", 0.0),
+                                    ("var", "n"), ('imaginary', )), ctx,
+                                   new_dim)
         assert isinstance(t, TTensor)
         assert len(t.dims) == 1
         outer, _ = t.dims[0]
