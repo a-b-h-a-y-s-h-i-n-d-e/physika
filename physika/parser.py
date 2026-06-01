@@ -380,7 +380,15 @@ def p_func_body_stmt_for_accum(p):
     #  ("body_for_accum", loop_vars, loop_body)
     loop_vars = p[2]
     loop_body = p[6]
-    p[0] = ("body_for_accum", loop_vars, loop_body)
+
+    has_pluseq = any(stmt and stmt[0] == "loop_index_pluseq"
+                     for stmt in loop_body)
+    has_assign = any(stmt and stmt[0] == "loop_index_assign_nd"
+                     for stmt in loop_body)
+    if has_pluseq:
+        p[0] = ("body_for_accum", loop_vars, loop_body)
+    if has_assign:
+        p[0] = ("body_for_map", loop_vars, loop_body)
 
 
 def p_func_body_stmt_for_range(p):
