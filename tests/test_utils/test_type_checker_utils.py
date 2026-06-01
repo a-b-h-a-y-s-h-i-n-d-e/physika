@@ -436,11 +436,16 @@ class TestUnifyDim:
 
 
 class TestTypePromotion:
-    """Tests for ``type_promotion``"""
+    """Tests scalar type promotion rules."""
 
     def test_type_promotion(self):
+        """Tests for ``type_promotion``"""
+
+        # ℕ + ℝ → ℝ
         assert type_promotion(T_REAL, T_NAT) == T_REAL
+        # ℝ + ℂ → ℂ
         assert type_promotion(T_REAL, T_COMPLEX) == T_COMPLEX
+        # ℕ + ℂ → ℂ
         assert type_promotion(T_NAT, T_COMPLEX) == T_COMPLEX
 
 
