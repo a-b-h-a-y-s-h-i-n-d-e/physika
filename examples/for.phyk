@@ -368,7 +368,18 @@ v2 : ℝ[3] = [4, 5, 6]
 row_sums : ℝ[3] = for i → sum(for j → u2[i] * v2[j])
 row_sums
 
-# 8.5 Mixed implicit/explicit
+# 8.5 Implicit multiple loop variables (function level)
+def outer_product(u : ℝ[n], v : ℝ[m]): ℝ[n, m]:
+    results : ℝ[n, m]
+    for i j:
+        results[i, j] = u[i] * v[j]
+    return results
+
+x: R[4] = [1, 2, 3, 4]
+y: R[4] = [0, 5, 6, 7]
+outer_product(x, y)
+
+# 8.6 Mixed implicit/explicit
 data2 : ℝ[4] = [10, 20, 30, 40]
 norm_flag : ℝ = 1
 normed : ℝ[4] = for i → data2[i]
