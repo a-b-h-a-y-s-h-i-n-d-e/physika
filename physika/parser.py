@@ -373,18 +373,18 @@ def p_func_body_stmt_for_implicit(p):
     # C : ℝ[2, 2]
     # for i j k:
     #     C[i, j] += A[i, k] * B[k, j]
-    # 
+    #
     # Example 2 (=):
     # x: R[4] = [1, 2, 3, 4]
     # y: R[4] = [0, 5, 6, 7]
     # results : ℝ[n, m]
     # for i j:
     #    results[i, j] = u[i] * v[j]
-    # 
+    #
     # Parameters:
     # p[2] — loop variable list [i, j, k]
     # p[6] — loop body statements
-    # 
+    #
     # Returns:
     #  if body_for_accum:
     #       ("body_for_accum", loop_vars, loop_body)
