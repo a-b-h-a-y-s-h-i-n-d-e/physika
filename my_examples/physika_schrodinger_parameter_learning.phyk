@@ -1,11 +1,3 @@
-def get_1d_array_length(x: ℝ[m]): ℝ:
-    total: ℝ = 0
-    temp: ℝ = 0
-    for i:
-        temp = x[i]
-        total += 1
-    return total
-
 def zero_1d_array(len: ℝ): ℝ[m]:
     results: ℝ[len] = for i: ℕ(len) -> i*0
     return results
@@ -17,75 +9,43 @@ def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
         x[i] = start + i * dx
     return x
 
-def append(x: R[m], var: R): R[n]:
-    new_length = len(x) + 1
-    results = zero_1d_array(new_length)
-    for i:N(new_length):
-        if i<len(x):
-            results[i] = x[i]
-        else:
-            results[i] = var
-    return results
+Nx   : ℕ = 1024
+x: ℝ[Nx] = linspace(-200, 200, Nx)
+dx: ℝ = 0.3910
+
+hbar : ℝ = 1.0
+mass : ℝ = 1.0
+
+cfl_factor: ℝ = 0.2
+dt: ℝ = cfl_factor * (mass * dx**2) / hbar
+t_final: ℝ = 100.0
+Nt: ℕ = 3271
+
+x0: ℝ = -50.0    # initial position
+k0: ℝ = 2.0      # wavenumber (controls momentum)
+sigma: ℝ = 10.0     # width of the wave packet
+
+psi0: ℂ[Nx] = (1 / sigma*sqrt(3.14))**0.5 * exp(1j * k0 * x) * exp(-((x - x0)**2) / (2 * sigma**2))
 
 
-# spatial grid
-Nx = 1024
-x = linspace(-200, 200, Nx)
-dx = 0.3910
 
-#dx = x[1] - x[0]
-#dx
-
-
-# physical constants
-hbar = 1.0
-mass = 1.0
-
-# CFL
-cfl_factor = 0.2
-dt = cfl_factor * (mass * dx**2) / hbar
+def schrodinger_rhs(psi: ℂ[m], V: ℝ[n], dx: ℝ, hbar: ℝ, mass: ℝ): ℂ[o]:
+    psi_xx: ℂ[Nx] = (roll(psi, -1) - 2*psi + roll(psi, 1)) / (dx**2)
+    H_psi: ℂ[Nx] = -(hbar**2 / (2*mass)) * psi_xx + V * psi
+    result: ℂ[Nx] = -1j / hbar * H_psi
+    return result
 
 
-# total number of timesteps
-t_final = 100.0
-Nt = 3271
-
-
-# reference timesteps
-Nt_ref = 10000
-steps_ref = 10
-steps_per_ref = 4
-
-# initial wave function (gaussian wave packet)
-x0 = -50.0
-k0 = 2.0
-sigma = 10.0
-
-
-psi0 = ((1 / sigma*sqrt(3.14)) ** 0.5 * exp(1j * k0 * x) * exp(-((x - x0) ** 2) / (2 * sigma**2))) 
-
-
-# potential barrier
-def make_potential(V_value: R[m]): R[m]:
+def make_potential(V_value: ℝ): ℝ[m]:
     V = zero_1d_array(Nx)
-    V_len = get_1d_array_length(V)
-    for i:N(0, V_len):
+    x: ℝ[Nx] = linspace(-200, 200, Nx)
+    for i:ℕ(0, Nx):
         if abs(x[i]) < 15:
             V[i] = V_value
     return V
 
 
-V = make_potential(1.8)
-
-
-
-def schrodinger_rhs(psi: R[m], V: R[n], dx: R, hbar: R, mass: R): R[o]:
-    psi_xx = (roll(psi, -1) - 2*psi + roll(psi, 1)) / (dx**2)
-    H_psi = -(hbar**2 / (2*mass)) * psi_xx + V * psi
-    result = -1j / hbar * H_psi
-    return result
-
-def RK4_step(psi: R[m], dt: R, V: R[n], dx: R, hbar: R, mass: R): R[o]:
+def RK4_step(psi: ℂ[m], dt: ℝ, V: ℝ[n], dx: ℝ, hbar: ℝ, mass: ℝ): ℂ[o]:
     k1 = schrodinger_rhs(psi, V, dx, hbar, mass)
     k2 = schrodinger_rhs(psi + 0.5 * dt * k1, V, dx, hbar, mass)
     k3 = schrodinger_rhs(psi + 0.5 * dt * k2, V, dx, hbar, mass)
@@ -93,10 +53,11 @@ def RK4_step(psi: R[m], dt: R, V: R[n], dx: R, hbar: R, mass: R): R[o]:
     psi_next = psi + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
     return psi_next
 
-def solver(V: R[m]): R[m]:
-    psi0 = ((1 / sigma*sqrt(3.14)) ** 0.5 * exp(1j * k0 * x) * exp(-((x - x0) ** 2) / (2 * sigma**2))) 
-    psi = psi0
-    history: R[1] = [0]
+def solver(V: ℝ[m]): ℂ[m]:
+    x: ℝ[Nx] = linspace(-200, 200, Nx)
+    psi0: ℂ[Nx] = ((1 / sigma*sqrt(3.14)) ** 0.5 * exp(1j * k0 * x) * exp(-((x - x0) ** 2) / (2 * sigma**2)))
+    psi: ℂ[Nx] = psi0
+    history: ℝ[1] = [0]
     counter: N = 0
     for i:N(0, Nt):
         psi = RK4_step(psi, dt, V, dx, hbar, mass)
@@ -108,36 +69,41 @@ def solver(V: R[m]): R[m]:
 
 
 
-true_values = solver(V)
-#create_plot(true_values, psi0, x, V)
+V = make_potential(1.8)
+true_values  = solver(V)
 
-def calculate_loss(barrier_height: R): R:
+create_plot(true_values, psi0, x, V)
+
+new_barrier_height = 6.0
+guess_V = make_potential(new_barrier_height)
+guess_values = solver(guess_V)
+create_plot(guess_values, psi0, x, V)
+
+
+
+def calculate_loss(barrier_height: ℝ): ℝ:
     V_current = make_potential(barrier_height)
     pred = solver(V_current)
     loss = mean(abs(pred - true_values)**2)
     return loss
 
-
 def adam(bh: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
-    beta1 : ℝ = 0.9
-    beta2 : ℝ = 0.999
-    eps   : ℝ = 1e-8
-    m_new : ℝ = beta1 * m + (1.0 - beta1) * g
-    v_new : ℝ = beta2 * v + (1.0 - beta2) * g**2
-    m_hat : ℝ = m_new / (1.0 - beta1**t)
-    v_hat : ℝ = v_new / (1.0 - beta2**t)
-    bh_new : ℝ = bh - lr * m_hat / (sqrt(v_hat) + eps)
+    beta1: ℝ = 0.9
+    beta2: ℝ = 0.999
+    eps: ℝ = 1e-8
+    m_new: ℝ = beta1 * m + (1.0 - beta1) * g
+    v_new: ℝ = beta2 * v + (1.0 - beta2) * g**2
+    m_hat: ℝ = m_new / (1.0 - beta1**t)
+    v_hat: ℝ = v_new / (1.0 - beta2**t)
+    bh_new: ℝ = bh - lr * m_hat / (sqrt(v_hat) + eps)
     return [bh_new, m_new, v_new, t + 1.0]
 
+m_adam: ℝ = 0.0
+v_adam: ℝ = 0.0
+t_adam: ℝ = 1.0
+lr: ℝ = 0.1
 
-# training loop
-m_adam : ℝ = 0.0
-v_adam : ℝ = 0.0
-t_adam : ℝ = 1.0
-lr     : ℝ = 0.1
-
-new_barrier_height = 6.0
-#new_V = make_potential(new_barrier_height)
+epochs: N = 1
 
 epochs: N = 1
 
@@ -151,12 +117,9 @@ for i:ℕ(epochs):
     t_adam = result[3]
     physika_print(new_barrier_height)
 
-
-new_barrier_height
-new_V = make_potential(new_barrier_height)
-pre_results = solver(new_V)
-create_plot(pre_results, psi0, x, V)
-
+pred_V = make_potential(new_barrier_height)
+pred_results = solver(pred_V)
+create_plot(pred_results, psi0, x, pred_V)
 
 
 # def append_row(arr, val):
