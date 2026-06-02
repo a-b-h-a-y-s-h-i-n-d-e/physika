@@ -6,8 +6,13 @@ time-dependent Schrödinger equation using gradient descent in Physika.
 The Schrödinger equation is a partial differential equation that governs
 the evolution of the wave function of a non-relativistic quantum-mechanical
 system.
+A non-relativistic quantum mechanical system is one where the particle moves
+at speeds much slower than the speed of light, so relativistic effects can
+be safely ignored. In this regime the Schrödinger equation is the right tool
+- it describes everyday quantum phenomena like electrons in atoms, particles
+trapped in a well, and tunnelling through a barrier.
 Here we simulate a Gaussian wave packet interacting with a potential
-barrier and recover the barrier height from observed wavefunction data.
+barrier and recover the barrier height from obser.ved wavefunction data.
 
 The Equation
 ------------
@@ -24,11 +29,11 @@ The time-dependent Schrödinger equation is:
 
 where:
 
-- :math:`\psi(x, t)` is the wavefunction — a complex-valued field whose
+- :math:`\psi(x, t)` is the wavefunction - a complex-valued field whose
   squared modulus :math:`|\psi|^2` gives the probability density of finding
   the particle at position :math:`x` at time :math:`t`
 - :math:`\hbar` is the reduced Planck constant
-- :math:`\hat{H}` is the Hamiltonian operator — the total energy of the system
+- :math:`\hat{H}` is the Hamiltonian operator - the total energy of the system
 
 The Hamiltonian
 ---------------
@@ -58,7 +63,7 @@ need for time-stepping:
     \frac{\partial \psi}{\partial t} = -\frac{i}{\hbar} \left( -\frac{\hbar^2}{2m} \frac{\partial^2 \psi}{\partial x^2} + V(x)\psi \right)
     \end{align*}
 
-This is the RHS of the Schrödinger equation — the rate of change of the
+This is the RHS of the Schrödinger equation - the rate of change of the
 wavefunction at each point in space.
 
 Helper functions
@@ -89,8 +94,11 @@ Grid and Physical Constants
     hbar: ℝ = 1.0
     mass: ℝ = 1.0
 
-The timestep is chosen using the CFL stability condition for the
-Schrödinger equation:
+The timestep is chosen using the CFL (Courant–Friedrichs–Lewy) stability
+condition. The CFL condition is a constraint on the timestep :math:`\Delta t`
+relative to the spatial spacing :math:`\Delta x` - if the timestep is too
+large, numerical errors grow unboundedly and the simulation blows up. For
+the Schrödinger equation the condition takes the form:
 
 .. math::
 
@@ -98,7 +106,8 @@ Schrödinger equation:
     \Delta t &= \alpha \cdot \frac{m \Delta x^2}{\hbar}
     \end{align*}
 
-where :math:`\alpha = 0.2` is the CFL factor keeping the simulation stable:
+where :math:`\alpha = 0.2` is the CFL factor. Keeping :math:`\alpha` well
+below 1 ensures the wavefunction evolves stably without numerical blow-up:
 
 .. code-block:: text
 
@@ -121,13 +130,13 @@ We initialize the wavefunction as a Gaussian wave packet:
 
 This is a product of three parts:
 
-- :math:`\frac{1}{\sqrt{\sigma\sqrt{\pi}}}` — normalization factor ensuring
+- :math:`\frac{1}{\sqrt{\sigma\sqrt{\pi}}}` :- normalization factor ensuring
   :math:`\int |\psi|^2 dx = 1`, so the total probability of finding the
   particle somewhere is 1
-- :math:`\exp(ik_0 x)` — a plane wave with wavenumber :math:`k_0`, giving
+- :math:`\exp(ik_0 x)` :- a plane wave with wavenumber :math:`k_0`, giving
   the packet a mean momentum :math:`p = \hbar k_0` and making it travel in
   the positive :math:`x` direction
-- :math:`\exp\!\left(-\frac{(x-x_0)^2}{2\sigma^2}\right)` — a Gaussian
+- :math:`\exp\!\left(-\frac{(x-x_0)^2}{2\sigma^2}\right)` :- a Gaussian
   envelope centred at :math:`x_0` with width :math:`\sigma`, localising the
   particle in space
 
@@ -145,7 +154,11 @@ Discretizing the RHS
 
 We discretize space into :math:`N_x` points with uniform spacing
 :math:`\Delta x`. The wavefunction becomes a vector
-:math:`\psi_i = \psi(x_i, t)`.
+:math:`\psi_i = \psi(x_i, t)`, and the continuous spatial derivative
+:math:`\frac{\partial^2 \psi}{\partial x^2}` is replaced by a finite
+difference stencil that only uses the values at neighbouring grid points.
+This turns the PDE into a system of ODEs - one per grid point
+
 
 **Step 1 — Discretize the second spatial derivative**
 
@@ -211,8 +224,8 @@ all spatial points simultaneously:
 
 
 
-The Potential Barrier
-----------------------
+Potential Barrier
+-----------------
 
 We place a rectangular potential barrier of height :math:`V_0` centred at
 :math:`x = 0`:
@@ -224,8 +237,7 @@ We place a rectangular potential barrier of height :math:`V_0` centred at
     \end{align*}
 
 When the wave packet hits this barrier, part of it is reflected and part
-tunnels through — a purely quantum mechanical phenomenon with no classical
-analogue. The ratio of transmitted to reflected probability depends
+tunnels through. The ratio of transmitted to reflected probability depends
 sensitively on :math:`V_0`, which is why it is a learnable parameter.
 
 .. code-block:: text
