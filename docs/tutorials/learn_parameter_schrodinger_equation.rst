@@ -261,12 +261,12 @@ RHS function changes:
 
 .. code-block:: text
 
-    def RK4_step(psi: ℝ[m], dt: ℝ, V: ℝ[n], dx: ℝ, hbar: ℝ, mass: ℝ): ℝ[o]:
-        k1 = schrodinger_rhs(psi, V, dx, hbar, mass)
-        k2 = schrodinger_rhs(psi + 0.5 * dt * k1, V, dx, hbar, mass)
-        k3 = schrodinger_rhs(psi + 0.5 * dt * k2, V, dx, hbar, mass)
-        k4 = schrodinger_rhs(psi + dt * k3, V, dx, hbar, mass)
-        psi_next = psi + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
+    def RK4_step(psi: ℂ[m], dt: ℝ, V: ℝ[n], dx: ℝ, hbar: ℝ, mass: ℝ): ℂ[o]:
+        k1: ℂ[Nx] = schrodinger_rhs(psi, V, dx, hbar, mass)
+        k2: ℂ[Nx] = schrodinger_rhs(psi + 0.5 * dt * k1, V, dx, hbar, mass)
+        k3: ℂ[Nx] = schrodinger_rhs(psi + 0.5 * dt * k2, V, dx, hbar, mass)
+        k4: ℂ[Nx] = schrodinger_rhs(psi + dt * k3, V, dx, hbar, mass)
+        psi_next: ℂ[Nx] = psi + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
         return psi_next
 
 
@@ -280,8 +280,8 @@ every 5 steps to build the history:
         psi0: ℂ[Nx] = ((1 / sigma*sqrt(3.14)) ** 0.5 * exp(1j * k0 * x) * exp(-((x - x0) ** 2) / (2 * sigma**2))) 
         psi: ℂ[Nx] = psi0
         history: ℝ[1] = [0]
-        counter: N = 0
-        for i:N(0, Nt):
+        counter: ℕ = 0
+        for i:ℕ(0, Nt):
             psi = RK4_step(psi, dt, V, dx, hbar, mass)
             counter = counter + 1
             if counter == 5:
@@ -315,8 +315,8 @@ produce the ground truth wavefunction history:
 
 .. code-block:: text
 
-    V = make_potential(1.8)
-    true_values = solver(V)
+    V: ℝ[Nx] = make_potential(1.8)
+    true_values: ℂ[m] = solver(V)
 
     create_plot(true_values, psi0, x, V)
 
@@ -401,9 +401,9 @@ Intial guess
 
 .. code-block:: text
 
-    new_barrier_height = 6.0
-    guess_V = make_potential(new_barrier_height)
-    guess_values = solver(guess_V)
+    guess_barrier_height: ℝ = 6.0
+    guess_V: ℝ[Nx] = make_potential(guess_barrier_height)
+    guess_values: ℂ[m] = solver(guess_V)
     create_plot(guess_values, psi0, x, V)
 
 
@@ -430,9 +430,9 @@ complex difference at each point, then square it:
 .. code-block:: text
 
     def calculate_loss(barrier_height: ℝ): ℝ:
-        V_current = make_potential(barrier_height)
-        pred = solver(V_current)
-        loss = mean(abs(pred - true_values)**2)
+        V_current: ℝ[Nx] = make_potential(barrier_height)
+        pred: ℂ[m] = solver(V_current)
+        loss: ℝ = mean(abs(pred - true_values)**2)
         return loss
 
 The Adam Optimizer
@@ -472,14 +472,13 @@ Adam recovers the true barrier height of :math:`1.8`:
     for i:ℕ(epochs):
         physika_print(i)
         g = grad(calculate_loss, new_barrier_height)
-        result  = adam(new_barrier_height, g, m_adam, v_adam, t_adam, lr)
+        result = adam(new_barrier_height, g, m_adam, v_adam, t_adam, lr)
         new_barrier_height  = result[0]
         m_adam = result[1]
         v_adam = result[2]
         t_adam = result[3]
-        physika_print(new_barrier_height)
 
-    pred_V = make_potential(new_barrier_height)
+    pred_V = make_potential(guess_barrier_height)
     pred_results = solver(pred_V)
     create_plot(pred_results, psi0, x, pred_V)
 
@@ -512,12 +511,12 @@ Full code
             x[i] = start + i * dx
         return x
 
-    Nx   : ℕ = 1024
+    Nx: ℕ = 1024
     x: ℝ[Nx] = linspace(-200, 200, Nx)
     dx: ℝ = 0.3910
 
-    hbar : ℝ = 1.0
-    mass : ℝ = 1.0
+    hbar: ℝ = 1.0
+    mass: ℝ = 1.0
 
     cfl_factor: ℝ = 0.2
     dt: ℝ = cfl_factor * (mass * dx**2) / hbar
@@ -531,7 +530,6 @@ Full code
     psi0: ℂ[Nx] = (1 / sigma*sqrt(3.14))**0.5 * exp(1j * k0 * x) * exp(-((x - x0)**2) / (2 * sigma**2))
 
 
-
     def schrodinger_rhs(psi: ℂ[m], V: ℝ[n], dx: ℝ, hbar: ℝ, mass: ℝ): ℂ[o]:
         psi_xx: ℂ[Nx] = (roll(psi, -1) - 2*psi + roll(psi, 1)) / (dx**2)
         H_psi: ℂ[Nx] = -(hbar**2 / (2*mass)) * psi_xx + V * psi
@@ -540,7 +538,7 @@ Full code
 
 
     def make_potential(V_value: ℝ): ℝ[m]:
-        V = zero_1d_array(Nx)
+        V: ℝ[Nx] = zero_1d_array(Nx)
         x: ℝ[Nx] = linspace(-200, 200, Nx)
         for i:ℕ(0, Nx):
             if abs(x[i]) < 15:
@@ -549,20 +547,21 @@ Full code
 
 
     def RK4_step(psi: ℂ[m], dt: ℝ, V: ℝ[n], dx: ℝ, hbar: ℝ, mass: ℝ): ℂ[o]:
-        k1 = schrodinger_rhs(psi, V, dx, hbar, mass)
-        k2 = schrodinger_rhs(psi + 0.5 * dt * k1, V, dx, hbar, mass)
-        k3 = schrodinger_rhs(psi + 0.5 * dt * k2, V, dx, hbar, mass)
-        k4 = schrodinger_rhs(psi + dt * k3, V, dx, hbar, mass)
-        psi_next = psi + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
+        k1: ℂ[Nx] = schrodinger_rhs(psi, V, dx, hbar, mass)
+        k2: ℂ[Nx] = schrodinger_rhs(psi + 0.5 * dt * k1, V, dx, hbar, mass)
+        k3: ℂ[Nx] = schrodinger_rhs(psi + 0.5 * dt * k2, V, dx, hbar, mass)
+        k4: ℂ[Nx] = schrodinger_rhs(psi + dt * k3, V, dx, hbar, mass)
+        psi_next: ℂ[Nx] = psi + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
         return psi_next
+
 
     def solver(V: ℝ[m]): ℂ[m]:
         x: ℝ[Nx] = linspace(-200, 200, Nx)
         psi0: ℂ[Nx] = ((1 / sigma*sqrt(3.14)) ** 0.5 * exp(1j * k0 * x) * exp(-((x - x0) ** 2) / (2 * sigma**2)))
         psi: ℂ[Nx] = psi0
-        history: ℝ[1] = [0]
-        counter: N = 0
-        for i:N(0, Nt):
+        history: ℂ[1] = [0j]
+        counter: ℕ = 0
+        for i:ℕ(0, Nt):
             psi = RK4_step(psi, dt, V, dx, hbar, mass)
             counter = counter + 1
             if counter == 5:
@@ -572,23 +571,23 @@ Full code
 
 
 
-    V = make_potential(1.8)
-    true_values  = solver(V)
+    V: ℝ[Nx] = make_potential(1.8)
+    true_values: ℂ[m] = solver(V)
 
-    create_plot(true_values, psi0, x, V)
+    #create_plot(true_values, psi0, x, V)
 
-    new_barrier_height = 6.0
-    guess_V = make_potential(new_barrier_height)
-    guess_values = solver(guess_V)
-    create_plot(guess_values, psi0, x, V)
-
+    guess_barrier_height: ℝ = 6.0
+    guess_V: ℝ[Nx] = make_potential(guess_barrier_height)
+    guess_values: ℂ[m] = solver(guess_V)
+    #create_plot(guess_values, psi0, x, V)
 
 
     def calculate_loss(barrier_height: ℝ): ℝ:
-        V_current = make_potential(barrier_height)
-        pred = solver(V_current)
-        loss = mean(abs(pred - true_values)**2)
+        V_current: ℝ[Nx] = make_potential(barrier_height)
+        pred: ℂ[m] = solver(V_current)
+        loss: ℝ = mean(abs(pred - true_values)**2)
         return loss
+
 
     def adam(bh: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
         beta1: ℝ = 0.9
@@ -606,21 +605,18 @@ Full code
     t_adam: ℝ = 1.0
     lr: ℝ = 0.1
 
-    epochs: N = 1
-
-    epochs: N = 1
+    epochs: ℕ = 40
 
     for i:ℕ(epochs):
         physika_print(i)
-        g = grad(calculate_loss, new_barrier_height)
-        result  = adam(new_barrier_height, g, m_adam, v_adam, t_adam, lr)
-        new_barrier_height  = result[0]
+        g = grad(calculate_loss, guess_barrier_height)
+        result  = adam(guess_barrier_height, g, m_adam, v_adam, t_adam, lr)
+        guess_barrier_height  = result[0]
         m_adam = result[1]
         v_adam = result[2]
         t_adam = result[3]
-        physika_print(new_barrier_height)
 
-    pred_V = make_potential(new_barrier_height)
+    pred_V = make_potential(guess_barrier_height)
     pred_results = solver(pred_V)
     create_plot(pred_results, psi0, x, pred_V)
 
