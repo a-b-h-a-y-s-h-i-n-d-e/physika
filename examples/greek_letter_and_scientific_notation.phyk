@@ -17,7 +17,7 @@ greek_letters_array
 
 
 # check gradients correctness
-def f(x: R[m]): R:
+def f(x: R[m]): R[m]:
     return x**2 + 1
 
 μ: R[1] = [2]

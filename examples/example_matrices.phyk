@@ -28,7 +28,7 @@ result
 
 # Matrix-vector multiplication
 A: R[2,3] = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
-x: R[3] = [1.0, 2.0, 3.0]
+x: R[3, 1] = [[1.0], [2.0], [3.0]]
 
-result: R[2] = A @ x
+result: R[2, 1] = A @ x
 result

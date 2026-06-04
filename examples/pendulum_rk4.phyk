@@ -12,14 +12,14 @@ def pendulum(x: ℝ[2]): ℝ[2]:
 # ----------------
 # RK4 ODE Solver
 # ----------------
-class RK4(f: ℝ → ℝ, dt: ℝ, n: ℕ):
+class RK4:
+    dt: ℝ
     def λ(x: ℝ[2]) → ℝ[2]:
-        for k:
-            k1 = f(x)
-            k2 = f(x + 0.5 * dt * k1)
-            k3 = f(x + 0.5 * dt * k2)
-            k4 = f(x + dt * k3)
-            x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        k1 = pendulum(x)
+        k2 = pendulum(x + 0.5 * dt * k1)
+        k3 = pendulum(x + 0.5 * dt * k2)
+        k4 = pendulum(x + dt * k3)
+        x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
         return x
 
 # ------------
@@ -30,7 +30,7 @@ dt: ℝ = 0.01
 # ------------------------------------------------------------
 # Solve: θ₀ = 0.5 rad, ω₀ = 0.0 rad/s (1000 steps = 10s)
 # ------------------------------------------------------------
-solver = RK4(pendulum, dt, 1000)
+solver = RK4(dt)
 solver([0.5, 0.0])
 
 # Different initial conditions
@@ -39,5 +39,5 @@ solver([1.0, 0.0])
 # ------------------------------------------------------------
 # Visualize oscillations
 # ------------------------------------------------------------
-step = RK4(pendulum, dt, 1)
+step = RK4(dt)
 simulate(step, [0.5, 0.0], 1000, dt)

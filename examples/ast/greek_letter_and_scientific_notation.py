@@ -1,5 +1,5 @@
 EXPECTED = {'functions': {'f': {'params': [('x', ('tensor', [('m', 'invariant')]))],
-                     'return_type': 'ℝ',
+                     'return_type': ('tensor', [('m', 'invariant')]),
                      'body': ('add',
                               ('pow', ('var', 'x'), ('num', 2)),
                               ('num', 1)),
