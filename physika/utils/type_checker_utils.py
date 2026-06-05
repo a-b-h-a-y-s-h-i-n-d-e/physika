@@ -786,7 +786,7 @@ def from_typespec(ts: Any) -> Optional[Type]:
             # Converts dimensions to TDim
             dims = tuple(
                 (TDim(d) if isinstance(d, str) else d, v) for d, v in ts[2])
-            #if not isinstance(base_type, TScalar):
+            # if not isinstance(base_type, TScalar):
             #    raise TypeError(f"Invalid tensor base type: {base_type}")
             return TTensor(base_type, dims)
         if ts[0] == "func_type":
