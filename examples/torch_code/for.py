@@ -6,7 +6,8 @@ from physika.runtime import physika_print
 
 # === Functions ===
 def outer_product(u, v):
-    return torch.stack([torch.stack([(u[int(i)] * v[int(j)]) for _fi_j in range(int(len(v))) for j in [torch.tensor(float(_fi_j))]]) for _fi_i in range(int(len(u))) for i in [torch.tensor(float(_fi_i))]])
+    results = torch.stack([torch.stack([(u[int(i)] * v[int(j)]) for j in range(v.shape[0])]) for i in range(u.shape[0])])
+    return results
 
 def get_last(arr):
     cur = 0
@@ -293,6 +294,9 @@ u2 = torch.tensor([1, 2, 3])
 v2 = torch.tensor([4, 5, 6])
 row_sums = torch.stack([torch.sum(torch.stack([(u2[int(i)] * v2[int(j)]) for _fi_j in range(int(len(v2))) for j in [torch.tensor(float(_fi_j))]]) if isinstance(torch.stack([(u2[int(i)] * v2[int(j)]) for _fi_j in range(int(len(v2))) for j in [torch.tensor(float(_fi_j))]]), torch.Tensor) else torch.tensor(float(torch.stack([(u2[int(i)] * v2[int(j)]) for _fi_j in range(int(len(v2))) for j in [torch.tensor(float(_fi_j))]])))) for _fi_i in range(int(len(u2))) for i in [torch.tensor(float(_fi_i))]])
 physika_print(row_sums)
+x = torch.tensor([1, 2, 3, 4])
+y = torch.tensor([0, 5, 6, 7])
+physika_print(outer_product(x, y))
 data2 = torch.tensor([10, 20, 30, 40])
 norm_flag = 1
 normed = torch.stack([data2[int(i)] for _fi_i in range(int(len(data2))) for i in [torch.tensor(float(_fi_i))]])

@@ -52,6 +52,7 @@ BodyStmtTag = Literal[
     "body_for",  # for k: ...        for-loop inside function body
     "body_zeros_decl",  # C : ℝ[n,o]        type annotation for an accumulation
     #                                           target
+    "body_for_map",
     "body_for_accum",  # for i j k: ...    accumulation loop. emits
     #                                          torch.stack
     #                                          per target
@@ -1149,6 +1150,29 @@ def emit_body_stmts(
             # The paired body_for_accum emits the `torch.stack` expression that
             # defines the tensor.
             pass
+
+        elif stmt_op == "body_for_map":
+            _, loop_vars, loop_body = stmt
+            assign_stmt = loop_body[0]
+            _, tensor_name, lhs_idx_exprs, rhs_expr = assign_stmt
+
+            ranges = {
+                v:
+                _infer_range(v, rhs_expr, tensor_name)
+                or f"# range unknown for {v}"
+                for v in loop_vars
+            }
+
+            rhs_code = ast_to_torch_expr(rhs_expr,
+                                         current_loop_var=set(loop_vars))
+
+            inner_expr = rhs_code
+
+            for v in reversed(loop_vars):
+                inner_expr = (f"torch.stack([{inner_expr}"
+                              f" for {v} in range({ranges[v]})])")
+
+            lines.append(f"{prefix}{tensor_name} = {inner_expr}")
 
         elif stmt_op == "body_for_accum":
             # Generates one differentiable torch.stack per += target.
