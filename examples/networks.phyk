@@ -3,23 +3,62 @@
 # ============================================================
 
 # ------------------------------------------------------------
+# Helper functions 
+# ------------------------------------------------------------
+
+def get_1d_array_length(x: ℝ[m]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+def get_2d_array_num_rows(x: ℝ[m, n]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+def zero_2d_array(rows: ℝ, cols: ℝ): ℝ[m, n]:
+    results: ℝ[rows, cols] = for i:ℕ(rows) -> for j:N(cols) -> j*0
+    return results
+
+
+# ------------------------------------------------------------
 # Activation: σ(x) = 1/(1 + e^(-x))
 # ------------------------------------------------------------
-def sigma(x: ℝ): ℝ:
-    return 1.0 / (1.0 + exp(0.0 - x)) #TODO: suppoert negative values (-x = 0.0 - x)
+def sigma(x: ℝ[a,b]): ℝ[a,b]:
+    rows: ℝ = get_2d_array_num_rows(x)
+    cols: ℝ = get_1d_array_length(x[0])
+    results: ℝ[cols, rows] = zero_2d_array(rows, cols)
+    for i:ℕ(rows):
+        for j:ℕ(cols):
+            results[i,j] = 1.0 / (1.0 + exp(0.0 - x[i,j]))
+    return results
+
+
 
 # ============================================================
 # Example 1: One-Layer Network (simple version)
 # ============================================================
-class OneLayerNet(W0: ℝ[2,3], c0: ℝ[2], w1: ℝ[2], b1: ℝ):
-    def λ(x: ℝ[3]) → ℝ:
-        return sigma(w1 @ sigma(W0 @ x + c0) + b1)
+class OneLayerNet:
+    W0: ℝ[2,3]
+    c0: ℝ[2, 1] 
+    w1: ℝ[1, 2]
+    b1: ℝ
+    def λ(x: ℝ[3, 1]) → ℝ:
+        z = sigma(W0 @ x + c0)
+        results = w1 @ z + b1
+        return results[0,0]
     def loss(y: ℝ, target: ℝ) → ℝ:
         return (y - target) ** 2.0
 
 W0: ℝ[2,3] = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
-c0: ℝ[2] = [0.1, 0.2]
-w1: ℝ[2] = [0.7, 0.8]
+c0: ℝ[2,1] = [[0.1],[0.2]]
+w1: ℝ[1,2] = [[0.7,0.8]]
 b1: ℝ = 0.3
 net1 = OneLayerNet(W0, c0, w1, b1)
 
@@ -29,10 +68,15 @@ net1([1.0, 2.0, 3.0])
 # Example 2: Generalized n-Layer Network
 # ============================================================
 
-class FullyConnectedNetwork(f: ℝ → ℝ, W: ℝ[2,3,3], B: ℝ[2,3], w: ℝ[3], b: ℝ, n: ℕ):
-    def λ(x: ℝ[3]) → ℝ:
+class FullyConnectedNetwork:
+    W: ℝ[2,3,3]
+    B: ℝ[2,3,1]
+    w: ℝ[1,3]
+    b: ℝ 
+    n: ℕ
+    def λ(x: ℝ[3, 1]) → ℝ[m, n]:
         for k:
-            x = f(W[k] @ x + B[k])
+            x = sigma(W[k] @ x + B[k])
         return w @ x + b
     def loss(y: ℝ, target: ℝ) → ℝ:
         return (y - target) ** 2.0
@@ -40,12 +84,15 @@ class FullyConnectedNetwork(f: ℝ → ℝ, W: ℝ[2,3,3], B: ℝ[2,3], w: ℝ[3
 # 2-layer network: ℝ[3] -> ℝ[3] -> ℝ[3] -> ℝ
 W: ℝ[2,3,3] = [[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]],
                [[0.2, 0.3, 0.4], [0.5, 0.6, 0.7], [0.8, 0.9, 0.1]]]
-B: ℝ[2,3] = [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]
-w: ℝ[3] = [0.5, 0.5, 0.5]
+B: ℝ[2,3,1] = [
+    [[0.1],[0.2],[0.3]],
+    [[0.1],[0.2],[0.3]]
+]
+w: ℝ[1,3] = [[0.5,0.5,0.5]]
 b: ℝ = 0.1
 
-net2 = FullyConnectedNetwork(sigma, W, B, w, b, 2)
+net2 = FullyConnectedNetwork(W, B, w, b, 2)
 
-net2([1.0, 2.0, 3.0])
-net2([0.0, 0.0, 0.0])
-net2([1.0, 1.0, 1.0])
+net2([[1.0], [2.0], [3.0]])
+net2([[0.0], [0.0], [0.0]])
+net2([[1.0], [1.0], [1.0]])

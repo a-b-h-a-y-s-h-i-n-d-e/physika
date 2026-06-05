@@ -7,14 +7,39 @@ from physika.runtime import train
 from physika.runtime import evaluate
 
 # === Functions ===
+def get_1d_array_length(x):
+    total = 0
+    temp = 0
+    for i in range(len(x)):
+        temp = x[int(i)]
+        total = total + 1
+    return total
+
+def get_2d_array_num_rows(x):
+    total = 0
+    temp = 0
+    for i in range(len(x)):
+        temp = x[int(i)]
+        total = total + 1
+    return total
+
+def zero_2d_array(rows, cols):
+    results = torch.stack([torch.stack([(j * 0) for _fi_j in range(int(cols)) for j in [torch.tensor(float(_fi_j))]]) for _fi_i in range(int(rows)) for i in [torch.tensor(float(_fi_i))]])
+    return results
+
 def sigma(x):
-    return (1.0 / (1.0 + torch.exp((0.0 - x) if isinstance((0.0 - x), torch.Tensor) else torch.tensor(float((0.0 - x))))))
+    rows = get_2d_array_num_rows(x)
+    cols = get_1d_array_length(x[int(0)])
+    results = zero_2d_array(rows, cols)
+    for i in range(int(0), int(rows)):
+        for j in range(int(0), int(cols)):
+            results[int(i), int(j)] = (1.0 / (1.0 + torch.exp((0.0 - x[int(i), int(j)]) if isinstance((0.0 - x[int(i), int(j)]), torch.Tensor) else torch.tensor(float((0.0 - x[int(i), int(j)]))))))
+    return results
 
 # === Classes ===
 class FullyConnectedNetwork(nn.Module):
-    def __init__(self, f, W, B, w, b, n):
+    def __init__(self, W, B, w, b, n):
         super().__init__()
-        self.f = torch.as_tensor(f).float() if isinstance(f, (int, float, torch.Tensor)) else f
         self.W = nn.Parameter(torch.as_tensor(W).float())
         self.B = nn.Parameter(torch.as_tensor(B).float())
         self.w = nn.Parameter(torch.as_tensor(w).float())
@@ -25,8 +50,9 @@ class FullyConnectedNetwork(nn.Module):
         this = self
         x = torch.as_tensor(x).float()
         for k in range(len(self.W)):
-            x = self.f(((self.W[int(k)] @ x) + self.B[int(k)]))
-        return ((self.w @ x) + self.b)
+            x = sigma(((self.W[int(k)] @ x) + self.B[int(k)]))
+        results = ((self.w @ x) + self.b)
+        return results[int(0), int(0)]
 
     def loss(self, y, target):
         this = self
@@ -45,13 +71,13 @@ class FullyConnectedNetwork(nn.Module):
                     p -= lr * g
 
 # === Program ===
-X = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 1.0, 1.0]])
+X = torch.tensor([[[1.0], [0.0], [0.0]], [[0.0], [1.0], [0.0]], [[0.0], [0.0], [1.0]], [[1.0], [1.0], [1.0]]])
 y = torch.tensor([0.2, 0.4, 0.6, 0.9])
 W = torch.tensor([[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]], [[0.2, 0.3, 0.4], [0.5, 0.6, 0.7], [0.8, 0.9, 0.1]]])
-B = torch.tensor([[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]])
-w = torch.tensor([0.5, 0.5, 0.5])
+B = torch.tensor([[[0.1], [0.2], [0.3]], [[0.1], [0.2], [0.3]]])
+w = torch.tensor([[0.5, 0.5, 0.5]])
 b = 0.1
-net = FullyConnectedNetwork(sigma, W, B, w, b, 2)
+net = FullyConnectedNetwork(W, B, w, b, 2)
 loss_before = evaluate(net, X, y)
 physika_print(loss_before)
 epochs = 1000

@@ -114,6 +114,14 @@ def get_array_length(x):
         total = total + 1
     return total
 
+def get_2d_array_num_rows(x):
+    total = 0
+    temp = 0
+    for i in range(len(x)):
+        temp = x[int(i)]
+        total = total + 1
+    return total
+
 def manipulate_1d_array(x):
     m = get_array_length(x)
     for i in range(int(0), int(m)):
@@ -121,7 +129,7 @@ def manipulate_1d_array(x):
     return x
 
 def manipulate_2d_array(x):
-    m = get_array_length(x)
+    m = get_2d_array_num_rows(x)
     n = get_array_length(x[int(0)])
     for i in range(int(0), int(m)):
         for j in range(int(0), int(n)):
@@ -299,7 +307,7 @@ for i in range(int(0), int(length_array)):
     sample_1d_array[int(i)] = (i * 2)
 physika_print(sample_1d_array)
 sample_2d_array = torch.tensor([[1, 1], [1, 1]])
-rows = get_array_length(sample_2d_array)
+rows = get_2d_array_num_rows(sample_2d_array)
 cols = get_array_length(sample_2d_array[int(0)])
 for i in range(int(0), int(rows)):
     for j in range(int(0), int(cols)):

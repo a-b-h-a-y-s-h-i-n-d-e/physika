@@ -6,6 +6,8 @@ from physika.utils.ast_utils import build_unified_ast
 from physika.parser import parser, symbol_table
 from physika.lexer import lexer
 from pathlib import Path
+import subprocess
+import os
 import pytest
 
 HEADER = "import torch\nimport torch.nn as nn\nimport torch.optim as optim\n"
@@ -70,3 +72,21 @@ def test_codegen_matches_reference(phyk_file):
     assert HEADER in code_phyk
     assert HEADER in code_torch
     assert code_phyk == code_torch
+
+
+@pytest.mark.parametrize("phyk_file", PHYK_FILES)
+def test_physika_cli(phyk_file):
+    """Test to runs all example physika files through subprocess"""
+
+    # run matplotlib code in non-interactive mode
+    env = os.environ.copy()
+    env["MPLBACKEND"] = "Agg"
+
+    result = subprocess.run(
+        ["physika", str(phyk_file)],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode == 0

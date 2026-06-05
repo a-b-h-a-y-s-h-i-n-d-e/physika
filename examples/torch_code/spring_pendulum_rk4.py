@@ -11,21 +11,18 @@ def spring_pendulum(x):
 
 # === Classes ===
 class RK4(nn.Module):
-    def __init__(self, f, dt, n):
+    def __init__(self, dt):
         super().__init__()
-        self.f = torch.as_tensor(f).float() if isinstance(f, (int, float, torch.Tensor)) else f
         self.dt = nn.Parameter(torch.as_tensor(dt).float())
-        self.n = torch.as_tensor(n).float() if isinstance(n, (int, float, torch.Tensor)) else n
 
     def forward(self, x):
         this = self
         x = torch.as_tensor(x).float()
-        for k in range(self.n):
-            k1 = self.f(x)
-            k2 = self.f((x + ((0.5 * self.dt) * k1)))
-            k3 = self.f((x + ((0.5 * self.dt) * k2)))
-            k4 = self.f((x + (self.dt * k3)))
-            x = (x + ((self.dt / 6.0) * (((k1 + (2.0 * k2)) + (2.0 * k3)) + k4)))
+        k1 = spring_pendulum(x)
+        k2 = spring_pendulum((x + ((0.5 * self.dt) * k1)))
+        k3 = spring_pendulum((x + ((0.5 * self.dt) * k2)))
+        k4 = spring_pendulum((x + (self.dt * k3)))
+        x = (x + ((self.dt / 6.0) * (((k1 + (2.0 * k2)) + (2.0 * k3)) + k4)))
         return x
 
     @property
@@ -40,8 +37,8 @@ class RK4(nn.Module):
 
 # === Program ===
 dt = 0.01
-solver = RK4(spring_pendulum, dt, 10000)
+solver = RK4(dt)
 physika_print(solver(torch.tensor([1.2, 0.3, 0.0, 0.0])))
 physika_print(solver(torch.tensor([1.3, 0.8, 0.0, 0.0])))
-step = RK4(spring_pendulum, dt, 1)
+step = RK4(dt)
 simulate(step, torch.tensor([1.2, 0.3, 0.0, 0.0]), 500, dt)

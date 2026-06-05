@@ -23,14 +23,16 @@ class HamiltonianNet(nn.Module):
         this = self
         x = torch.as_tensor(x).float()
         h = ((self.w2 @ tanh(((self.W1 @ x) + self.b1))) + self.b2)
-        return h
+        dh_grad = compute_grad(h, x)
+        dh_dp = dh_grad[int(1), int(0)]
+        dh_dq = (-dh_grad[int(0), int(0)])
+        return torch.tensor([[dh_dp], [dh_dq]])
 
-    def loss(self, H, target, x):
+    def loss(self, symplectic_gradient, target):
         this = self
-        H = torch.as_tensor(H).float()
+        symplectic_gradient = torch.as_tensor(symplectic_gradient).float()
         target = torch.as_tensor(target).float()
-        x = torch.as_tensor(x).float()
-        lo = (((compute_grad(H, x)[int(1)] - target[int(0)]) ** 2.0) + (((0.0 - compute_grad(H, x)[int(0)]) - target[int(1)]) ** 2.0))
+        lo = (((symplectic_gradient[int(0)] - target[int(0)]) ** 2.0) + ((symplectic_gradient[int(1)] - target[int(1)]) ** 2.0))
         return lo
 
     @property
@@ -44,11 +46,11 @@ class HamiltonianNet(nn.Module):
                     p -= lr * g
 
 # === Program ===
-X = torch.tensor([[0.0, 1.0], [1.0, 0.0], [0.0, (-1.0)], [(-1.0), 0.0], [0.5, 0.5], [(-0.5), (-0.5)], [0.7, (-0.7)], [(-0.7), 0.7]])
-y = torch.tensor([[1.0, 0.0], [0.0, (-1.0)], [(-1.0), 0.0], [0.0, 1.0], [0.5, (-0.5)], [(-0.5), 0.5], [(-0.7), (-0.7)], [0.7, 0.7]])
+X = torch.tensor([[[0.0], [1.0]], [[1.0], [0.0]], [[0.0], [(-1.0)]], [[(-1.0)], [0.0]], [[0.5], [0.5]], [[(-0.5)], [(-0.5)]], [[0.7], [(-0.7)]], [[(-0.7)], [0.7]]])
+y = torch.tensor([[[1.0], [0.0]], [[0.0], [(-1.0)]], [[(-1.0)], [0.0]], [[0.0], [1.0]], [[0.5], [(-0.5)]], [[(-0.5)], [0.5]], [[(-0.7)], [(-0.7)]], [[0.7], [0.7]]])
 W1 = torch.tensor([[0.5, 0.1], [0.1, 0.5], [0.3, 0.3], [0.4, 0.2], [0.2, 0.4], [0.1, 0.1], [0.3, 0.1], [0.1, 0.3], [0.2, 0.2], [0.4, 0.4], [0.5, 0.3], [0.3, 0.5], [0.2, 0.1], [0.1, 0.2], [0.4, 0.1], [0.1, 0.4]])
-b1 = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-w2 = torch.tensor([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+b1 = torch.tensor([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
+w2 = torch.tensor([[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]])
 b2 = 0.0
 H_net = HamiltonianNet(W1, b1, w2, b2)
 loss_before = evaluate(H_net, X, y)

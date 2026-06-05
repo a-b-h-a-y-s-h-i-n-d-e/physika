@@ -380,11 +380,19 @@ normed
 
 # 9. Indexing array (1d, 2d) inside for loop
 
-# helper function
+# helper functions
 def get_array_length(x: ℝ[m]): ℝ:
     total: ℝ = 0
     for i:
         curr = x[i]
+        total += 1
+    return total
+
+def get_2d_array_num_rows(x: ℝ[m, n]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
         total += 1
     return total
 
@@ -400,7 +408,7 @@ sample_2d_array: ℝ[2, 2] = [
     [1, 1],
     [1, 1]
 ]
-rows: R = get_array_length(sample_2d_array)
+rows: R = get_2d_array_num_rows(sample_2d_array)
 cols: R = get_array_length(sample_2d_array[0])
 for i:ℕ(rows):
     for j:ℕ(cols):
@@ -435,7 +443,7 @@ manipulate_1d_array(arr1d)
 
 # 9.5 2d array indexing inside function body
 def manipulate_2d_array(x: ℝ[m, n]): ℝ[m, n]:
-    m = get_array_length(x)
+    m = get_2d_array_num_rows(x)
     n = get_array_length(x[0])
     for i:ℕ(m):
         for j:ℕ(n):
