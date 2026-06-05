@@ -260,6 +260,9 @@ def expr_array(node: Any,
         return TTensor(base.base_type, ((n, "invariant"), ) + base.dims), cur
     if isinstance(base, TScalar):
         return make_tensor(base, [n]), cur
+    # currently physika return None for symbolic expressions
+    if base is None:
+        return TTensor(T_REAL, ((n, "invariant"), )), cur
     raise TypeError(f"Unsupported array element type: {base}")
 
 
@@ -1090,7 +1093,7 @@ def expr_call(node: Any,
                         (int(val) if val is not None else dim, variance))
                 else:
                     resolved_dims.append((dim, variance))
-            ret = TTensor(tuple(resolved_dims))
+            ret = TTensor(ret.base_type, tuple(resolved_dims))
         return ret, s
 
     # Unknown call
