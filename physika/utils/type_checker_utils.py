@@ -780,14 +780,16 @@ def from_typespec(ts: Any) -> Optional[Type]:
         return T_COMPLEX
     if ts == "string":
         return T_STRING
+    if ts in ("ℤ", "Z"):
+        return T_REAL
     if isinstance(ts, tuple):
         if ts[0] == "tensor":
             base_type = from_typespec(ts[1])
             # Converts dimensions to TDim
             dims = tuple(
                 (TDim(d) if isinstance(d, str) else d, v) for d, v in ts[2])
-            # if not isinstance(base_type, TScalar):
-            #    raise TypeError(f"Invalid tensor base type: {base_type}")
+            if not isinstance(base_type, TScalar):
+                raise TypeError(f"Invalid tensor base type: {base_type}")
             return TTensor(base_type, dims)
         if ts[0] == "func_type":
             # Recursively convert parameter and return type specs

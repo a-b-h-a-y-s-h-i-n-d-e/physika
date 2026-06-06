@@ -653,7 +653,7 @@ def stmt_for_eq(stmt: Any, ctx: StmtContext) -> None:
     >>> from physika.utils.types import Substitution, T_REAL, TTensor
     >>> errors = []
     >>> ctx = StmtContext(
-    ...     env={'results': TTensor(((3, 'invariant'),
+    ...     env={'results': TTensor(T_REAL, ((3, 'invariant'),
     ...                               (3, 'invariant')))},
     ...     s=Substitution(), func_name='outer_product',
     ...     return_type=T_REAL, add_error=errors.append,
