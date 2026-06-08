@@ -697,11 +697,13 @@ def check_class(
     from physika.utils.infer_stmts import infer_stmts
 
     methods = cdef.get("methods", [])
-    fields = list(cdef.get("class_params", [])) + list(cdef.get("fields", []))
+    class_params = list(cdef.get("class_params", []))
+    fields = class_params + list(cdef.get("fields", []))
 
     # add constructor details to func_env
+    # (only class_params, not declared fields)
     func_env[name] = (
-        [from_typespec(pt) or new_var() for _, pt in fields],
+        [from_typespec(pt) or new_var() for _, pt in class_params],
         TInstance(name),
     )
 

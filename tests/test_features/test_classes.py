@@ -4,7 +4,7 @@ from physika.features.classes import (is_learnable, replace_class_params,
                                       ClassFeature)
 import re
 import pytest
-from physika.utils.ast_utils import build_unified_ast
+from physika.utils.ast_utils import build_unified_ast, ast_to_torch_expr
 from physika.utils.types import TScalar, TTensor, TInstance, Substitution
 import sys
 import os
@@ -348,8 +348,8 @@ class TestMakeParserRules:
         # make_parser_rules returns a plain list
         assert isinstance(make_parser_rules(), list)
 
-        # Exactly 16 grammar rules
-        assert len(make_parser_rules()) == 16
+        # Exactly 20 grammar rules
+        assert len(make_parser_rules()) == 20
 
         # every item should be a callable p_ functino
         for rule in make_parser_rules():
@@ -633,8 +633,13 @@ class TestClassForwardRules:
         """
         # forward_rules for field_access, method_call, and class_def
         rules = ClassFeature().forward_rules()
-        assert set(
-            rules.keys()) == {"field_access", "method_call", "class_def"}
+        assert set(rules.keys()) == {
+            "field_access",
+            "method_call",
+            "class_def",
+            "body_expr",
+            "body_field_assign",
+        }
         assert all(callable(h) for h in rules.values())
 
         # field_access emits '*class.field' string."""
@@ -650,6 +655,19 @@ class TestClassForwardRules:
             ("method_call", ("var", "p"), "step", [("var", "dt")]),
             lambda n: n[1],
         ) == "p.step(dt)"
+
+        # checks that body expression with method call produces correct code
+        emit = ClassFeature().forward_rules()["body_expr"]
+        assert emit(("body_expr", ("method_call", ("var", "p"), "ke", [])),
+                    ast_to_torch_expr,
+                    current_loop_var=None) == "p.ke()"
+
+        # field assignment emits 'self.field = expr'
+        emit = ClassFeature().forward_rules()["body_field_assign"]
+        assert emit(("body_field_assign", ("var", "this"), "b",
+                     ("add", 1, ("var", "b"))),
+                    ast_to_torch_expr,
+                    current_loop_var=None) == "self.b = (1 + b)"
 
         # class_def emits a complete nn.Module subclass
         emit = ClassFeature().forward_rules()["class_def"]

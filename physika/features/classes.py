@@ -330,15 +330,25 @@ def generate_class(name: str, class_def: dict) -> str:
                 f"        self.{pname} = torch.as_tensor({pname}).float() "
                 f"if isinstance({pname}, (int, float, torch.Tensor)) else {pname}"  # noqa :E501
             )
-    # Fields are initialized to zero as nn.Parameter
+    # Fields should not be learnable (register_buffer)
     for fname, ftype in fields:
         if isinstance(ftype, tuple) and ftype[0] == "tensor":
-            dims = ", ".join(str(d) for d in ftype[1])
+            # Only use torch.zeros if all dims are concrete integers.
+            raw_dims = ftype[1]
+            int_dims = [d for d in raw_dims if isinstance(d, int)]
+            # case all dims are integers
+            if len(int_dims) == len(raw_dims):
+                dims = ", ".join(str(d) for d in int_dims)
+                class_lines.append(
+                    f"        self.register_buffer('{fname}', torch.zeros({dims}))"
+                )
+            else:
+                # case symbolic dims (ℝ[n])
+                class_lines.append(f"        self.{fname} = None")
+        # case scalar field, initialize to 0.0
+        elif isinstance(ftype, str) and ftype in ("ℝ", "R"):
             class_lines.append(
-                f"        self.{fname} = nn.Parameter(torch.zeros({dims}))")
-        elif is_learnable(ftype) and ftype[0] in ["R", "ℝ"]:
-            class_lines.append(
-                f"        self.{fname} = nn.Parameter(torch.tensor(0.0))")
+                f"        self.register_buffer('{fname}', torch.tensor(0.0))")
         else:
             class_lines.append(f"        self.{fname} = None")
 
@@ -546,6 +556,43 @@ def make_parser_rules():
             "body": unwrap_return(p[10])
         }
 
+    def p_class_method_void(p):
+        """class_method : DEF ID LPAREN params RPAREN COLON NEWLINE INDENT func_body_stmts DEDENT
+                        | DEF ID LPAREN RPAREN COLON NEWLINE INDENT func_body_stmts DEDENT"""
+        # Void method
+        # no return type and no return statement.
+        # Example:
+        #   def train(J: ℝ, h: ℝ, n: ℝ, n_steps: ℕ, lr: ℝ):
+        #       for step : ℕ(n_steps):
+        #           .
+        #           .
+        #           .
+        # Paremeters:
+        #   p[2] - method name
+        #   p[4] - params
+        #   p[9] - body statements
+
+        # Contains class params:
+        # DEF ID ( params ) : NEWLINE INDENT stmts DEDENT
+        if len(p) == 11:
+            p[0] = {
+                "name": p[2],
+                "params": p[4],
+                "return_type": None,
+                "statements": p[9],
+                "body": None,
+            }
+        # No params:
+        # DEF ID (        ) : NEWLINE INDENT stmts DEDENT
+        else:
+            p[0] = {
+                "name": p[2],
+                "params": [],
+                "return_type": None,
+                "statements": p[8],
+                "body": None,
+            }
+
     def p_class_method_return_single(p):
         """class_method_return : RETURN func_expr NEWLINE"""
         # Single value return at the end of a class method.
@@ -609,6 +656,44 @@ def make_parser_rules():
         #   p[5] - argument list
         p[0] = ("body_expr", ("method_call", p[1], p[3], p[5] or []))
 
+    def p_func_body_stmt_field_assign(p):
+        """func_body_stmt : func_factor DOT ID EQUALS func_expr NEWLINE"""
+        # Field assignment on an instance inside a method.
+        # Example:
+        #   this.b = b
+        # Parameters:
+        #   p[1] - object expression ("var", "this")
+        #   p[3] - field name
+        #   p[5] - value expression
+        p[0] = ("body_field_assign", p[1], p[3], p[5])
+
+    def p_func_loop_stmt_field_assign(p):
+        """func_loop_stmt : ID DOT ID EQUALS func_expr NEWLINE"""
+        # Field assignment on an instance inside a for loop.
+        # Example:
+        #   this.b = b
+        # Parameters:
+        #   p[1] - object expression ("var", "this")
+        #   p[3] - field name
+        #   p[5] - value expression
+        p[0] = ("body_field_assign", ("var", p[1]), p[3], p[5])
+
+    def p_func_loop_stmt_method_call(p):
+        """func_loop_stmt : ID DOT ID LPAREN func_args RPAREN NEWLINE"""
+        # Method call used as a statement inside a for loop of a class method.
+        # Example:
+        # class PhysikaClass:
+        #   def loss(preds: ℝ[n], target: ℝ[n]) → ℝ:
+        #       ...
+        #   def train(target: ℝ[n], n_steps: ℕ):
+        #       for step : ℕ(n_steps):
+        #           loss: ℝ = this.loss(this(target), target)
+        # Parameters:
+        #   p[1] - class instance expression ("var", "this")
+        #   p[3] - method name
+        #   p[5] - argument list
+        p[0] = ("body_expr", ("method_call", ("var", p[1]), p[3], p[5] or []))
+
     return [
         p_statement_class_no_params,
         p_statement_class_with_params,
@@ -626,6 +711,10 @@ def make_parser_rules():
         p_method_call,
         p_type_class,
         p_func_body_stmt_method_call,
+        p_func_body_stmt_field_assign,
+        p_class_method_void,
+        p_func_loop_stmt_field_assign,
+        p_func_loop_stmt_method_call,
     ]
 
 
@@ -757,7 +846,7 @@ class ClassFeature(ELF):
         >>> from physika.features import ClassFeature
         >>> rules = ClassFeature().parser_rules()
         >>> len(rules)
-        16
+        20
         >>> rules[0].__name__
         'p_statement_class_no_params'
         """
@@ -921,6 +1010,9 @@ class ClassFeature(ELF):
                         info.get("class_params", []) + info.get("fields", []))
                     if field_name in all_fields:
                         return from_typespec(all_fields[field_name]), s
+                    # params and update are defined nn.Module methods
+                    if field_name in ("params", "update"):
+                        return None, s
                     add_error(
                         f"Class '{obj_type.class_name}' has no field '{field_name}'"
                     )
@@ -1198,8 +1290,100 @@ class ClassFeature(ELF):
             _, name, class_def = node
             return generate_class(name, class_def)
 
+        def emit_body_expr(node: tuple,
+                           to_expr: Callable,
+                           current_loop_var=None,
+                           **ctx) -> str:
+            """
+            Emit a ``body_expr`` AST node when a method call is used inside
+            a method body or for loop.
+
+            Parameters
+            ----------
+            node : tuple
+                AST node of the form ``("body_expr", method_call)`` where
+                ``method_call`` is an AST node representing a method call.
+            to_expr : Callable
+                Code generation function that converts an  AST node to a
+                Pytorch code (generally from_ast_to_torch util function).
+            current_loop_var : str, optional
+                Name of the current loop variable if inside a for loop,
+                by default None.
+            **ctx
+                Extra keyword arguments forwarded by the dispatch mechanism.
+
+            Returns
+            -------
+            str
+                Python source string for a method call.
+
+            Examples
+            --------
+            >>> from physika.features import ClassFeature
+            >>> from physika.utils.ast_utils import ast_to_torch_expr
+            >>> rules = ClassFeature().forward_rules()
+            >>> emit = rules["body_expr"]
+            >>> method_call = ("method_call", ("var", "p"), "ke", [])
+            >>> code = emit(("body_expr", method_call), ast_to_torch_expr, current_loop_var=None)
+            >>> "p.ke()" in code
+            True
+            """
+            _, inner_expr = node
+            return to_expr(inner_expr, current_loop_var=current_loop_var)
+
+        def emit_body_field_assign(node: tuple,
+                                   to_expr: Callable,
+                                   current_loop_var=None,
+                                   **ctx) -> str:
+            """
+            Emits a ``body_field_assign`` AST node when a field assignment statement
+            is used inside a method body or for loop.
+
+            
+            Parameters
+            ----------
+            node : tuple
+                AST node of the form ``('body_field_assign', obj_expr, field_name, expr)`` where
+                ``obj_expr`` refers to `this` var name, ``field_name`` the name of the field being
+                assigned and ``expr`` the expression to be done.
+            to_expr : Callable
+                Code generation function that converts an  AST node to a
+                Pytorch code (generally ``from_ast_to_torch`` util function).
+            current_loop_var : str, optional
+                Name of the current loop variable if inside a for loop,
+                by default None.
+            **ctx
+                Extra keyword arguments forwarded by the dispatch mechanism.
+
+            Returns
+            -------
+            str
+                Python source string for a method call.
+
+            Examples
+            --------
+            >>> from physika.features import ClassFeature
+            >>> from physika.utils.ast_utils import ast_to_torch_expr
+            >>> rules = ClassFeature().forward_rules()
+            >>> emit = rules["body_field_assign"]
+            >>> field_assign = ("body_field_assign", ("var", "this"), "b", (add, 1, ("var", "b")))
+            >>> code = emit(field_assign, ast_to_torch_expr, current_loop_var=None)
+            >>> "self.b = (1 + b)" in code
+            True
+            """
+            _, obj_expr, field_name, expr = node
+            raw = to_expr(obj_expr, current_loop_var=current_loop_var)
+            if raw == "this":
+                obj_code = "self"
+            else:
+                obj_code = raw
+            val_code = to_expr(expr, current_loop_var=current_loop_var)
+            return f"{obj_code}.{field_name} = {val_code}"
+
         return {
             "field_access": emit_field_access,
             "method_call": emit_method_call,
             "class_def": emit_class_def,
+            "body_expr": emit_body_expr,
+            "body_field_assign": emit_body_field_assign,
         }
