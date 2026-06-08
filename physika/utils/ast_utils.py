@@ -987,6 +987,15 @@ def emit_func_loop_body(
             emit_func_loop_body(then_body, indent_level + 1, lines, active)
             lines.append(f"{prefix}else:")
             emit_func_loop_body(else_body, indent_level + 1, lines, active)
+        else:
+            result = REGISTRY.dispatch_forward(
+                tag,
+                loop_stmt,
+                to_expr=ast_to_torch_expr,
+                current_loop_var=active,
+            )
+            if result is not None:
+                lines.append(f"{prefix}{result}")
 
 
 # Code generators (function / class / statement)

@@ -147,7 +147,7 @@ class TypeChecker:
                 },
             }
             self.func_env[name] = (
-                [pt for _, pt in all_fields],
+                [pt for _, pt in cdef.get("class_params", [])],
                 TInstance(name),
             )
 
