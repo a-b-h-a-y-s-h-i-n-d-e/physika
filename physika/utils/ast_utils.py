@@ -628,9 +628,10 @@ def ast_to_torch_expr(node: ASTNode,
             return f"torch.tensor([{', '.join(inner_lists)}])"
         else:
             all_numeric = all(
-                isinstance(e, tuple) and
-                (e[0] == "num" or (e[0] == "neg" and isinstance(e[1], tuple)
-                                   and e[1][0] == "num")) for e in elements)
+                isinstance(e, tuple) and (
+                    e[0] == "num" or e[0] == "complex" or
+                    (e[0] == "neg" and isinstance(e[1], tuple)
+                     and e[1][0] == "num")) for e in elements)
             elem_strs = [
                 ast_to_torch_expr(e, indent, current_loop_var)
                 for e in elements
