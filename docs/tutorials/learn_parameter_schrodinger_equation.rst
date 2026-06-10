@@ -361,6 +361,10 @@ produce the ground truth wavefunction history:
 
     .. code-block:: python
 
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from matplotlib import animation
+
         def update(frame, true_values, psi, line_prob, line_re, line_im):
             """
             Evolves the wave function for several time steps per frame to smooth the animation,
