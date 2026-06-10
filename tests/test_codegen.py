@@ -101,3 +101,45 @@ def test_physika_cli(phyk_file):
     )
 
     assert result.returncode == 0
+
+
+@pytest.mark.parametrize("phyk_file", PHYK_FILES)
+def test_physika_cli_print_ast(phyk_file):
+    """
+    Test to runs all example physika files with 
+    ``--print-ast`` flag through subprocess
+    """
+
+    # run matplotlib code in non-interactive mode
+    env = os.environ.copy()
+    env["MPLBACKEND"] = "Agg"
+
+    result = subprocess.run(
+        ["physika", str(phyk_file), "--print-ast"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode == 0
+
+
+@pytest.mark.parametrize("phyk_file", PHYK_FILES)
+def test_physika_cli_print_code(phyk_file):
+    """
+    Test to runs all example physika files with 
+    ``--print-code`` flag through subprocess
+    """
+
+    # run matplotlib code in non-interactive mode
+    env = os.environ.copy()
+    env["MPLBACKEND"] = "Agg"
+
+    result = subprocess.run(
+        ["physika", str(phyk_file), "--print-code"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode == 0
