@@ -106,7 +106,7 @@ def test_physika_cli(phyk_file):
 @pytest.mark.parametrize("phyk_file", PHYK_FILES)
 def test_physika_cli_print_ast(phyk_file):
     """
-    Test to runs all example physika files with 
+    Test to runs all example physika files with
     ``--print-ast`` flag through subprocess
     """
 
@@ -127,7 +127,7 @@ def test_physika_cli_print_ast(phyk_file):
 @pytest.mark.parametrize("phyk_file", PHYK_FILES)
 def test_physika_cli_print_code(phyk_file):
     """
-    Test to runs all example physika files with 
+    Test to runs all example physika files with
     ``--print-code`` flag through subprocess
     """
 
