@@ -197,3 +197,12 @@ or ``6.674e-11`` are valid numeric literals.
 
 .. literalinclude:: ../examples/greek_letter_and_scientific_notation.phyk
    :language: text
+
+
+Import statements
+-----------------
+
+Physika supports importing functions, classes from other Physika modules.
+
+.. literalinclude:: ../examples/example_import_statement.phyk
+   :language: text
