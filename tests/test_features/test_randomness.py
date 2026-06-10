@@ -350,11 +350,34 @@ class TestLexerParserRules:
     of the AST node.
     """
 
+    def test_seed_parser(self):
+        """
+        Test for parsing physika.seed function calls in different
+        contexts
+        """
+        # at top level
+        ast = parse_physika("physika.seed(42)\n")
+        node = ast["program"][0]
+        assert node == ("seed", ("num", 42))
+
+        # physika.seed with a variable argument
+        ast = parse_physika("n : ℕ = 7\nphysika.seed(n)\n")
+        node = ast["program"][1]
+        assert node == ("seed", ("var", "n"))
+
+        # physika.seed inside a function body
+        ast = parse_physika("def f(s: ℕ) : ℝ:\n"
+                            "    physika.seed(s)\n"
+                            "    return 0.0\n")
+
+        stmts = ast["functions"]["f"]["statements"]
+        assert stmts == [("seed", ("var", "s"))]
+
     def test_parser_rules_structure(self):
         """parser_rules() returns 7 callable PLY functions"""
         rules = RandomnessFeature().parser_rules()
         assert isinstance(rules, list)
-        assert len(rules) == 7
+        assert len(rules) == 9
         for rule in rules:
             assert callable(rule)
             # functions must be p_-prefixed
@@ -367,6 +390,9 @@ class TestLexerParserRules:
         t_tilde = rules["token_funcs"][0]
         assert t_tilde.__name__ == "t_TILDE"
         assert t_tilde.__doc__ == "~"
+
+        assert "PHYSIKA" in rules["tokens"]
+        assert rules["reserved"].get("physika") == "PHYSIKA"
 
         func_names = [f.__name__ for f in rules["token_funcs"]]
         dists = ["Normal", "Uniform", "Beta", "Gamma"]
@@ -590,6 +616,24 @@ class TestForwardRules:
         assert node[0] == "sample_expr"
         result = rules["sample_expr"](node, ast_to_torch_expr)
         assert result == "torch.distributions.Normal(mu, 1.0).rsample((int(2.0),))"  # noqa: E501
+
+    def test_seed_emit(self):
+        """
+        Verifies emitted code for physika.seed
+        """
+        rules = RandomnessFeature().forward_rules()
+        result = rules["seed"](("seed", ("num", 42)), ast_to_torch_expr)
+        assert result == "torch.manual_seed(int(42))"
+
+        # physika.seed(n) where n is a symbolic variable
+        rules = RandomnessFeature().forward_rules()
+        result = rules["seed"](("seed", ("var", "n")), ast_to_torch_expr)
+        assert result == "torch.manual_seed(int(n))"
+
+        # physika.seed(0) is generated as torch.manual_seed(int(0))
+        ast = parse_physika("physika.seed(0)\nx : ℝ ~ Normal(0.0, 1.0)\n")
+        code = from_ast_to_torch(ast, print_code=False)
+        assert "torch.manual_seed(int(0))" in code
 
     def test_typed_sample_expr_emit(self):
         """
