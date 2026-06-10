@@ -74,7 +74,7 @@ def RK4_step(psi, dt, V, dx, hbar, mass):
 def solver(V):
     x = linspace((-200), 200, Nx)
     psi0 = (((((1 / sigma) * torch.sqrt(3.14 if isinstance(3.14, torch.Tensor) else torch.tensor(float(3.14)))) ** 0.5) * torch.exp(((1j * k0) * x) if isinstance(((1j * k0) * x), torch.Tensor) else torch.tensor(float(((1j * k0) * x))))) * torch.exp(((-((x - x0) ** 2)) / (2 * (sigma ** 2))) if isinstance(((-((x - x0) ** 2)) / (2 * (sigma ** 2))), torch.Tensor) else torch.tensor(float(((-((x - x0) ** 2)) / (2 * (sigma ** 2)))))))
-    history = torch.stack([torch.as_tensor(psi0).float()])
+    history = torch.stack([torch.as_tensor(psi0)])
     counter = 0
     psi = psi0
     for i in range(int(0), int(Nt)):
@@ -100,7 +100,7 @@ def adam(bh, g, m, v, t, lr):
     m_hat = (m_new / (1.0 - (beta1 ** t)))
     v_hat = (v_new / (1.0 - (beta2 ** t)))
     bh_new = (bh - ((lr * m_hat) / (torch.sqrt(v_hat if isinstance(v_hat, torch.Tensor) else torch.tensor(float(v_hat))) + eps)))
-    return torch.stack([torch.as_tensor(bh_new).float(), torch.as_tensor(m_new).float(), torch.as_tensor(v_new).float(), torch.as_tensor((t + 1.0)).float()])
+    return torch.stack([torch.as_tensor(bh_new), torch.as_tensor(m_new), torch.as_tensor(v_new), torch.as_tensor((t + 1.0))])
 
 # === Program ===
 Nx = 102
