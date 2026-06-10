@@ -33,6 +33,10 @@ def physika_print(value: Any) -> None:
     >>> physika_print(torch.tensor([[1.0, 2.0], [3.0, 4.0]]))
     [[1.0, 2.0], [3.0, 4.0]] ∈ ℝ[2,2]
     """
+    # avoid printing NoneType in terminal when value is None
+    # (for example void methods)
+    if value is None:
+        return
     display = _from_torch(value)
     type_str = _infer_type(value)
     print(f"{display} ∈ {type_str}")
@@ -307,6 +311,23 @@ def compute_grad(
     >>> compute_grad(x * x, x)
     tensor(6.)
     """
+    if isinstance(x, list):
+        # x is a list of parameters (from this.params).
+        # Compute gradients w.r.t. all params
+        if isinstance(f, torch.Tensor):
+            out = f
+        else:
+            out = torch.tensor(float(f))
+        grads = torch.autograd.grad(out, x, create_graph=False,
+                                    allow_unused=True)
+        result = []
+        for g, p in zip(grads, x):
+            if g is not None:
+                result.append(g)
+            else:
+                result.append(torch.zeros_like(p))
+        return result
+
     if callable(f):
         # Evaluate f on a fresh leaf so the tape is always clean.
         if isinstance(x, torch.Tensor) and x.dim() > 0:
@@ -902,3 +923,4 @@ def animate(func: Any, *args: Any) -> None:
         print(
             "[animate] No visualization backend available (install pyvista or matplotlib)"  # noqa: E501
         )
+

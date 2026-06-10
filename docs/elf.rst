@@ -275,6 +275,10 @@ A mismatch is recorded as a type error:
 
 When ranks match, each declared dimension is compared against the corresponding size argument.
 
+**Reproducibility**
+
+``RandomnessFeature`` also supports setting random seeds in Physika programs with ``physika.seed(expr)``, where ``expr`` is a scalar expression that evaluates to an integer.
+The emitted code for this function is ``torch.manual_seed(int(expr))``, ensuring reproducibility of random sampling from distributions across runs.
 
 References
 ----------

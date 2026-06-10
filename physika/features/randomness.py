@@ -447,7 +447,9 @@ class RandomnessFeature(ELF):
 
     def lexer_rules(self) -> dict:
         """
-        Adds ``TILDE`` token (``"~"``) for stochastic sampling syntax.
+        Adds ``TILDE`` token (``"~"``) for stochastic sampling syntax
+        and includes ``PHYSIKA`` reserved keyword so that
+        ``physika.seed(n)`` parses.
         Also, includes greek letters aliases for mapping with torch
         distributions:
 
@@ -459,16 +461,18 @@ class RandomnessFeature(ELF):
         Returns
         -------
         dict
-            Dictionary with ``tokens`` (``["TILDE"]``) and ``token_funcs``
-            (``t_TILDE``, ``t_DIST_NORMAL``, ``t_DIST_GAMMA``, ``t_DIST_BETA``,
-            ``t_DIST_UNIFORM``).
+            Dictionary with ``tokens`` (``["TILDE", "PHYSIKA"]``) and
+            ``token_funcs`` (``t_TILDE``, ``t_DIST_NORMAL``, ``t_DIST_GAMMA``,
+            ``t_DIST_BETA``, ``t_DIST_UNIFORM``).
 
         Examples
         --------
         >>> from physika.features.randomness import RandomnessFeature
         >>> rules = RandomnessFeature().lexer_rules()
         >>> rules["tokens"]
-        ['TILDE']
+        ['TILDE', 'PHYSIKA']
+        >>> rules["reserved"]
+        {'physika': 'PHYSIKA'}
         >>> rules["token_funcs"][1].__name__
         't_DIST_NORMAL'
         >>> rules["token_funcs"][2].__name__
@@ -517,7 +521,8 @@ class RandomnessFeature(ELF):
             return t
 
         return {
-            "tokens": ["TILDE"],
+            "reserved": {"physika": "PHYSIKA"},
+            "tokens": ["TILDE", "PHYSIKA"],
             "token_funcs": [
                 t_TILDE, t_DIST_NORMAL, t_DIST_GAMMA, t_DIST_BETA,
                 t_DIST_UNIFORM
@@ -528,9 +533,10 @@ class RandomnessFeature(ELF):
         """
         Handler for new grammar rules.
 
-        Seven new PLY grammar functions for sampling are added. These rules
-        allows random sampling statements at top-level program,
-        function/method bodies, and for-loop with optional type annotations.
+        Nine new PLY grammar functions: 
+        - Seven for random sampling at top-level, function/method bodies,
+            and for-loops.
+        - Two for ``physika.seed(n)`` at top-level and inside function bodies.
 
         Returns
         -------
@@ -543,7 +549,7 @@ class RandomnessFeature(ELF):
         >>> from physika.features import RandomnessFeature
         >>> rules = RandomnessFeature().parser_rules()
         >>> len(rules)
-        7
+        9
         >>> rules[0].__name__
         'p_sample_untyped'
         """
@@ -594,10 +600,19 @@ class RandomnessFeature(ELF):
                 body = ("sample_expr", samp_name, call_node)
             p[0] = ("for_expr", p[2], p[6], body)
 
+        def p_statement_seed(p):
+            """statement : PHYSIKA DOT ID LPAREN func_expr RPAREN NEWLINE"""
+            p[0] = ("seed", p[5])
+
+        def p_func_body_stmt_seed(p):
+            """func_body_stmt : PHYSIKA DOT ID LPAREN func_expr RPAREN NEWLINE"""
+            p[0] = ("seed", p[5])
+
         return [
             p_sample_untyped, p_sample_typed, p_statement_sample,
             p_func_body_stmt_sample, p_for_statement_sample,
-            p_func_factor_sample_expr, p_for_sample
+            p_func_factor_sample_expr, p_for_sample,
+            p_statement_seed, p_func_body_stmt_seed,
         ]
 
     def type_rules(self) -> dict:
@@ -688,38 +703,37 @@ class RandomnessFeature(ELF):
 
             if isinstance(call_node, tuple) and call_node[0] == "call":
                 func_name = call_node[1]
-                shape_args = get_shape_args(call_node[2], env)
-                expected_rank = len(shape_args)
                 if isinstance(declared_type, TTensor):
                     declared_rank = len(declared_type.dims)
                 else:
                     declared_rank = 0
-                # case rank mismatch
-                if declared_rank != expected_rank:
-                    dims_desc = ", ".join(["n"] * expected_rank)
-                    sample_desc = "ℝ" if expected_rank == 0 else f"ℝ[{dims_desc}]"  # noqa: E501
-                    add_error(
-                        f"'{name}': declared {declared_type} but "
-                        f"{func_name}(...) produces a {sample_desc} sample")
+                dist_args = list(call_node[2])
+                # after stripping any mode string, the last declared_rank
+                # args are the shape args.
+                if dist_args and isinstance(dist_args[-1], tuple) and dist_args[-1][0] in ("string", "equation_string"):  # noqa: E501
+                    dist_args = dist_args[:-1]
+                if declared_rank > 0:
+                    shape_args = dist_args[-declared_rank:]
                 else:
-                    # check for dimension type mismatch
-                    if isinstance(declared_type, TTensor):
-                        for i, shape_arg in enumerate(shape_args):
-                            actual = get_dim(shape_arg, env)
-                            declared = get_dim(declared_type.dims[i][0], env)
-                            if declared != actual:
-                                if isinstance(declared, int) and isinstance(
-                                        actual, int):
-                                    add_error(
-                                        f"'{name}': declared {declared_type}. "
-                                        f"{func_name}(...) in dim[{i}] infers {actual} but declared {declared}"  # noqa: E501
-                                    )
-                                elif isinstance(declared, str) and isinstance(
-                                        actual, str):
-                                    add_error(
-                                        f"'{name}': declared {declared_type}. "
-                                        f"{func_name}(...) in dim[{i}] infers {actual} but declared {declared}"  # noqa: E501
-                                    )
+                    shape_args = []
+                # check for dimension type mismatch
+                if isinstance(declared_type, TTensor):
+                    for i, shape_arg in enumerate(shape_args):
+                        actual = get_dim(shape_arg, env)
+                        declared = get_dim(declared_type.dims[i][0], env)
+                        if declared != actual:
+                            if isinstance(declared, int) and isinstance(
+                                    actual, int):
+                                add_error(
+                                    f"'{name}': declared {declared_type}. "
+                                    f"{func_name}(...) in dim[{i}] infers {actual} but declared {declared}"  # noqa: E501
+                                )
+                            elif isinstance(declared, str) and isinstance(
+                                    actual, str):
+                                add_error(
+                                    f"'{name}': declared {declared_type}. "
+                                    f"{func_name}(...) in dim[{i}] infers {actual} but declared {declared}"  # noqa: E501
+                                )
 
             env[name] = declared_type
             return declared_type, s
@@ -958,6 +972,21 @@ class RandomnessFeature(ELF):
 
             return wrapper
 
+        def seed_emit(node: Tuple, to_expr: Callable, **ctx) -> str:
+            """
+            Emit ``torch.manual_seed(int(n))`` for ``physika.seed(n)``.
+
+            Examples
+            --------
+            >>> from physika.features import RandomnessFeature
+            >>> from physika.utils.ast_utils import ast_to_torch_expr
+            >>> rules = RandomnessFeature().forward_rules()
+            >>> rules["seed"](("seed", ("num", 42.0)), ast_to_torch_expr)
+            'torch.manual_seed(int(42.0))'
+            """
+            _, expr = node
+            return f"torch.manual_seed(int({to_expr(expr)}))"
+
         return {
             "sample": sample_stmt_emit,
             "body_sample": sample_stmt_emit,
@@ -972,4 +1001,5 @@ class RandomnessFeature(ELF):
             "call:Beta": make_call_emit(beta_dist),
             "call:Gamma": make_call_emit(gamma_dist),
             "call:Bernoulli": make_call_emit(bernoulli_dist),
+            "seed": seed_emit,
         }
