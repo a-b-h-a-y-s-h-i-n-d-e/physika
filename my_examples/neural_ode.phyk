@@ -1,0 +1,204 @@
+def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+    x: ℝ[n] = zeros(n)
+    dx: ℝ = (end - start) / (n - 1)
+    for i:ℕ(0, n):
+        x[i] = start + i * dx
+    return x
+
+
+# ------------------------------------------------------------
+# 
+# ------------------------------------------------------------
+
+
+def rk4_step(state: ℝ[2, 1], t: ℝ, dt: ℝ, ode_func: ODEFunc): ℝ[2, 1]:
+    k1: ℝ[2, 1] = ode_func(state)
+    k2_state: ℝ[2, 1] = state + 0.5 * dt * k1
+    k2: ℝ[2, 1] = ode_func(k2_state)
+    k3_state: ℝ[2, 1] = state + 0.5 * dt * k2
+    k3: ℝ[2, 1] = ode_func(k3_state)
+    k4_state: ℝ[2, 1] = state + dt * k3
+    k4: ℝ[2, 1] = ode_func(k4_state)
+    return state + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+
+
+
+def odesolver(ode_func: ODEFunc, y0: R[2, 1], dt: R, timesteps: R[n]): R[m, 2, 1]:
+    n_times: N = len(timesteps)
+    trajectory: ℝ[n_times,2,1] = zeros(n_times, 2, 1)
+    state: R[2, 1] = y0
+    for i:N(1, n_times):
+        current_t = timesteps[i-1]
+        state = rk4_step(state, current_t, dt, ode_func)
+        trajectory[i] = state
+    return trajectory
+
+class ODEFunc:
+    W1: ℝ[Z, 2]
+    B1: ℝ[Z, 1]
+    W2: ℝ[2, Z]
+    B2: ℝ[2, 1]
+    def λ(x: ℝ[2, 1]) → ℝ[2, 1]:
+        h1: R[Z, 1] = tanh(W1 @ x + B1)
+        out: R[2, 1] = W2 @ h1 + B2
+        return out
+
+#n_neurons: R = 48
+#W1: ℝ[n_neurons, 2] = for i: ℕ(n_neurons) -> for j: ℕ(2) -> 0.05 * sin(i + 3*j)
+#B1: ℝ[n_neurons, 1] = for i: ℕ(n_neurons) -> [0.1]
+#W2: ℝ[2, n_neurons] = for i: ℕ(2) -> for j: ℕ(n_neurons) -> 0.05 * cos(i+j)
+#B2: ℝ[2, 1] = [[0.1], [0.1]]
+
+n_neurons: ℕ = 128
+
+μ: ℝ = 0.0
+σ: ℝ = 0.1
+
+W1: ℝ[n_neurons, 2] = for i: ℕ(n_neurons) -> ε: ℝ[2] ~ Normal(μ, σ, 2)
+B1: ℝ[n_neurons, 1] = for i: ℕ(n_neurons) -> [0.01]
+W2: ℝ[2, n_neurons] = for i: ℕ(2) -> ε: ℝ[n_neurons] ~ Normal(μ, σ, n_neurons)
+B2: ℝ[2, 1] = [[0.01], [0.01]]
+
+# ------------------------------------------------------------
+# Create Dataset
+# ------------------------------------------------------------
+
+def simple_pendulum(state: ℝ[2,1]): ℝ[2,1]:
+    q: ℝ = state[0,0]
+    p: ℝ = state[1,0]
+    dq: ℝ = p 
+    dp: ℝ = 0.0 - sin(q)
+    return [[dq], [dp]]
+
+
+def generate_dataset(y0: ℝ[2,1], dt: ℝ, timesteps: R[n]): ℝ[m,2,1]:
+    n_times = len(timesteps)
+    trajectory: ℝ[n_times, 2, 1] = zeros(n_times, 2, 1)
+    state: ℝ[2,1] = y0
+    trajectory[0] = state
+    for i: ℕ(1, n_times):
+        current_t = timesteps[i-1]
+        state = rk4_step(state, current_t, dt, simple_pendulum)
+        trajectory[i] = state
+    return trajectory
+
+
+model = ODEFunc(W1, B1, W2, B2)
+
+timesteps: ℝ[100] = linspace(0.0, 2.0, 10)
+y0: ℝ[2, 1] = [[1.0], [0.0]]
+dt: R = 0.1
+
+true_trajectory = generate_dataset(y0, 0.1, timesteps)
+
+def mse_loss(pred_traj: R[m, 2, 1], true_traj: R[m, 2, 1]): R:
+    diff = pred_traj - true_traj
+    return mean(diff**2)
+
+
+
+# -----------------------------------------------------------
+# SGD
+# ----------------------------------------------------------
+
+epochs: N = 1000
+lr: R = 0.01
+
+
+for i:N(epochs):
+    physika_print(i)
+    pred_traj = odesolver(model, y0, dt, timesteps)
+    loss = mse_loss(pred_traj, true_trajectory)
+    physika_print(loss)
+    dW1 = grad(loss, model.W1)
+    dB1 = grad(loss, model.B1)
+    dW2 = grad(loss, model.W2)
+    dB2 = grad(loss, model.B2)
+    new_W1 = model.W1 - lr * dW1
+    new_B1 = model.B1 - lr * dB1
+    new_W2 = model.W2 - lr * dW2
+    new_B2 = model.B2 - lr * dB2
+    model = ODEFunc(new_W1, new_B1, new_W2, new_B2)
+
+
+
+# -----------------------------------------------------------
+# adam
+# ----------------------------------------------------------
+
+
+class AdamOptimizer:
+    lr: R
+    beta1: R 
+    beta2: R 
+    eps: R
+    t: R
+    m: R[m, n]
+    v: R[m, n]
+    def step(param: ℝ[m,n], grad: ℝ[m,n]) → ℝ[m,n]:
+        this.t = this.t + 1.0
+        m_new: ℝ[m,n] = this.beta1 * this.m + (1.0 - this.beta1) * grad
+        v_new: ℝ[m,n] = this.beta2 * this.v + (1.0 - this.beta2) * grad**2
+        m_hat: ℝ[m,n] = m_new / (1.0 - this.beta1**this.t)
+        v_hat: ℝ[m,n] = v_new / (1.0 - this.beta2**this.t)
+        param_new: ℝ[m,n] = param - this.lr * m_hat / (sqrt(v_hat) + this.eps)
+        return [param_new, m_new, v_new]
+
+
+lr: R = 0.01
+adam_W1 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(n_neurons,2), zeros(n_neurons,2))
+adam_B1 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(n_neurons,1), zeros(n_neurons,1))
+adam_W2 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(2,n_neurons), zeros(2,n_neurons))
+adam_B2 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(2,1), zeros(2,1))
+
+
+epochs: ℕ = 1000
+
+for epoch: ℕ(epochs):
+    physika_print(epoch)
+    pred_traj = odesolver(model, y0, dt, timesteps)
+    loss = mse_loss(pred_traj, true_trajectory)
+    physika_print(loss)
+    dW1 = grad(loss, model.W1)
+    dB1 = grad(loss, model.B1)
+    dW2 = grad(loss, model.W2)
+    dB2 = grad(loss, model.B2)
+    result_W1 = adam_W1.step(model.W1, dW1)
+    result_B1 = adam_B1.step(model.B1, dB1)
+    result_W2 = adam_W2.step(model.W2, dW2)
+    result_B2 = adam_B2.step(model.B2, dB2)
+    new_W1 = result_W1[0]
+    new_B1 = result_B1[0]
+    new_W2 = result_W2[0]
+    new_B2 = result_B2[0]
+    adam_W1 = AdamOptimizer(adam_W1.lr, adam_W1.beta1, adam_W1.beta2, adam_W1.eps, adam_W1.t + 1.0, result_W1[1], result_W1[2])
+    adam_B1 = AdamOptimizer(adam_B1.lr, adam_B1.beta1, adam_B1.beta2, adam_B1.eps, adam_B1.t + 1.0, result_B1[1], result_B1[2])
+    adam_W2 = AdamOptimizer(adam_W2.lr, adam_W2.beta1, adam_W2.beta2, adam_W2.eps, adam_W2.t + 1.0, result_W2[1], result_W2[2])
+    adam_B2 = AdamOptimizer(adam_B2.lr, adam_B2.beta1, adam_B2.beta2, adam_B2.eps, adam_B2.t + 1.0, result_B2[1], result_B2[2])
+    model = ODEFunc(new_W1, new_B1, new_W2, new_B2)
+
+
+predicted_trajectory: ℝ[m, 2, 1] = odesolver(model, y0, dt, timesteps)
+plot_phase_space(true_trajectory)
+plot_phase_space(predicted_trajectory)
+
+
+
+
+# def plot_phase_space(trajectory):
+    
+#     trajectory = trajectory.detach().numpy()
+#     x = trajectory[:, 0, 0]
+#     y = trajectory[:, 1, 0]
+
+#     plt.figure(figsize=(6, 6))
+#     plt.plot(x, y)
+
+#     plt.xlabel("x")
+#     plt.ylabel("y")
+#     plt.title("Phase Space Trajectory")
+
+#     plt.axis("equal")
+#     plt.grid(True)
+
+#     plt.show()
