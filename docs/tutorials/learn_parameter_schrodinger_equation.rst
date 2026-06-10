@@ -705,4 +705,4 @@ References
 - `Quantum tunneling simulation code <https://www.astro.utoronto.ca/~mhvk/AST1410/python/quantum_tunneling.py>`_
 - `Schrödinger FDTD - SciPy Cookbook <https://scipy-cookbook.readthedocs.io/items/SchrodingerFDTD.html>`_
 - `Schrödinger FDTD PDF Notes <https://scipy-cookbook.readthedocs.io/_static/items/attachments/SchrodingerFDTD/Schrodinger%5FFDTD.pdf>`_
-- `Wave Functions and Operators - Fiveable Computational Chemistry <https://fiveable.me/computational-chemistry/unit-3/wave-functions-operators/study-guide/kLX80x0GqycgGNHp>`
+- `Wave Functions and Operators - Fiveable Computational Chemistry <https://fiveable.me/computational-chemistry/unit-3/wave-functions-operators/study-guide/kLX80x0GqycgGNHp>`_
