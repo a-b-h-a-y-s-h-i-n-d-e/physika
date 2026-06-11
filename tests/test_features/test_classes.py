@@ -322,7 +322,7 @@ class TestGenerateClass:
         assert "@property" in code
         assert "def params(self):" in code
         assert "return list(self.parameters())" in code
-        assert "def update(self, lr, grads):" in code
+        assert "def update(self, lr, *grads):" in code
         assert "p -= lr * g" in code
 
     def test_constructur_params_and_forward(self):
@@ -348,8 +348,8 @@ class TestMakeParserRules:
         # make_parser_rules returns a plain list
         assert isinstance(make_parser_rules(), list)
 
-        # Exactly 21 grammar rules
-        assert len(make_parser_rules()) == 21
+        # Exactly 20 grammar rules
+        assert len(make_parser_rules()) == 20
 
         # every item should be a callable p_ functino
         for rule in make_parser_rules():
