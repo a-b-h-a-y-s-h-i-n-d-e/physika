@@ -156,6 +156,7 @@ def print_unified_ast(unified_ast: dict[str, Any]) -> str:
     Examples
     --------
     >>> from physika.utils.ast_utils import build_unified_ast
+    >>> from physika.utils.print_utils import print_unified_ast
     >>> ast = {"functions": {}, "classes": {},
     ... "program": [("expr", ("num", 1.0), 1)]}
     >>> print(print_unified_ast(ast))
@@ -188,18 +189,10 @@ def print_unified_ast(unified_ast: dict[str, Any]) -> str:
     lines.append("\nClasses:")
     for name, class_def in unified_ast["classes"].items():
         lines.append(f"  {name}:")
-        lines.append(f"    class_params: {class_def['class_params']}")
-        lines.append(f"    lambda_params: {class_def['lambda_params']}")
-        if class_def.get('has_loop'):
-            lines.append(f"    loop_var: {class_def['loop_var']}")
-            lines.append("    loop_body:")
-            for stmt in class_def['loop_body']:
-                lines.append(_pformat(stmt, 3))
-        lines.append("    body:")
-        lines.append(_pformat(class_def['body'], 3))
-        if class_def.get('has_loss'):
-            lines.append("    loss_body:")
-            lines.append(_pformat(class_def['loss_body'], 3))
+        lines.append(
+            f"    class_params: {_pformat(class_def['class_params'])}")
+        lines.append(f"    class_fields: {_pformat(class_def['fields'])}")
+        lines.append(f"    class_methods: {_pformat(class_def['methods'])}")
 
     # Program
     lines.append("\nProgram:")
