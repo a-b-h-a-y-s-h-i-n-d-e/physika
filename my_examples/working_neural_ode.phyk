@@ -74,7 +74,7 @@ def generate_dataset(y0: ℝ[2,1], dt: ℝ, timesteps: R[n]): ℝ[m,2,1]:
     trajectory[0] = state
     for i: ℕ(1, n_times):
         current_t = timesteps[i-1]
-        state = rk4_step(state, current_t, dt, damped_oscillator)
+        state = rk4_step(state, current_t, dt, simple_pendulum)
         trajectory[i] = state
     return trajectory
 
@@ -92,11 +92,7 @@ true_trajectory: ℝ[100, 2, 1] = generate_dataset(y0, 0.1, timesteps)
 
 
 
-class ODEFunc:
-    W1: ℝ[Z, 2]
-    B1: ℝ[Z, 1]
-    W2: ℝ[2, Z]
-    B2: ℝ[2, 1]
+class ODEFunc(W1: ℝ[Z, 2], B1: ℝ[Z, 1], W2: ℝ[2, Z], B2: ℝ[2, 1]):
     def λ(x: ℝ[2, 1]) → ℝ[2, 1]:
         h1: ℝ[Z, 1] = tanh(W1 @ x + B1)
         out: ℝ[2, 1] = W2 @ h1 + B2
@@ -104,12 +100,12 @@ class ODEFunc:
     def train(y0: ℝ[2, 1], lr: ℝ, epochs: ℕ) → ℝ:
         loss: ℝ = 0
         for i:ℕ(epochs):
-            pred_traj = odesolver(model, y0, dt, timesteps)
+            pred_traj = odesolver(this, y0, dt, timesteps)
             loss = mse_loss(pred_traj, true_trajectory)
-            dW1 = grad(loss, model.W1)
-            dB1 = grad(loss, model.B1)
-            dW2 = grad(loss, model.W2)
-            dB2 = grad(loss, model.B2)
+            dW1 = grad(loss, this.W1)
+            dB1 = grad(loss, this.B1)
+            dW2 = grad(loss, this.W2)
+            dB2 = grad(loss, this.B2)
             this.update(lr, dW1, dB1, dW2, dB2)
         return loss
 
@@ -131,7 +127,7 @@ B2: ℝ[2, 1] = [[0.01], [0.01]]
 
 model: ODEFunc = ODEFunc(W1, B1, W2, B2)
 
-epochs: ℕ = 1000
+epochs: ℕ = 2000
 lr: ℝ = 0.01
 
 
