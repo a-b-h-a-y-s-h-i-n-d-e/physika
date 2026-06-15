@@ -13,6 +13,8 @@
 
 Physika is designed to simplify the representation of equations governing diverse physical systems, and the computational methods used to approximate their solutions. Physika is a type-based differentiable language program, that checks for dimension and data type correctenss.
 
+
+
 ## Workflow
 
 ```
@@ -24,11 +26,15 @@ example.phyk → Lexer (PLY) → Parser → AST → Type Checker → Runtime Exe
 3. The **type checker** validates tensor shapes and type correctness across the AST.
 4. The **runtime** interprets the AST datastructure and executes the program, using PyTorch as backend.
 
+
+
 ## Usage
 
 ```bash
 physika examples/example_arrays.phyk
 ```
+
+
 
 ## Physika Program Description
 
