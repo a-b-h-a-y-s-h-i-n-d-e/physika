@@ -70,7 +70,7 @@ class FullyConnectedNetwork(W: ℝ[2,3,3], B: ℝ[2,3,1], w: ℝ[1,3], b: ℝ):
                 dB = grad(current_loss, this.B)
                 dw = grad(current_loss, this.w)
                 db = grad(current_loss, this.b)
-                this.update(lr, this.params)
+                this.update(lr, dW, dB, dw, db)
             last_loss = epoch_loss / len_dataset
         return last_loss
     def evaluate(X: ℝ[4, 3, 1], y: ℝ[4]) → ℝ:
