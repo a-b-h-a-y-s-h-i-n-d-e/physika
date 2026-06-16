@@ -1,0 +1,204 @@
+def get_1d_array_length(x: ℝ[m]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+    x: ℝ[n] = zeros(n)
+    dx: ℝ = (end - start) / (n - 1)
+    for i:ℕ(0, n):
+        x[i] = start + i * dx
+    return x
+
+
+# ------------------------------------------------------------
+# 
+# ------------------------------------------------------------
+
+
+def rk4_step(state: ℝ[2, 1], t: ℝ, dt: ℝ, ode_func: ODEFunc): ℝ[2, 1]:
+    k1: ℝ[2, 1] = ode_func(state)
+    k2_state: ℝ[2, 1] = state + 0.5 * dt * k1
+    k2: ℝ[2, 1] = ode_func(k2_state)
+    k3_state: ℝ[2, 1] = state + 0.5 * dt * k2
+    k3: ℝ[2, 1] = ode_func(k3_state)
+    k4_state: ℝ[2, 1] = state + dt * k3
+    k4: ℝ[2, 1] = ode_func(k4_state)
+    return state + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+
+
+
+def odesolver(ode_func: ODEFunc, y0: ℝ[2, 1], dt: ℝ, timesteps: ℝ[n]): ℝ[m, 2, 1]:
+    n_times: N = get_1d_array_length(timesteps)
+    trajectory: ℝ[n_times,2,1] = zeros(n_times, 2, 1)
+    state: ℝ[2, 1] = y0
+    trajectory[0] = state
+    for i:ℕ(1, n_times):
+        current_t = timesteps[i-1]
+        state = rk4_step(state, current_t, dt, ode_func)
+        trajectory[i] = state
+    return trajectory
+
+def mse_loss(pred_traj: ℝ[m, 2, 1], true_traj: ℝ[m, 2, 1]): ℝ:
+    diff: ℝ[m, 2, 1] = pred_traj - true_traj
+    return mean(diff**2)
+
+
+# ------------------------------------------------------------
+# Create Dataset
+# ------------------------------------------------------------
+
+def simple_pendulum(state: ℝ[2,1]): ℝ[2,1]:
+    q: ℝ = state[0,0]
+    p: ℝ = state[1,0]
+    dq: ℝ = p 
+    dp: ℝ = 0.0 - sin(q)
+    return [[dq], [dp]]
+
+def damped_oscillator(state: ℝ[2,1]): ℝ[2,1]:
+    q: ℝ = state[0,0]
+    p: ℝ = state[1,0]
+    gamma: ℝ = 0.2
+    dq: ℝ = p
+    dp: ℝ = 0.0 - q - gamma * p
+    return [[dq], [dp]]
+
+
+def generate_dataset(y0: ℝ[2,1], dt: ℝ, timesteps: R[n]): ℝ[m,2,1]:
+    n_times = get_1d_array_length(timesteps)
+    trajectory: ℝ[n_times, 2, 1] = zeros(n_times, 2, 1)
+    state: ℝ[2,1] = y0
+    trajectory[0] = state
+    for i: ℕ(1, n_times):
+        current_t = timesteps[i-1]
+        state = rk4_step(state, current_t, dt, simple_pendulum)
+        trajectory[i] = state
+    return trajectory
+
+
+
+
+timesteps: ℝ[100] = linspace(0.0, 1.0, 10)
+y0: ℝ[2, 1] = [[1.0], [0.0]]
+dt: ℝ = 0.1
+
+true_trajectory: ℝ[100, 2, 1] = generate_dataset(y0, 0.1, timesteps)
+
+# ------------------------------------------------------------
+
+
+
+
+class ODEFunc(W1: ℝ[Z, 2], B1: ℝ[Z, 1], W2: ℝ[2, Z], B2: ℝ[2, 1]):
+    def λ(x: ℝ[2, 1]) → ℝ[2, 1]:
+        h1: ℝ[Z, 1] = tanh(W1 @ x + B1)
+        out: ℝ[2, 1] = W2 @ h1 + B2
+        return out
+    def train(y0: ℝ[2, 1], lr: ℝ, epochs: ℕ) → ℝ:
+        loss: ℝ = 0
+        for i:ℕ(epochs):
+            grads = this.adjoint_grad(y0)
+            gW1 = grads[0]
+            gB1 = grads[1]
+            gW2 = grads[2]
+            gB2 = grads[3]
+            this.update(lr, gW1, gB1, gW2, gB2)
+            pred_traj = odesolver(this, y0, dt, timesteps)
+            loss = mse_loss(pred_traj, true_trajectory)
+        return loss
+    def adjoint_grad(y0: R[2, 1]) → R:
+        n_times = len(timesteps)
+        pred_traj = odesolver(this, y0, dt, timesteps)
+        y_final = pred_traj[n_times - 1]
+        y_true_final = true_trajectory[n_times - 1]
+        s = 2.0 * (y_final - y_true_final)
+        gW1 = zeros(128, 2)
+        gB1 = zeros(128, 1)
+        gW2 = zeros(2, 128)
+        gB2 = zeros(2, 1)
+        y = y_final
+        for i:N(n_times-1):
+            f_out = this(y)
+            product = transpose(s) @ f_out
+            scalar = product[0, 0]
+            gW1 = gW1 + dt * grad(scalar, this.W1)
+            gB1 = gB1 + dt * grad(scalar, this.B1)
+            gW2 = gW2 + dt * grad(scalar, this.W2)
+            gB2 = gB2 + dt * grad(scalar, this.B2)
+            J_state = grad(scalar, y)
+            s = s - dt * J_state
+            #y = y - dt * f_out
+            k1 = this(y)
+            k2 = this(y - 0.5 * dt * k1)
+            k3 = this(y - 0.5 * dt * k2)
+            k4 = this(y - dt * k3)
+            y = y - (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        return return_list(gW1, gB1, gW2, gB2)
+
+
+
+n_neurons: ℕ = 128
+μ: ℝ = 0.0
+σ: ℝ = 0.1
+
+W1: ℝ[n_neurons, 2] = for i: ℕ(n_neurons) -> ε: ℝ[2] ~ Normal(μ, σ, 2)
+B1: ℝ[n_neurons, 1] = for i: ℕ(n_neurons) -> [0.01]
+W2: ℝ[2, n_neurons] = for i: ℕ(2) -> ε: ℝ[n_neurons] ~ Normal(μ, σ, n_neurons)
+B2: ℝ[2, 1] = [[0.01], [0.01]]
+
+
+
+# -----------------------------------------------------------
+# SGD
+# ----------------------------------------------------------
+
+model: ODEFunc = ODEFunc(W1, B1, W2, B2)
+
+epochs: ℕ = 2000
+lr: ℝ = 0.001
+
+
+#model.adjoint_grad(y0)
+
+
+loss: ℝ = model.train(y0, lr, epochs)
+loss
+
+
+predicted_trajectory: ℝ[100, 2, 1] = odesolver(model, y0, dt, timesteps)
+plot_phase_space(true_trajectory, predicted_trajectory)
+
+
+
+def transpose(x):
+#     return x.T
+
+# def return_list(*x):
+#     return list(x)
+
+# import matplotlib.pyplot as plt
+# def plot_phase_space(true_trajectory, pred_trajectory):
+#    true_trajectory = true_trajectory.detach().numpy()
+#    pred_trajectory = pred_trajectory.detach().numpy()
+
+#    true_x = true_trajectory[:, 0, 0]
+#    true_y = true_trajectory[:, 1, 0]
+
+#    pred_x = pred_trajectory[:, 0, 0]
+#    pred_y = pred_trajectory[:, 1, 0]
+
+#    plt.figure(figsize=(6, 6))
+#    plt.plot(true_x, true_y)
+#    plt.plot(pred_x, pred_y, linestyle="--")
+
+#    plt.xlabel("x")
+#    plt.ylabel("y")
+#    plt.title("Phase Space Trajectory (True vs Predicted)")
+
+#    plt.axis("equal")
+#    plt.grid(True)
+
+#    plt.show()
