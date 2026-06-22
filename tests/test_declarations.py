@@ -4,7 +4,6 @@ from tests.conftest import exec_phyk
 from physika.lexer import lexer
 
 
-
 def first_type_value(src):
     """Return the value of the first TYPE token lexed from src."""
     lexer.lexer.lineno = 1
