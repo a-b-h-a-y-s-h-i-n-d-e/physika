@@ -760,8 +760,14 @@ def ast_to_torch_expr(node: ASTNode,
             else:
                 vars_code = arg_strs[0]
             expr_code = arg_strs[1]
-            return (f"sp.lambdify({vars_code}, {expr_code}, "
-                    f"modules={torch_funcs})")
+            return ("(lambda *args: "
+                    f"sp.lambdify({vars_code}, {expr_code}, modules='torch')"
+                    "("
+                    "*[torch.as_tensor(a).float() "
+                    "if not isinstance(a, torch.Tensor) "
+                    "else a "
+                    "for a in args]"
+                    "))")
 
         elif func_name == "symbolic_solve":
             # symbolic_solve is wrapper for solve which finds solution of an
