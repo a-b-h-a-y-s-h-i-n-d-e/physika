@@ -187,7 +187,7 @@ Physika random sampling syntax allows users to declare a random variable with a 
     # Sample a 10x5x2 tensor from a normal distribution with mean 0 and std 1
     z : ℝ[10, 5, 2] ~ for i : ℕ(10) → for j : ℕ(5) → ε : ℝ[2] ~ Normal(μ, σ, 2)
 
-Physika supports differentiable sampling following Stochastich Computation Graphs (SCG) framework [1]_, where sampling statements
+Physika supports differentiable sampling following Stochastic Computation Graphs (SCG) framework [1]_, where sampling statements
 are represented as stochastic nodes in the computation graph and gradients are computed by backpropagating through these nodes
 with the reparameterization trick (for continous distributions) or score function estimators (for non-continous distributions).
 ``RandomnessFeature`` default code generation emits reparameterized sampling for continous distributions (``Normal/Gaussian``, 
