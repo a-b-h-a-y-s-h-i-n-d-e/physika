@@ -8,17 +8,20 @@ the end you will be able to read any of the other tutorials on this site.
 What is Physika?
 ----------------
 
-Physika is a type-based, differentiable language for physical and numerical
+Physika is a type-based, differentiable, and probabilistic language for physical and numerical
 computation. You write programs in ``.phyk`` files using math-like notation,
 and declare every value with its mathematical type: a real ``ℝ``, an integer
 ``ℤ``, a complex number ``ℂ``, or an array such as ``ℝ[3]``.
 
-Physika compiles to PyTorch. Each value becomes a ``torch.tensor``, so any
-function you write can be differentiated with ``grad`` through PyTorch's
-autograd. Before a program runs, the type checker verifies that every operation
-uses compatible types and dimensions. A shape mismatch, such as adding an
-``ℝ[3]`` to an ``ℝ[5]``, is caught before any
-computation runs.
+Physika compiles to PyTorch. Each value becomes a ``torch.tensor``, so you can
+differentiate a function with the ``grad`` operation, where ``grad(expr, x)``
+returns the derivative of ``expr`` with respect to an input ``x``, computed by
+PyTorch's autograd. Before a program runs, the type checker verifies that every
+operation uses compatible types and dimensions. A shape mismatch, such as adding
+an ``ℝ[3]`` to an ``ℝ[5]``, is caught before any computation runs. Values can
+also be sampled from probability distributions, and you can take gradients with
+respect to a distribution's parameters.
+
 
 
 How Physika works
@@ -34,30 +37,22 @@ The lexer and parser read the source and build an abstract syntax tree (AST).
 The type checker walks that tree and verifies the types and dimensions of every
 operation. If it finds a mismatch, compilation stops and the error is reported.
 Otherwise the code generator turns the AST into a PyTorch program, which is then
-executed. You can inspect the generated PyTorch at any point with the
+executed. You can inspect the generated PyTorch with the
 ``--print-code`` flag, which we use in the next section.
 
 Installation
 ------------
 
-Physika requires Python 3.9 or newer. Installing from source pulls in the
-remaining dependencies (PyTorch, PLY, NumPy):
-
-.. code-block:: bash
-
-   git clone https://github.com/deepforestsci/physika.git
-   cd physika
-   pip install -e ".[dev]"
-
-This makes the ``physika`` command available in your terminal. On Windows, also
-set ``PYTHONUTF8=1`` (``setx PYTHONUTF8 1``) so the Unicode output renders
-correctly. See :doc:`/install` for more.
+Physika needs Python 3.9 or newer. If you have not set it up yet, follow the
+:doc:`/install` guide, which covers the requirements, installing from source,
+and running a program.
 
 Your first program
 ------------------
 
-Create a file ``first.phyk`` that computes the kinetic energy ``½mv²`` of a 3 kg
-mass at three different speeds:
+With Physika installed, let's write and run a small program from start to
+finish. We'll start with something simple: the kinetic energy ``½mv²`` of a 3 kg
+mass at three different speeds. Create a file ``first.phyk``:
 
 .. code-block:: text
 
@@ -311,16 +306,41 @@ compiles to ``compute_grad`` in the Physika runtime, which calls
 ``torch.autograd.grad``. Every loop and conditional above is differentiable in
 the same way. See the Differentiable For Loops section of :doc:`/language`.
 
+7. Random sampling
+~~~~~~~~~~~~~~~~~~~
+
+Physika is probabilistic as well as differentiable. A value can be drawn from a
+probability distribution with ``~``, and because the draw stays on the autograd
+graph, you can take gradients through it:
+
+.. code-block:: text
+
+   physika.seed(0)
+   μ : ℝ = 0.0
+   x : ℝ ~ Normal(μ, 1.0)
+   grad(x, μ)
+
+Output::
+
+   1.0 ∈ ℝ
+
+Here ``x`` is an ordinary ``ℝ`` sampled from a normal distribution, and ``grad(x, μ)``
+differentiates through the draw to give ``1.0``, so you can fit a distribution's 
+parameters by gradient descent. ``Normal``, ``Uniform``, ``Beta``, ``Gamma``, and ``Bernoulli`` are 
+supported; continuous distributions differentiate through the draw, and discrete 
+ones like Bernoulli use a score-function estimator. See the Random sampling section of :doc:`/elf`.
+
 A complete program
 ------------------
 
-A 2 kg mass hangs from a spring of stiffness ``k = 4 N/m`` under gravity. Its
-potential energy is ``U(x) = ½kx² − mgx``, and the mass comes to rest at the
-position where that energy is lowest. Rather than solve for that position by
-hand, we let the mass relax: at each step it moves a little way along the force
-``−U'(x)``, which ``grad`` provides, until it settles. This final program uses
-everything from the tour at once, a function for ``U``, a loop for the
-relaxation steps, and ``grad`` for the force:
+To finish, let's put everything together in one program where a function, a
+loop, and ``grad`` work as a unit. We'll find the resting position of a 2 kg
+mass hanging from a spring of stiffness ``k = 4 N/m`` under gravity. Its
+potential energy is ``U(x) = ½kx² − mgx``, and the mass settles where that
+energy is lowest. Rather than solve for that position by hand, we let it relax:
+at each step it moves a little way along the force ``−U'(x)``, which ``grad``
+provides, until it stops moving. The function defines ``U``, the loop runs the
+relaxation steps, and ``grad`` supplies the force:
 
 .. code-block:: text
 
@@ -341,16 +361,7 @@ Output::
    4.899992942810059 ∈ ℝ
 
 The mass settles at ``x ≈ 4.9 m``, which is exactly the equilibrium ``mg/k``
-found by balancing the spring force against gravity. We never wrote that answer,
-or the force: ``grad`` supplied the force at each step, and the loop did the
-rest.
-
-.. figure:: ../_static/tutorial_files/intro_equilibrium.png
-   :align: center
-   :width: 70%
-
-   The mass rolls down its potential-energy curve and comes to rest at the
-   equilibrium ``x = mg/k = 4.9 m``.
+found by balancing the spring force against gravity.
 
 Run the program with ``--print-code`` to see the PyTorch it compiles to:
 
@@ -379,12 +390,10 @@ Run the program with ``--print-code`` to see the PyTorch it compiles to:
 Where to go next
 ----------------
 
-A few larger features were left out of this introduction. Each is covered with
-worked examples in :doc:`/examples`:
+A couple of larger features were left out of this introduction. Each is covered
+with worked examples in :doc:`/examples`:
 
 - **Classes**: group fields and methods into reusable types.
-- **Random sampling**: declare a random value with ``x : ℝ ~ Normal(0.0, 1.0)``
-  and sample from it differentiably (see :doc:`/elf`).
 - **Symbolic math**: ``Symbol``, ``diff``, and ``solve`` via SymPy.
 
 From here:

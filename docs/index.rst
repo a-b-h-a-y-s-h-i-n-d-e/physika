@@ -1,26 +1,28 @@
 Physika
 =====================
 
-Physika is a type-based, differentiable programming language for modelling
-diverse physical systems and the numerical methods used to solve them.
+Physika is a type-based, differentiable, and probabilistic programming language
+for modelling physical systems and the numerical methods used to solve them.  It
+lets you describe a system in notation close to its mathematics, in ``.phyk``
+files, and run it.
 
-Programs are written in ``.phyk`` files using notation close to the underlying
-mathematics. Every quantity is declared with its type, whether a real number
-``ℝ``, an integer ``ℤ``, a complex number ``ℂ``, or an array such as ``ℝ[3]``,
-and Physika compiles the program to PyTorch from these declarations.
+Every program compiles to PyTorch, so you can take the gradient of a result with
+respect to its inputs through PyTorch's autograd. Values can also be sampled from
+probability distributions, and those samples stay differentiable too. Every value
+carries a type, and Physika checks the shapes in an operation before the program
+runs, so dimension errors surface up front.
 
-Programs compile to PyTorch, so every value becomes a ``torch.tensor`` and any
-function can be differentiated with ``torch.autograd``. This makes it possible to
-fit model parameters to data, optimize a system against an objective, or run
-gradient descent through a complete simulation. The type system adds a second
-layer of safety: declared shapes are checked for consistency before a program
-runs, so dimension errors are reported up front rather than during execution.
 
 A program passes through a fixed pipeline from source to result:
 
 .. code-block:: text
 
    example.phyk → Lexer → Parser → AST → Type Checker → Runtime (PyTorch)
+
+New to Physika? Start with the :doc:`/tutorials/intro_to_physika` tutorial. It
+covers installing the language, the core syntax, and one complete program. See
+:doc:`/language` for the full reference and :doc:`/examples` for short worked
+snippets.
 
 .. toctree::
    :maxdepth: 1
