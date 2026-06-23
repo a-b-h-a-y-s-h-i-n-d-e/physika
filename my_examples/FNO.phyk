@@ -1,0 +1,186 @@
+class Conv1d(W: R[out, in], b: R[out, 1]):
+    def λ(x: R[in, n]) -> R[out, n]:
+        z = W @ x + b
+        return z
+
+
+class MLP(W1: R[mid, in],  b1: R[mid, 1], W2: R[out, mid], b2: R[out, 1]):
+    def λ(x: R[in, n]) -> R[out, n]:
+        z1 = W1 @ x + b1
+        a1 = gelu(z1)
+        z2 = W2 @ a1 + b2
+        return z2
+
+
+class SpectralConv(weights1: ℂ[in_ch, out_ch, modes], in_ch: ℕ, out_ch: ℕ, modes: ℕ):
+    def λ(x: ℂ[in_ch, n]) ->  ℂ[out_ch, n]:
+        x_ft: ℂ[in_ch, n_ft] = rfft(x)
+        x_ft = truncate_modes(x_ft, modes)
+        out_ft = compl_mul1d(x_ft, weights1)
+        results = irfft(out_ft, len(x[0]))
+        return results
+
+class FNO1d:
+    p: Conv1d
+    conv0: SpectralConv
+    conv1: SpectralConv
+    conv2: SpectralConv
+    conv3: SpectralConv
+    mlp0: MLP
+    mlp1: MLP
+    mlp2: MLP
+    mlp3: MLP
+    w0: Conv1d
+    w1: Conv1d
+    w2: Conv1d
+    w3: Conv1d
+    q: MLP
+    def λ(x: R[1, n]) -> R[1, n]:
+        x = p(x)
+        x1 = conv0(x)
+        x1 = mlp0(x1)
+        x2 = w0(x)
+        x = gelu(x1 + x2)
+        # second part
+        x1 = conv1(x)
+        x1 = mlp1(x1)
+        x2 = w1(x)
+        x = gelu(x1 + x2)
+        x1 = conv2(x)
+        x1 = mlp3(x1)
+        x2 = w2(x)
+        x = gelu(x1 + x2)
+        x1 = conv3(x)
+        x1 = mlp3(x1)
+        x2 = w3(x)
+        x = x1 + x2
+        x = q(x)
+        return x
+    def loss(pred: R[1, n], label: R[1, n]) -> R:
+        diff = pred - target
+        return mean(diff**2)
+    def train(X: R[m, 1, n], y: R[m, 1, n], epochs: N, lr: R) -> R:
+        
+
+
+
+
+
+
+# ------------------------------------------
+# Initialize objects for each block
+# ------------------------------------------
+
+
+width: ℕ = 16
+modes: ℕ = 8
+
+# ------------------------------------------
+
+Wp: ℝ[width, 1] = for i:ℕ(width) -> ε: ℝ[1] ~ Normal(0.0, 0.1, 1)
+Bp: ℝ[width, 1] = for i:ℕ(width) -> ε: ℝ[1] ~ Normal(0.0, 0.1, 1)
+
+p = Conv1d(Wp, Bp)
+
+# ------------------------------------------
+
+
+weights0: ℂ[width, width, modes] = random_complex(width, width, modes)
+weights1: ℂ[width, width, modes] = random_complex(width, width, modes)
+weights2: ℂ[width, width, modes] = random_complex(width, width, modes)
+weights3: ℂ[width, width, modes] = random_complex(width, width, modes)
+
+
+conv0 = SpectralConv(weights0, width, width, modes)
+conv1 = SpectralConv(weights1, width, width, modes)
+conv2 = SpectralConv(weights2, width, width, modes)
+conv3 = SpectralConv(weights3, width, width, modes)
+
+# ------------------------------------------
+
+Ww0: ℝ[width, width] = for i:ℕ(width) -> ε: ℝ[width] ~ Normal(0.0, 0.1, width)
+Bw0: ℝ[width, 1] = for i:ℕ(width) -> ε: ℝ[1] ~ Normal(0.0, 0.1, 1)
+
+w0 = Conv1d(Ww0, Bw0)
+w1 = Conv1d(Ww0, Bw0)
+w2 = Conv1d(Ww0, Bw0)
+w3 = Conv1d(Ww0, Bw0)
+
+# ------------------------------------------
+
+W1: ℝ[width, width] = for i:ℕ(width) -> ε: ℝ[width] ~ Normal(0.0, 0.1, width)
+b1: ℝ[width,1] = zeros(width, 1)
+W2: ℝ[width, width] = for i:ℕ(width) -> ε: ℝ[width] ~ Normal(0.0, 0.1, width)
+b2: ℝ[width,1] = zeros(width, 1)
+
+#b1: ℝ[width,1] = for i:ℕ(width) -> ε: ℝ[1] ~ Normal(0.0, 0.1, width)
+#b2: ℝ[width,1] = for i:ℕ(width) -> ε: ℝ[1] ~ Normal(0.0, 0.1, width)
+
+mlp0 = MLP(W1, b1, W2, b2)
+mlp1 = MLP(W1, b1, W2, b2)
+mlp2 = MLP(W1, b1, W2, b2)
+mlp3 = MLP(W1, b1, W2, b2)
+
+# ------------------------------------------
+
+q_width: N = 2 * width
+Wq1: ℝ[q_width, width] = for i:ℕ(q_width) -> ε: ℝ[width] ~ Normal(0.0, 0.1, width)
+bq1: ℝ[q_width,1] = zeros(q_width, 1)
+Wq2: ℝ[1, q_width] = for i:ℕ(1) -> ε: ℝ[q_width] ~ Normal(0.0, 0.1, q_width)
+bq2: ℝ[1,1] = zeros(1, 1)
+
+q = MLP(Wq1, bq1, Wq2, bq2)
+
+# ------------------------------------------
+
+
+fno_obj = FNO1d(p, conv0, conv1, conv2, conv3, mlp0, mlp1, mlp2, mlp3, w0, w1, w2, w3, q)
+
+
+dataset = create_heat_dataset(100)
+X = dataset[0]
+y = dataset[1]
+
+fno_obj(X[0])
+
+
+
+# def create_heat_dataset(samples):
+#     import gzip
+#     import numpy as np
+
+#     initial_states_file_path = "/home/zap/Downloads/initial_states.npy.gz"
+#     final_states_file_path = "/home/zap/Downloads/final_states.npy.gz"
+
+#     with gzip.open(initial_states_file_path, "rb") as f:
+#         initial_states_data = np.load(f)
+
+#     with gzip.open(final_states_file_path, "rb") as f:
+#         final_states_data = np.load(f)
+
+
+#     initial_states_data = initial_states_data[:samples, :]
+#     final_states_data = final_states_data[:samples, :]
+
+#     import torch
+#     X = torch.tensor(initial_states_data).float()
+#     Y = torch.tensor(final_states_data).float()
+
+#     X = X.unsqueeze(1)
+#     Y = Y.unsqueeze(1)
+
+#     return X, Y
+
+
+# def random_complex(*shape, scale=0.1):
+#     real = torch.randn(*shape) * scale
+#     imag = torch.randn(*shape) * scale
+#     return torch.complex(real, imag)
+
+# def truncate_modes(x_ft, modes):
+#     modes = int(modes)
+#     return x_ft[:, :modes]
+
+
+# def compl_mul1d(x_ft, weights1):
+#     return torch.einsum("ix,iox->ox", x_ft, weights1)
