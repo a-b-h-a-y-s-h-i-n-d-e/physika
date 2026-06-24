@@ -248,14 +248,13 @@ class TestTypeRules:
         Unpacked variable names inside a for loop body are
         usable inside iteration.
         """
-        src = (
-            "class T(v: ℝ):\n"
-            "    def f(n: ℕ) → ℝ:\n"
-            "        total : ℝ = 0.0\n"
-            "        for k : ℕ(n):\n"
-            "            p, q = this.v\n"
-            "            total = total + p + q\n"
-            "        return total\n")
+        src = ("class T(v: ℝ):\n"
+               "    def f(n: ℕ) → ℝ:\n"
+               "        total : ℝ = 0.0\n"
+               "        for k : ℕ(n):\n"
+               "            p, q = this.v\n"
+               "            total = total + p + q\n"
+               "        return total\n")
         assert type_errors(src) == []
 
     def test_loop_tuple_unpack_type_errors(self):

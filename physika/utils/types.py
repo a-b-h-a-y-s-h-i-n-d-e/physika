@@ -637,7 +637,10 @@ def check_function(
 
     # Infers and checks types of function's return expressions
     if body is not None:
-        def _add(msg): add_error(f"In function '{name}': {msg}")
+
+        def _add(msg):
+            add_error(f"In function '{name}': {msg}")
+
         if (isinstance(body, tuple) and body[0] == "tuple_return"
                 and isinstance(return_type, tuple)
                 and return_type[0] == "tuple_type"):
@@ -765,7 +768,10 @@ def check_class(
         # Body are return expressions
         if body is not None:
             err_prefix = f"In class '{name}', method '{method_name}'"
-            def _add(msg): add_error(f"{err_prefix}: {msg}")
+
+            def _add(msg):
+                add_error(f"{err_prefix}: {msg}")
+
             if (isinstance(body, tuple) and body[0] == "tuple_return"
                     and isinstance(return_type, tuple)
                     and return_type[0] == "tuple_type"):
