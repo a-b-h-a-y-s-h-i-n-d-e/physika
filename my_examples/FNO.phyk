@@ -2,6 +2,9 @@ class Conv1d(W: R[out, in], b: R[out, 1]):
     def λ(x: R[in, n]) -> R[out, n]:
         z = W @ x + b
         return z
+    def update_params(lr: R, dW: R, db: R):
+        this.W = this.W - lr * dW
+        this.b = this.b - lr * db
 
 
 class MLP(W1: R[mid, in],  b1: R[mid, 1], W2: R[out, mid], b2: R[out, 1]):
@@ -10,15 +13,22 @@ class MLP(W1: R[mid, in],  b1: R[mid, 1], W2: R[out, mid], b2: R[out, 1]):
         a1 = gelu(z1)
         z2 = W2 @ a1 + b2
         return z2
+    def update_params(lr: R, dW1: R, db1: R, dW2: R, db2: R):
+        this.W1 = this.W1 - lr * dW1
+        this.b1 = this.b1 - lr * db1
+        this.W2 = this.W2 - lr * dW2
+        this.b2 = this.b2 - lr * db2
 
 
 class SpectralConv(weights1: ℂ[in_ch, out_ch, modes], in_ch: ℕ, out_ch: ℕ, modes: ℕ):
-    def λ(x: ℂ[in_ch, n]) ->  ℂ[out_ch, n]:
+    def λ(x: ℂ[in_ch, n]) -> ℂ[out_ch, n]:
         x_ft: ℂ[in_ch, n_ft] = rfft(x)
         x_ft = truncate_modes(x_ft, modes)
         out_ft = compl_mul1d(x_ft, weights1)
         results = irfft(out_ft, len(x[0]))
         return results
+    def update_params(lr: R, dweights1: R):
+        this.weights1 = this.weights1 - lr * dweights1
 
 class FNO1d:
     p: Conv1d
@@ -47,7 +57,7 @@ class FNO1d:
         x2 = w1(x)
         x = gelu(x1 + x2)
         x1 = conv2(x)
-        x1 = mlp3(x1)
+        x1 = mlp2(x1)
         x2 = w2(x)
         x = gelu(x1 + x2)
         x1 = conv3(x)
@@ -57,10 +67,80 @@ class FNO1d:
         x = q(x)
         return x
     def loss(pred: R[1, n], label: R[1, n]) -> R:
-        diff = pred - target
+        diff = pred - label
         return mean(diff**2)
     def train(X: R[m, 1, n], y: R[m, 1, n], epochs: N, lr: R) -> R:
-        
+        len_dataset = len(X)
+        for i:N(epochs):
+            epoch_loss = 0
+            for j:N(len_dataset):
+                pred = this(X[j])
+                current_loss = this.loss(pred, y[j])
+                epoch_loss = epoch_loss + current_loss
+                # ------------------------------------------------
+                # Lift layer
+                # ------------------------------------------------
+                dp_W = grad(current_loss, this.p.W)
+                dp_b = grad(current_loss, this.p.b)
+                # ------------------------------------------------
+                dconv0 = grad(current_loss, this.conv0.weights1)
+                dconv1 = grad(current_loss, this.conv1.weights1)
+                dconv2 = grad(current_loss, this.conv2.weights1)
+                dconv3 = grad(current_loss, this.conv3.weights1)
+                # ------------------------------------------------
+                dw0_W = grad(current_loss, this.w0.W)
+                dw0_b = grad(current_loss, this.w0.b)
+                dw1_W = grad(current_loss, this.w1.W)
+                dw1_b = grad(current_loss, this.w1.b)
+                dw2_W = grad(current_loss, this.w2.W)
+                dw2_b = grad(current_loss, this.w2.b)
+                dw3_W = grad(current_loss, this.w3.W)
+                dw3_b = grad(current_loss, this.w3.b)
+                # ------------------------------------------------
+                # MLP 0
+                dmlp0_W1 = grad(current_loss, this.mlp0.W1)
+                dmlp0_b1 = grad(current_loss, this.mlp0.b1)
+                dmlp0_W2 = grad(current_loss, this.mlp0.W2)
+                dmlp0_b2 = grad(current_loss, this.mlp0.b2)
+                # MLP 1
+                dmlp1_W1 = grad(current_loss, this.mlp1.W1)
+                dmlp1_b1 = grad(current_loss, this.mlp1.b1)
+                dmlp1_W2 = grad(current_loss, this.mlp1.W2)
+                dmlp1_b2 = grad(current_loss, this.mlp1.b2)
+                # MLP 2
+                dmlp2_W1 = grad(current_loss, this.mlp2.W1)
+                dmlp2_b1 = grad(current_loss, this.mlp2.b1)
+                dmlp2_W2 = grad(current_loss, this.mlp2.W2)
+                dmlp2_b2 = grad(current_loss, this.mlp2.b2)
+                # MLP 3
+                dmlp3_W1 = grad(current_loss, this.mlp3.W1)
+                dmlp3_b1 = grad(current_loss, this.mlp3.b1)
+                dmlp3_W2 = grad(current_loss, this.mlp3.W2)
+                dmlp3_b2 = grad(current_loss, this.mlp3.b2)
+                # ------------------------------------------------
+                dq_W1 = grad(current_loss, this.q.W1)
+                dq_b1 = grad(current_loss, this.q.b1)
+                dq_W2 = grad(current_loss, this.q.W2)
+                dq_b2 = grad(current_loss, this.q.b2)
+                # ------------------------------------------------
+                # update all parameters
+                # ------------------------------------------------
+                this.p.update_params(lr, dp_W, dp_b)
+                this.conv0.update_params(lr, dconv0)
+                this.conv1.update_params(lr, dconv1)
+                this.conv2.update_params(lr, dconv2)
+                this.conv3.update_params(lr, dconv3)
+                this.w0.update_params(lr, dw0_W, dw0_b)
+                this.w1.update_params(lr, dw1_W, dw1_b)
+                this.w2.update_params(lr, dw2_W, dw2_b)
+                this.w3.update_params(lr, dw3_W, dw3_b)
+                this.mlp0.update_params(lr, dmlp0_W1, dmlp0_b1, dmlp0_W2, dmlp0_b2)
+                this.mlp1.update_params(lr, dmlp1_W1, dmlp1_b1, dmlp1_W2, dmlp1_b2)
+                this.mlp2.update_params(lr, dmlp2_W1, dmlp2_b1, dmlp2_W2, dmlp2_b2)
+                this.mlp3.update_params(lr, dmlp3_W1, dmlp3_b1, dmlp3_W2, dmlp3_b2)
+                this.q.update_params(lr, dq_W1, dq_b1, dq_W2, dq_b2)
+            last_loss = epoch_loss / len_dataset
+        return last_loss
 
 
 
@@ -137,11 +217,46 @@ q = MLP(Wq1, bq1, Wq2, bq2)
 fno_obj = FNO1d(p, conv0, conv1, conv2, conv3, mlp0, mlp1, mlp2, mlp3, w0, w1, w2, w3, q)
 
 
-dataset = create_heat_dataset(100)
-X = dataset[0]
-y = dataset[1]
+dataset = create_heat_dataset(10)
+X: ℝ[m,1,n] = dataset[0]
+y: ℝ[m,1,n] = dataset[1]
 
-fno_obj(X[0])
+
+
+epochs: N = 1000
+results = fno_obj.train(X, y, epochs, 0.0001)   
+results
+
+
+pred = fno_obj(X[1])
+compare_states(pred, y[1])
+
+
+
+
+
+
+# def compare_states(pred_state, true_state):
+#     import matplotlib.pyplot as plt
+#     import numpy as np
+#     true_flat = true_state.detach().cpu().numpy().squeeze()
+#     pred_flat = pred_state.detach().cpu().numpy().squeeze()
+#     plt.figure(figsize=(10, 5))
+#     plt.plot(true_flat, color="black", linestyle="-", label="True Label", lw=2)
+#     plt.plot(
+#         pred_flat,
+#         color="crimson",
+#         linestyle="--",
+#         label="Predicted State",
+#         lw=2,
+#     )
+
+#     plt.grid(True, linestyle=":", alpha=0.6)
+#     plt.legend(loc="best", fontsize=10)
+
+#     plt.tight_layout()
+#     plt.show()
+
 
 
 
