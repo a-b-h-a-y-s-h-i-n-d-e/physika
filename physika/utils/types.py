@@ -637,14 +637,14 @@ def check_function(
 
     # Infers and checks types of function's return expressions
     if body is not None:
-        _add = lambda msg: add_error(f"In function '{name}': {msg}")
+        def _add(msg): add_error(f"In function '{name}': {msg}")
         if (isinstance(body, tuple) and body[0] == "tuple_return"
                 and isinstance(return_type, tuple)
                 and return_type[0] == "tuple_type"):
-            for i, (ret_expr, decl_t) in enumerate(
-                    zip(body[1:], return_type[1])):
-                t, s = infer_expr(ret_expr, final_env, s, func_env,
-                                  class_env, _add)
+            for i, (ret_expr,
+                    decl_t) in enumerate(zip(body[1:], return_type[1])):
+                t, s = infer_expr(ret_expr, final_env, s, func_env, class_env,
+                                  _add)
                 if t is not None and decl_t is not None:
                     try:
                         s = unify(decl_t, s.apply(t), s)
@@ -653,8 +653,8 @@ def check_function(
                              f"declared {type_to_str(decl_t)}, "
                              f"got {type_to_str(s.apply(t))}: {e}")
         else:
-            body_t, s = infer_expr(
-                body, final_env, s, func_env, class_env, _add)
+            body_t, s = infer_expr(body, final_env, s, func_env, class_env,
+                                   _add)
             body_t = s.apply(body_t) if body_t is not None else None
             if return_type is not None and body_t is not None:
                 try:
@@ -765,13 +765,13 @@ def check_class(
         # Body are return expressions
         if body is not None:
             err_prefix = f"In class '{name}', method '{method_name}'"
-            _add = lambda msg: add_error(f"{err_prefix}: {msg}")
+            def _add(msg): add_error(f"{err_prefix}: {msg}")
             if (isinstance(body, tuple) and body[0] == "tuple_return"
                     and isinstance(return_type, tuple)
                     and return_type[0] == "tuple_type"):
                 # Tuple return type → ℝ, ℝ: check each component separately
-                for i, (ret_expr, decl_t) in enumerate(
-                        zip(body[1:], return_type[1])):
+                for i, (ret_expr,
+                        decl_t) in enumerate(zip(body[1:], return_type[1])):
                     t, s = infer_expr(ret_expr, final_env, s, func_env,
                                       class_env, _add)
                     if t is not None and decl_t is not None:
@@ -782,8 +782,8 @@ def check_class(
                                  f"declared {type_to_str(decl_t)}, "
                                  f"got {type_to_str(s.apply(t))}: {e}")
             else:
-                body_t, s = infer_expr(
-                    body, final_env, s, func_env, class_env, _add)
+                body_t, s = infer_expr(body, final_env, s, func_env, class_env,
+                                       _add)
                 if return_type is not None and body_t is not None:
                     try:
                         s = unify(return_type, s.apply(body_t), s)

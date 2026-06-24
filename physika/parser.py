@@ -296,7 +296,6 @@ def p_func_body_stmt_zeros_decl(p):
     p[0] = ("body_zeros_decl", p[1], p[3])
 
 
-
 def p_func_body_stmt_empty(p):
     """func_body_stmt : NEWLINE"""
     p[0] = None

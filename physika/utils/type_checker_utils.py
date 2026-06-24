@@ -792,7 +792,7 @@ def from_typespec(ts: Any) -> Optional[Type]:
         if ts[0] == "instance":
             return TInstance(ts[1])
         if ts[0] == "tuple_type":
-            return ("tuple_type", [from_typespec(t) for t in ts[1]])
+            return ("tuple_type", [from_typespec(t) for t in ts[1]])  # type: ignore[return-value]
     return None
 
 

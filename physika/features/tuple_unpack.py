@@ -2,6 +2,7 @@ from typing import Callable, Tuple
 from physika.elf import ELF
 from physika.utils.types import Substitution
 
+
 class TupleUnpackFeature(ELF):
     """
     ELF that adds tuple unpacking support for Physika programs at top-level
@@ -29,7 +30,7 @@ class TupleUnpackFeature(ELF):
     >>> len(f.parser_rules())
     9
     >>> [r.__name__ for r in f.parser_rules()]
-    ['p_return_type_single', 'p_return_type_tuple', 'p_typed_id_list', 'p_return_expr_list', 'p_top_level_expr_list', 'p_func_body_stmt_tuple_unpack', 'p_func_loop_stmt_tuple_unpack', 'p_statement_tuple_unpack', 'p_for_statement_tuple_unpack']
+    ['p_return_type_single', 'p_return_type_tuple', 'p_typed_id_list', 'p_return_expr_list', 'p_top_level_expr_list', 'p_func_body_stmt_tuple_unpack', 'p_func_loop_stmt_tuple_unpack', 'p_statement_tuple_unpack', 'p_for_statement_tuple_unpack']  # noqa: E501
     """
 
     name = "tuple_unpack"
@@ -45,9 +46,9 @@ class TupleUnpackFeature(ELF):
         where added to support this.
 
         Also, comma separated values parser rules where added at every Physika
-        level. Tuple unpack are used for two functionalities when writing Physika
-        programs. Parser rules where added to support these expressions.
-        First, typed variable assignment:
+        level. Tuple unpack are used for two functionalities when writing
+        Physika programs. Parser rules where added to support these
+        expressions. First, typed variable assignment:
         ``a: ℝ, b: ℝ, c: ℝ, d: ℝ = 1.0, 2.0, 3.0, 4.0``
 
         Second, for splitting a multiple valued tuple produced from a function
@@ -104,7 +105,7 @@ class TupleUnpackFeature(ELF):
             """func_body_stmt : id_list EQUALS func_expr NEWLINE
                               | typed_id_list EQUALS func_expr NEWLINE
                               | id_list EQUALS return_expr_list NEWLINE
-                              | typed_id_list EQUALS return_expr_list NEWLINE"""
+                              | typed_id_list EQUALS return_expr_list NEWLINE"""  # noqa: E501
             rhs = ("expr_list", p[3]) if isinstance(p[3], list) else p[3]
             p[0] = ("body_tuple_unpack", p[1], rhs)
 
@@ -112,7 +113,7 @@ class TupleUnpackFeature(ELF):
             """func_loop_stmt : id_list EQUALS func_expr NEWLINE
                               | typed_id_list EQUALS func_expr NEWLINE
                               | id_list EQUALS return_expr_list NEWLINE
-                              | typed_id_list EQUALS return_expr_list NEWLINE"""
+                              | typed_id_list EQUALS return_expr_list NEWLINE"""  # noqa: E501
             rhs = ("expr_list", p[3]) if isinstance(p[3], list) else p[3]
             p[0] = ("loop_tuple_unpack", p[1], rhs)
 
@@ -136,7 +137,7 @@ class TupleUnpackFeature(ELF):
             """for_statement : id_list EQUALS func_expr NEWLINE
                              | typed_id_list EQUALS func_expr NEWLINE
                              | id_list EQUALS top_level_expr_list NEWLINE
-                             | typed_id_list EQUALS top_level_expr_list NEWLINE"""
+                             | typed_id_list EQUALS top_level_expr_list NEWLINE"""  # noqa: E501
             rhs = ("expr_list", p[3]) if isinstance(p[3], list) else p[3]
             p[0] = ("stmt_tuple_unpack", p[1], rhs)
 
@@ -174,7 +175,8 @@ class TupleUnpackFeature(ELF):
         Returns
         -------
         dict
-            ``{"expr_list": handler, "loop_tuple_unpack": handler, "stmt_tuple_unpack": handler}``.
+            ``{"expr_list": handler, "loop_tuple_unpack": handler,
+            "stmt_tuple_unpack": handler}``.
 
         Examples
         --------
@@ -197,8 +199,10 @@ class TupleUnpackFeature(ELF):
             _, exprs = node
             return ", ".join(to_expr(e) for e in exprs)
 
-        def emit_loop_tuple_unpack(node: Tuple, to_expr: Callable,
-                                   current_loop_var=None, **ctx) -> str:
+        def emit_loop_tuple_unpack(node: Tuple,
+                                   to_expr: Callable,
+                                   current_loop_var=None,
+                                   **ctx) -> str:
             _, var_names, expr = node
             names = [n if isinstance(n, str) else n[0] for n in var_names]
             expr_code = to_expr(expr, current_loop_var=current_loop_var)
@@ -236,7 +240,7 @@ class TupleUnpackFeature(ELF):
         >>> from physika.utils.types import Substitution
         >>> rules = TupleUnpackFeature().type_rules()
         >>> sorted(rules.keys())
-        ['body_tuple_unpack', 'expr_list', 'loop_tuple_unpack', 'stmt_tuple_unpack', 'tuple_return']
+        ['body_tuple_unpack', 'expr_list', 'loop_tuple_unpack', 'stmt_tuple_unpack', 'tuple_return']  # noqa: E501
         >>> errors = []
         >>> env = {"a": None, "b": None}
         >>> from physika.utils.infer_expr import infer_expr
@@ -266,15 +270,15 @@ class TupleUnpackFeature(ELF):
         from physika.utils.types import TScalar
 
         def check_tuple_return(node: tuple, env: dict, s: Substitution,
-                              func_env: dict, class_env: dict,
-                              add_error: Callable, infer_expr: Callable):
+                               func_env: dict, class_env: dict,
+                               add_error: Callable, infer_expr: Callable):
             for expr in node[1:]:
                 _, s = infer_expr(expr, env, s, func_env, class_env, add_error)
             return None, s
 
         def check_expr_list(node: tuple, env: dict, s: Substitution,
-                              func_env: dict, class_env: dict,
-                              add_error: Callable, infer_expr: Callable):
+                            func_env: dict, class_env: dict,
+                            add_error: Callable, infer_expr: Callable):
             # ("expr_list", [e1, e2, ...]) comma RHS of a tuple unpack.
             for sub in node[1]:
                 # type check each sub expression
@@ -282,9 +286,9 @@ class TupleUnpackFeature(ELF):
             return None, s
 
         def check_tuple_unpack(node: tuple, env: dict, s: Substitution,
-                              func_env: dict, class_env: dict,
-                              add_error: Callable, infer_expr: Callable):
-            from physika.utils.type_checker_utils import from_typespec, type_to_str
+                               func_env: dict, class_env: dict,
+                               add_error: Callable, infer_expr: Callable):
+            from physika.utils.type_checker_utils import from_typespec, type_to_str  # noqa: E501
             _, names, expr = node
 
             if isinstance(expr, tuple) and expr[0] == "expr_list":
@@ -293,7 +297,8 @@ class TupleUnpackFeature(ELF):
                 rhs_exprs = expr[1]
                 rhs_types = []
                 for e in rhs_exprs:
-                    t, s = infer_expr(e, env, s, func_env, class_env, add_error)
+                    t, s = infer_expr(e, env, s, func_env, class_env,
+                                      add_error)
                     rhs_types.append(t)
 
                 for i, entry in enumerate(names):
@@ -308,10 +313,9 @@ class TupleUnpackFeature(ELF):
                         declared = from_typespec(type_spec)
                         if actual is not None and declared != actual:
                             add_error(
-                                f"Type mismatch in tuple unpack: '{name}' declared "
+                                f"Type mismatch in tuple unpack: '{name}' declared "  # noqa: E501
                                 f"as {type_to_str(declared)} but got "
-                                f"{type_to_str(actual)}"
-                            )
+                                f"{type_to_str(actual)}")
                             # Register the actual type so later statements
                             env[name] = actual
                         else:
@@ -320,7 +324,8 @@ class TupleUnpackFeature(ELF):
                             env[name] = declared if actual is None else actual
                     else:
                         # Untyped LHS register inferred type, default ℝ.
-                        env[entry] = actual if actual is not None else TScalar("ℝ")
+                        env[entry] = actual if actual is not None else TScalar(
+                            "ℝ")
             else:
                 # when rhs is a single expression: `a, b = f()` (function or
                 # method call).
@@ -333,10 +338,9 @@ class TupleUnpackFeature(ELF):
                         declared = from_typespec(type_spec)
                         if declared != element_type:
                             add_error(
-                                f"Type mismatch in tuple unpack: '{name}' declared "
-                                f"as {type_to_str(declared)} but element type is "
-                                f"{type_to_str(element_type)}"
-                            )
+                                f"Type mismatch in tuple unpack: '{name}' declared "  # noqa: E501
+                                f"as {type_to_str(declared)} but element type is "  # noqa: E501
+                                f"{type_to_str(element_type)}")
                             env[name] = element_type
                         else:
                             env[name] = declared

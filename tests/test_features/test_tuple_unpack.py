@@ -115,7 +115,9 @@ class TestTupleUnpack:
         forward rules contains 'loop_tuple_unpack' and 'stmt_tuple_unpack'.
         """
         rules = TupleUnpackFeature().forward_rules()
-        assert set(rules.keys()) == {"expr_list", "loop_tuple_unpack", "stmt_tuple_unpack"}
+        assert set(rules.keys()) == {
+            "expr_list", "loop_tuple_unpack", "stmt_tuple_unpack"
+        }
         assert callable(rules["loop_tuple_unpack"])
         assert callable(rules["stmt_tuple_unpack"])
 
@@ -141,15 +143,15 @@ class TestForwardRules:
     def test_emit_function_call(self):
         """Unpack two values from a plain function call."""
         rules = TupleUnpackFeature().forward_rules()
-        node = ("loop_tuple_unpack", ["a", "b"],
-                ("call", "f", [("var", "n")]))
-        assert rules["loop_tuple_unpack"](node, ast_to_torch_expr) == "a, b = f(n)"
+        node = ("loop_tuple_unpack", ["a", "b"], ("call", "f", [("var", "n")]))
+        assert rules["loop_tuple_unpack"](node,
+                                          ast_to_torch_expr) == "a, b = f(n)"
 
     def test_self_method_call(self):
         """Unpack two values from a self.method() call"""
         rules = TupleUnpackFeature().forward_rules()
-        node = ("loop_tuple_unpack", ["spins", "log_prob"],
-                ("call", "self", [("var", "n")]))
+        node = ("loop_tuple_unpack", ["spins", "log_prob"], ("call", "self",
+                                                             [("var", "n")]))
         result = rules["loop_tuple_unpack"](node, ast_to_torch_expr)
         assert result == "spins, log_prob = self(n)"
 
@@ -190,7 +192,8 @@ class TestTypeRules:
         errors = type_errors(src)
 
         assert len(errors) == 1
-        assert errors[0] == "In class 'T', method 'bad': Shape mismatch in div: ℝ[3] vs ℝ[2]"
+        assert errors[
+            0] == "In class 'T', method 'bad': Shape mismatch in div: ℝ[3] vs ℝ[2]"  # noqa: E501
 
     def test_tuple_return_no_errorsr(self):
         """``return this.x, this.y`` with learnable parameters x:ℝ, y:ℝ"""
@@ -230,29 +233,35 @@ class TestTypeRules:
                "        return x + y\n")
         errors = type_errors(src)
 
-        assert len(errors) == 4 
-        assert errors[0] == "In class 'T', method 'bad': Type mismatch in tuple unpack: 'x' declared as ℝ but got ℝ[3]"
-        assert errors [1] =="In class 'T', method 'bad': Type mismatch in tuple unpack: 'y' declared as ℝ but got ℝ[2]"
-        assert errors[2] =="In class 'T', method 'bad': Shape mismatch in add: ℝ[3] vs ℝ[2]"
-        assert errors[3] == "In class 'T', method 'bad': return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]"
+        assert len(errors) == 4
+        assert errors[
+            0] == "In class 'T', method 'bad': Type mismatch in tuple unpack: 'x' declared as ℝ but got ℝ[3]"  # noqa: E501
+        assert errors[
+            1] == "In class 'T', method 'bad': Type mismatch in tuple unpack: 'y' declared as ℝ but got ℝ[2]"  # noqa: E501
+        assert errors[
+            2] == "In class 'T', method 'bad': Shape mismatch in add: ℝ[3] vs ℝ[2]"  # noqa: E501
+        assert errors[
+            3] == "In class 'T', method 'bad': return type mismatch: declared ℝ, got ℝ[3]: Cannot unify scalar ℝ with tensor ℝ[3]"  # noqa: E501
 
     def test_loop_tuple_unpack_usable(self):
         """
         Unpacked variable names inside a for loop body are
         usable inside iteration.
         """
-        src = ("class T(v: ℝ):\n"
-               "    def f(n: ℕ) → ℝ:\n"
-               "        total : ℝ = 0.0\n"
-               "        for k : ℕ(n):\n"
-               "            p, q = this.v\n" #TODO: FIX THIS SINCE v is R but unpacking as R[2], error
-               "            total = total + p + q\n"
-               "        return total\n")
+        src = (
+            "class T(v: ℝ):\n"
+            "    def f(n: ℕ) → ℝ:\n"
+            "        total : ℝ = 0.0\n"
+            "        for k : ℕ(n):\n"
+            "            p, q = this.v\n"
+            "            total = total + p + q\n"
+            "        return total\n")
         assert type_errors(src) == []
 
     def test_loop_tuple_unpack_type_errors(self):
         """
-        A type errir should be catch for wrong type operations, but correct tuple unpack
+        A type errir should be catch for wrong type operations, but correct
+        tuple unpack
         """
         src = ("class T(a: ℝ[3], b: ℝ[2]):\n"
                "    def bad(n: ℕ) → ℝ:\n"
@@ -263,9 +272,8 @@ class TestTypeRules:
                "        return total\n")
         errors = type_errors(src)
         assert len(errors) == 1
-        assert errors[0] == "In class 'T', method 'bad': Shape mismatch in div: ℝ[3] vs ℝ[2]"
-
-
+        assert errors[
+            0] == "In class 'T', method 'bad': Shape mismatch in div: ℝ[3] vs ℝ[2]"  # noqa: E501
 
     def test_stmt_tuple_unpack_names_usable(self):
         """
@@ -293,7 +301,8 @@ class TestTypeRules:
 
     def test_body_tuple_unpack_no_error(self):
         """
-        Test multiple (more than two) tuple unpack values are usable in runtime.
+        Test multiple (more than two) tuple unpack values are usable
+        in runtime.
         """
         src = ("class T(v: ℝ):\n"
                "    def compute(n: ℕ) → ℝ:\n"
@@ -319,7 +328,8 @@ class TestTypeRules:
                "        return total\n")
         errors = type_errors(src)
         assert len(errors) == 1
-        assert errors[0] == "In class 'T', method 'compute': Type mismatch in tuple unpack: 'a' declared as ℝ[3] but element type is ℝ"
+        assert errors[
+            0] == "In class 'T', method 'compute': Type mismatch in tuple unpack: 'a' declared as ℝ[3] but element type is ℝ"  # noqa: E501
 
 
 class TestParserRules:
@@ -333,13 +343,10 @@ class TestParserRules:
         ``("loop_tuple_unpack", [value1, value2, ..., valuen], expr)``.
         """
         ast = parse_physika(simple_src)
-        method = next(
-            m for m in ast["classes"]["Simple"]["methods"]
-            if m["name"] == "sum_pairs"
-        )
-        for_stmt = next(
-            s for s in method["statements"] if s[0] == "body_for_range"
-        )
+        method = next(m for m in ast["classes"]["Simple"]["methods"]
+                      if m["name"] == "sum_pairs")
+        for_stmt = next(s for s in method["statements"]
+                        if s[0] == "body_for_range")
         loop_body = for_stmt[4]  # (tag, var, start, end, body_list)
         unpack_nodes = [s for s in loop_body if s[0] == "loop_tuple_unpack"]
         assert len(unpack_nodes) == 1
@@ -347,13 +354,10 @@ class TestParserRules:
     def test_loop_tuple_unpack_names(self):
         """Variables ``a``, ``b`` are present after parsing"""
         ast = parse_physika(simple_src)
-        method = next(
-            m for m in ast["classes"]["Simple"]["methods"]
-            if m["name"] == "sum_pairs"
-        )
-        for_stmt = next(
-            s for s in method["statements"] if s[0] == "body_for_range"
-        )
+        method = next(m for m in ast["classes"]["Simple"]["methods"]
+                      if m["name"] == "sum_pairs")
+        for_stmt = next(s for s in method["statements"]
+                        if s[0] == "body_for_range")
         loop_body = for_stmt[4]
         unpack = next(s for s in loop_body if s[0] == "loop_tuple_unpack")
         assert unpack[1] == ["a", "b"]
@@ -361,13 +365,12 @@ class TestParserRules:
     def test_body_tuple_unpack_class_method(self):
         """
         ``a, b = expr`` directly in a class method body
-        is parsed as ``("body_tuple_unpack", [value_1, value_2, ..., value_n], expr)``.
+        is parsed as ``("body_tuple_unpack", [value_1, value_2, ..., value_n],
+        expr)``.
         """
         ast = parse_physika(pair_src)
-        method = next(
-            m for m in ast["classes"]["Pair"]["methods"]
-            if m["name"] == "sum"
-        )
+        method = next(m for m in ast["classes"]["Pair"]["methods"]
+                      if m["name"] == "sum")
         stmts = method["statements"]
         unpack_stmts = [s for s in stmts if s[0] == "body_tuple_unpack"]
         assert len(unpack_stmts) == 1
@@ -383,15 +386,11 @@ class TestParserRules:
                "        a, b, c = arr\n"
                "        return a + b + c\n")
         ast = parse_physika(src)
-        method = next(
-            m for m in ast["classes"]["T"]["methods"]
-            if m["name"] == "compute"
-        )
+        method = next(m for m in ast["classes"]["T"]["methods"]
+                      if m["name"] == "compute")
         stmts = method["statements"]
-        three_name = next(
-            s for s in stmts
-            if s[0] == "body_tuple_unpack" and len(s[1]) == 3
-        )
+        three_name = next(s for s in stmts
+                          if s[0] == "body_tuple_unpack" and len(s[1]) == 3)
         assert three_name[1] == ["a", "b", "c"]
 
     def test_tuple_return_node_in_class_method(self):
@@ -400,11 +399,11 @@ class TestParserRules:
         ``("tuple_return", e1, e2)`` after ``unwrap_return``.
         """
         ast = parse_physika(pair_src)
-        method = next(
-            m for m in ast["classes"]["Pair"]["methods"]
-            if m["name"] == "get"
-        )
-        assert method["body"] == ('tuple_return', ('field_access', ('var', 'this'), 'a'), ('field_access', ('var', 'this'), 'b'))
+        method = next(m for m in ast["classes"]["Pair"]["methods"]
+                      if m["name"] == "get")
+        assert method["body"] == ('tuple_return', ('field_access',
+                                                   ('var', 'this'), 'a'),
+                                  ('field_access', ('var', 'this'), 'b'))
 
     def test_body_tuple_unpack_in_top_level_function(self):
         """
@@ -439,9 +438,8 @@ class TestParserRules:
                "    return total\n")
         ast = parse_physika(src)
         func = ast["functions"]["accumulate"]
-        for_stmt = next(
-            s for s in func["statements"] if s[0] == "body_for_range"
-        )
+        for_stmt = next(s for s in func["statements"]
+                        if s[0] == "body_for_range")
         loop_body = for_stmt[4]
         unpack = next(s for s in loop_body if s[0] == "loop_tuple_unpack")
         assert unpack[1] == ["x", "y"]
@@ -456,14 +454,10 @@ class TestParserRules:
                "        a, b, c, d = arr\n"
                "        return a + b + c + d\n")
         ast = parse_physika(src)
-        method = next(
-            m for m in ast["classes"]["T"]["methods"]
-            if m["name"] == "compute"
-        )
-        unpack = next(
-            s for s in method["statements"]
-            if s[0] == "body_tuple_unpack"
-        )
+        method = next(m for m in ast["classes"]["T"]["methods"]
+                      if m["name"] == "compute")
+        unpack = next(s for s in method["statements"]
+                      if s[0] == "body_tuple_unpack")
         assert unpack[1] == ["a", "b", "c", "d"]
 
     def test_n_name_stmt_tuple_unpack_at_program_level(self):
@@ -478,10 +472,8 @@ class TestParserRules:
                "arr : ℝ[4] = for i : ℕ(4) → t.v\n"
                "a: ℝ, b: ℝ, c:ℝ, d: ℝ = arr\n")
         ast = parse_physika(src)
-        unpack = next(
-            s for s in ast["program"]
-            if isinstance(s, tuple) and s[0] == "stmt_tuple_unpack"
-        )
+        unpack = next(s for s in ast["program"]
+                      if isinstance(s, tuple) and s[0] == "stmt_tuple_unpack")
         assert unpack[1] == [('a', 'ℝ'), ('b', 'ℝ'), ('c', 'ℝ'), ('d', 'ℝ')]
 
     def test_literal_comma_rhs_produces_expr_list(self):
@@ -491,10 +483,8 @@ class TestParserRules:
         """
         src = "a: ℝ, b: ℝ = 1, 2\n"
         ast = parse_physika(src)
-        unpack = next(
-            s for s in ast["program"]
-            if isinstance(s, tuple) and s[0] == "stmt_tuple_unpack"
-        )
+        unpack = next(s for s in ast["program"]
+                      if isinstance(s, tuple) and s[0] == "stmt_tuple_unpack")
         assert unpack[1] == [('a', 'ℝ'), ('b', 'ℝ')]
         rhs = unpack[2]
         assert isinstance(rhs, tuple) and rhs[0] == "expr_list"
@@ -506,10 +496,8 @@ class TestParserRules:
         """
         src = "a: ℝ, b: ℝ, c: ℝ = 10, 20, 30\n"
         ast = parse_physika(src)
-        unpack = next(
-            s for s in ast["program"]
-            if isinstance(s, tuple) and s[0] == "stmt_tuple_unpack"
-        )
+        unpack = next(s for s in ast["program"]
+                      if isinstance(s, tuple) and s[0] == "stmt_tuple_unpack")
         rhs = unpack[2]
         assert rhs[0] == "expr_list"
         assert len(rhs[1]) == 3
@@ -545,8 +533,8 @@ class TestTypeRulesLiteralComma:
 
 class TestTupleUnpackIntegration:
     """
-    Check an end-to-end integration of TupleUnpack feature at parser, codegen and type
-    rules.
+    Check an end-to-end integration of TupleUnpack feature at parser, codegen
+    and type rules.
     """
 
     def test_tuple_unpack_in_class_method_for_loop(self):
