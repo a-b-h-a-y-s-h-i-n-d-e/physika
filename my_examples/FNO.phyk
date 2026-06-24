@@ -297,5 +297,14 @@ compare_states(pred, y[1])
 #     return x_ft[:, :modes]
 
 
+
+# put this in features/classes.py
+    # def p_func_loop_stmt_chained_method_call(p):
+    #     """func_loop_stmt : ID DOT ID DOT ID LPAREN func_args RPAREN NEWLINE"""
+    #     obj = ("var", p[1])
+    #     field = ("field_access", obj, p[3])
+    #     #p[0] = ("loop_method_call", field, p[5], p[7] or [])
+    #     p[0] = ("body_expr", ("method_call", field, p[5], p[7] or []))
+
 # def compl_mul1d(x_ft, weights1):
 #     return torch.einsum("ix,iox->ox", x_ft, weights1)
