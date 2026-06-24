@@ -40,7 +40,6 @@ class TestTypeNotations:
     def test_complex_forms(self):
         assert first_type_value("ℂ") == "ℂ"
         assert first_type_value(r"\mathbb{C}") == "ℂ"
-        assert first_type_value(r"\C") == "ℂ"
 
 
 @pytest.fixture(scope="module")
@@ -55,7 +54,7 @@ class TestRealDeclarations:
     def test_real_scalars(self, decl_ns):
         assert float(decl_ns["r_unicode"]) == 3.14
         assert float(decl_ns["r_mathbb"]) == 2.5
-        assert float(decl_ns["r_latex"]) == 1.5
+        assert float(decl_ns["r_macro"]) == 1.5
         assert float(decl_ns["r_ascii"]) == 0.5
 
     def test_real_arrays(self, decl_ns):
@@ -71,7 +70,7 @@ class TestIntegerDeclarations:
     def test_integer_scalars(self, decl_ns):
         assert float(decl_ns["z_unicode"]) == 10.0
         assert float(decl_ns["z_mathbb"]) == -4.0
-        assert float(decl_ns["z_latex"]) == 7.0
+        assert float(decl_ns["z_macro"]) == 7.0
         assert float(decl_ns["z_ascii"]) == 42.0
 
     def test_integer_array(self, decl_ns):
@@ -85,7 +84,7 @@ class TestNaturalDeclarations:
     def test_natural_scalars(self, decl_ns):
         assert float(decl_ns["n_unicode"]) == 5.0
         assert float(decl_ns["n_mathbb"]) == 8.0
-        assert float(decl_ns["n_latex"]) == 3.0
+        assert float(decl_ns["n_macro"]) == 3.0
         assert float(decl_ns["n_ascii"]) == 1.0
 
     def test_natural_array(self, decl_ns):
@@ -99,7 +98,6 @@ class TestComplexDeclarations:
     def test_complex_scalars(self, decl_ns):
         assert complex(decl_ns["c_unicode"]) == complex(3, 1)
         assert complex(decl_ns["c_mathbb"]) == complex(5, 3)
-        assert complex(decl_ns["c_latex"]) == complex(2, 7)
 
     def test_complex_array(self, decl_ns):
         assert torch.allclose(decl_ns["c_vector"],

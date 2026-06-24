@@ -28,12 +28,12 @@ the lexer maps all of them to the same underlying type:
 - Real (ℝ): ``ℝ``, ``\mathbb{R}``, ``\R`` or ``R``
 - Integer (ℤ): ``ℤ``, ``\mathbb{Z}``, ``\Z`` or ``Z``
 - Natural (ℕ): ``ℕ``, ``\mathbb{N}``, ``\N`` or ``N``
-- Complex (ℂ): ``ℂ``, ``\mathbb{C}`` or ``\C``
+- Complex (ℂ): ``ℂ``, ``\mathbb{C}``
 
 .. note::
 
    Complex has no single-letter ASCII form. ``C`` is treated as an ordinary
-   identifier, so use ``ℂ``, ``\mathbb{C}`` or ``\C`` instead.
+   identifier, so use ``ℂ``, or ``\mathbb{C}`` instead.
 
 The example below declares both scalars and arrays for every type using each
 of these notations.

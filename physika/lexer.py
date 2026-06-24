@@ -77,12 +77,12 @@ def t_IMAGINARY(t):
 
 
 def t_TYPE(t):
-    r"(ℝ|\\mathbb\{R\}|\\R|R(?![a-zA-Z0-9_])|ℤ|\\mathbb\{Z\}|\\Z|Z(?![a-zA-Z0-9_])|ℕ|\\mathbb\{N\}|\\N|N(?![a-zA-Z0-9_])|ℂ|\\mathbb\{C\}|\\C)"  # noqa: E501
+    r"(ℝ|\\mathbb\{R\}|\\R|R(?![a-zA-Z0-9_])|ℤ|\\mathbb\{Z\}|\\Z|Z(?![a-zA-Z0-9_])|ℕ|\\mathbb\{N\}|\\N|N(?![a-zA-Z0-9_])|ℂ|\\mathbb\{C\})"  # noqa: E501
     if t.value in ("ℤ", "Z", r"\mathbb{Z}", r"\Z"):
         t.value = "ℤ"
     elif t.value in ("ℕ", "N", r"\mathbb{N}", r"\N"):
         t.value = "ℕ"
-    elif t.value in ("ℂ", r"\mathbb{C}", r"\C"):
+    elif t.value in ("ℂ", r"\mathbb{C}"):
         t.value = "ℂ"
     else:
         t.value = "ℝ"
