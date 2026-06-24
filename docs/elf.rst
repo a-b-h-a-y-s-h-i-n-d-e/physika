@@ -287,15 +287,13 @@ Tuple unpack
 ``TupleUnpackFeature`` adds tuple unpacking support for Physika programs.
 This ELF covers two main use cases.
 
-- **Literal comma assignment**: Assign multiple variables from a comma separated
-list of values in a single statement, with type annotations:
+- **Literal comma assignment**: Assign multiple variables from a comma separated list of values in a single statement, with type annotations:
 
 .. code-block:: text
 
     a: ℝ, b: ℝ, c: ℝ, d: ℝ = 1, 2, 3, 4
 
-- **Tuple unpacking from a function or class method**: Bind the individual
-return values of a multi-return function or method to named variables:
+- **Tuple unpacking from a function or class method**: Bind the individual return values of a multi-return function or method to named variables:
 
 .. code-block:: text
 
@@ -310,7 +308,8 @@ return values of a multi-return function or method to named variables:
 
 **Parser rules**
 
-New AST node types are produced by the new parser rules, as follows:
+New AST node types are produced by parser rules, as follows:
+
 * ``("stmt_tuple_unpack", names, rhs)`` for top-level statement
   and for-loop body unpack. ``names`` is either a ``id_list`` (``["a","b"]``)
   or a ``typed_id_list`` (``[("a","ℝ"),("b","ℝ")]``). ``rhs`` is the RHS
@@ -334,10 +333,9 @@ can reference them without errors.
 
 **Code generation**
 
-Each tuple-unpack node is emitted as a plain Python unpacking assignment:
-``a, b = expr``. ``expr_list`` node
+Each tuple-unpack node is emitted as a plain Python unpacking assignment (``a, b = expr``). ``expr_list`` node
 joins its elements with ``", "`` so ``a: ℝ, b: ℝ = 1.0, 2.0`` would get emitted as
-``a, b = 1.0, 2.0`
+``a, b = 1.0, 2.0``
 
 References
 ----------
