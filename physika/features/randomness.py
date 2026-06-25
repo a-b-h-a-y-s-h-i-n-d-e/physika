@@ -1130,7 +1130,8 @@ class RandomnessFeature(ELF):
             declared_rank = len(_type1[1]) if isinstance(
                 _type1, tuple) and _type1[0] == "tensor" else 0  # noqa: E501
             shape_args = raw_args[-declared_rank:] if declared_rank > 0 else []
-            param_args = raw_args[:-declared_rank] if declared_rank > 0 else raw_args  # noqa: E501
+            param_args = raw_args[:
+                                  -declared_rank] if declared_rank > 0 else raw_args  # noqa: E501
             params_str = ", ".join(to_expr(a) for a in param_args)
             dist_cls = f"torch.distributions.{dist_name}"
             dist_var = f"_dist_{name1}"

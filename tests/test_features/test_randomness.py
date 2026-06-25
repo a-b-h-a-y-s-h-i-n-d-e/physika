@@ -676,7 +676,7 @@ class TestForwardRules:
         code = from_ast_to_torch(ast, print_code=False)
         expected = (
             "z = torch.stack(["
-            "torch.as_tensor(torch.distributions.Normal(0.0, 1.0).rsample((int(3),))).float() "  # noqa: E501
+            "torch.distributions.Normal(0.0, 1.0).rsample((int(3),)) "
             # ε : ℝ[3] ~ 𝒩(0.0, 1.0, 3)
             "for _fi_i in range(int(3)) "  # for i : ℕ(3)
             "for i in [torch.tensor(float(_fi_i))]])")
