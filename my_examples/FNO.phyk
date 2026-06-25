@@ -1,3 +1,35 @@
+def get_1d_array_length(x: ℝ[m]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+def get_2d_array_num_rows(x: ℂ[m, n]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total`
+
+def tanh(x: R): R:
+    ex: R = exp(x)
+    enx: R = exp(-x)
+    return (ex - enx) / (ex + enx)
+
+def gelu1d(x: R): R:
+    c: R = 0.7978845608
+    results: R = 0.5 * x * (1.0 * tanh(c * (x + 0.044715 * x * x * x)))
+    return results
+
+def gelu2d(x: R[m, n]): R[m, n]:
+    rows = get_2d_array_num_rows(x)
+    cols = get_1d_array_length(x[0])
+    results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> gelu1d(x[i, j])
+    return results
+
 class Conv1d(W: R[out, in], b: R[out, 1]):
     def λ(x: R[in, n]) -> R[out, n]:
         z = W @ x + b
@@ -194,15 +226,13 @@ test_X: ℝ[m,1,n] = dataset[0]
 test_y: ℝ[m,1,n] = dataset[1]
 
 
-epochs: N = 1
+epochs: N = 300
 results = fno_obj.train(train_X, train_y, epochs, 0.0001)   
 results
 
 
 pred = fno_obj(test_X[1])
 compare_states(pred, test_y[1])
-
-
 
 
 # def compare_states(pred_state, true_state):
