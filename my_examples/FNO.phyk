@@ -2,9 +2,11 @@ class Conv1d(W: R[out, in], b: R[out, 1]):
     def λ(x: R[in, n]) -> R[out, n]:
         z = W @ x + b
         return z
-    def update_params(lr: R, dW: R, db: R):
-        this.W = this.W - lr * dW
-        this.b = this.b - lr * db
+    def update_params(lr: R, grads: R[List]):
+        this.W = this.W - lr * grads[0]
+        this.b = this.b - lr * grads[1]
+
+
 
 
 class MLP(W1: R[mid, in],  b1: R[mid, 1], W2: R[out, mid], b2: R[out, 1]):
@@ -13,11 +15,11 @@ class MLP(W1: R[mid, in],  b1: R[mid, 1], W2: R[out, mid], b2: R[out, 1]):
         a1 = gelu(z1)
         z2 = W2 @ a1 + b2
         return z2
-    def update_params(lr: R, dW1: R, db1: R, dW2: R, db2: R):
-        this.W1 = this.W1 - lr * dW1
-        this.b1 = this.b1 - lr * db1
-        this.W2 = this.W2 - lr * dW2
-        this.b2 = this.b2 - lr * db2
+    def update_params(lr: R, grads: R[List]):
+        this.W1 = this.W1 - lr * grads[0]
+        this.b1 = this.b1 - lr * grads[1]
+        this.W2 = this.W2 - lr * grads[2]
+        this.b2 = this.b2 - lr * grads[3]
 
 
 class SpectralConv(weights1: ℂ[in_ch, out_ch, modes], in_ch: ℕ, out_ch: ℕ, modes: ℕ):
@@ -27,8 +29,8 @@ class SpectralConv(weights1: ℂ[in_ch, out_ch, modes], in_ch: ℕ, out_ch: ℕ,
         out_ft = compl_mul1d(x_ft, weights1)
         results = irfft(out_ft, len(x[0]))
         return results
-    def update_params(lr: R, dweights1: R):
-        this.weights1 = this.weights1 - lr * dweights1
+    def update_params(lr: R, grads: R[List]):
+        this.weights1 = this.weights1 - lr * grads[0]
 
 class FNO1d:
     p: Conv1d
@@ -78,67 +80,35 @@ class FNO1d:
                 current_loss = this.loss(pred, y[j])
                 epoch_loss = epoch_loss + current_loss
                 # ------------------------------------------------
-                # Lift layer
+                # Calculate gradients
                 # ------------------------------------------------
-                dp_W = grad(current_loss, this.p.W)
-                dp_b = grad(current_loss, this.p.b)
+                dp = grad(current_loss, this.p.learnable_params)
+                dconv0 = grad(current_loss, this.conv0.learnable_params)
+                dconv1 = grad(current_loss, this.conv1.learnable_params)
+                dconv2 = grad(current_loss, this.conv2.learnable_params)
+                dconv3 = grad(current_loss, this.conv3.learnable_params)
+                dmlp0 = grad(current_loss, this.mlp0.learnable_params)
+                dmlp1 = grad(current_loss, this.mlp1.learnable_params)
+                dmlp2 = grad(current_loss, this.mlp2.learnable_params)
+                dmlp3 = grad(current_loss, this.mlp3.learnable_params)
+                dw0 = grad(current_loss, this.w0.learnable_params)
+                dw1 = grad(current_loss, this.w1.learnable_params)
+                dw2 = grad(current_loss, this.w2.learnable_params)
+                dw3 = grad(current_loss, this.w3.learnable_params)
+                dq = grad(current_loss, this.q.learnable_params)
                 # ------------------------------------------------
-                dconv0 = grad(current_loss, this.conv0.weights1)
-                dconv1 = grad(current_loss, this.conv1.weights1)
-                dconv2 = grad(current_loss, this.conv2.weights1)
-                dconv3 = grad(current_loss, this.conv3.weights1)
+                # update parameters
                 # ------------------------------------------------
-                dw0_W = grad(current_loss, this.w0.W)
-                dw0_b = grad(current_loss, this.w0.b)
-                dw1_W = grad(current_loss, this.w1.W)
-                dw1_b = grad(current_loss, this.w1.b)
-                dw2_W = grad(current_loss, this.w2.W)
-                dw2_b = grad(current_loss, this.w2.b)
-                dw3_W = grad(current_loss, this.w3.W)
-                dw3_b = grad(current_loss, this.w3.b)
-                # ------------------------------------------------
-                # MLP 0
-                dmlp0_W1 = grad(current_loss, this.mlp0.W1)
-                dmlp0_b1 = grad(current_loss, this.mlp0.b1)
-                dmlp0_W2 = grad(current_loss, this.mlp0.W2)
-                dmlp0_b2 = grad(current_loss, this.mlp0.b2)
-                # MLP 1
-                dmlp1_W1 = grad(current_loss, this.mlp1.W1)
-                dmlp1_b1 = grad(current_loss, this.mlp1.b1)
-                dmlp1_W2 = grad(current_loss, this.mlp1.W2)
-                dmlp1_b2 = grad(current_loss, this.mlp1.b2)
-                # MLP 2
-                dmlp2_W1 = grad(current_loss, this.mlp2.W1)
-                dmlp2_b1 = grad(current_loss, this.mlp2.b1)
-                dmlp2_W2 = grad(current_loss, this.mlp2.W2)
-                dmlp2_b2 = grad(current_loss, this.mlp2.b2)
-                # MLP 3
-                dmlp3_W1 = grad(current_loss, this.mlp3.W1)
-                dmlp3_b1 = grad(current_loss, this.mlp3.b1)
-                dmlp3_W2 = grad(current_loss, this.mlp3.W2)
-                dmlp3_b2 = grad(current_loss, this.mlp3.b2)
-                # ------------------------------------------------
-                dq_W1 = grad(current_loss, this.q.W1)
-                dq_b1 = grad(current_loss, this.q.b1)
-                dq_W2 = grad(current_loss, this.q.W2)
-                dq_b2 = grad(current_loss, this.q.b2)
-                # ------------------------------------------------
-                # update all parameters
-                # ------------------------------------------------
-                this.p.update_params(lr, dp_W, dp_b)
+                this.p.update_params(lr, dp)
                 this.conv0.update_params(lr, dconv0)
                 this.conv1.update_params(lr, dconv1)
                 this.conv2.update_params(lr, dconv2)
                 this.conv3.update_params(lr, dconv3)
-                this.w0.update_params(lr, dw0_W, dw0_b)
-                this.w1.update_params(lr, dw1_W, dw1_b)
-                this.w2.update_params(lr, dw2_W, dw2_b)
-                this.w3.update_params(lr, dw3_W, dw3_b)
-                this.mlp0.update_params(lr, dmlp0_W1, dmlp0_b1, dmlp0_W2, dmlp0_b2)
-                this.mlp1.update_params(lr, dmlp1_W1, dmlp1_b1, dmlp1_W2, dmlp1_b2)
-                this.mlp2.update_params(lr, dmlp2_W1, dmlp2_b1, dmlp2_W2, dmlp2_b2)
-                this.mlp3.update_params(lr, dmlp3_W1, dmlp3_b1, dmlp3_W2, dmlp3_b2)
-                this.q.update_params(lr, dq_W1, dq_b1, dq_W2, dq_b2)
+                this.mlp0.update_params(lr, dmlp0)
+                this.mlp1.update_params(lr, dmlp1)
+                this.mlp2.update_params(lr, dmlp2)
+                this.mlp3.update_params(lr, dmlp3)
+                this.q.update_params(lr, dq)
             last_loss = epoch_loss / len_dataset
         return last_loss
 
@@ -217,21 +187,20 @@ q = MLP(Wq1, bq1, Wq2, bq2)
 fno_obj = FNO1d(p, conv0, conv1, conv2, conv3, mlp0, mlp1, mlp2, mlp3, w0, w1, w2, w3, q)
 
 
-dataset = create_heat_dataset(10)
-X: ℝ[m,1,n] = dataset[0]
-y: ℝ[m,1,n] = dataset[1]
+dataset = create_heat_dataset(50)
+train_X: ℝ[m,1,n] = dataset[0]
+train_y: ℝ[m,1,n] = dataset[1]
+test_X: ℝ[m,1,n] = dataset[0]
+test_y: ℝ[m,1,n] = dataset[1]
 
 
-
-epochs: N = 1000
-results = fno_obj.train(X, y, epochs, 0.0001)   
+epochs: N = 1
+results = fno_obj.train(train_X, train_y, epochs, 0.0001)   
 results
 
 
-pred = fno_obj(X[1])
-compare_states(pred, y[1])
-
-
+pred = fno_obj(test_X[1])
+compare_states(pred, test_y[1])
 
 
 
