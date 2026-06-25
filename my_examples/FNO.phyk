@@ -290,3 +290,11 @@ compare_states(pred, test_y[1])
     #         ("method_call", p[1], p[3], p[5] or [])
     #     )
 
+#for pname, ptype in params:
+    #     if is_learnable(ptype):
+    #         if ptype != ('tensor', [('List', 'invariant')]):
+    #             method_lines.append(
+    #                 f"        {pname} = torch.as_tensor({pname})")
+
+# params and update are defined nn.Module methods
+                    # if field_name in ("params", "update", "learnable_params"):
