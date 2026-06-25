@@ -267,13 +267,26 @@ compare_states(pred, test_y[1])
 
 
 
-# put this in features/classes.py
-    # def p_func_loop_stmt_chained_method_call(p):
-    #     """func_loop_stmt : ID DOT ID DOT ID LPAREN func_args RPAREN NEWLINE"""
-    #     obj = ("var", p[1])
-    #     field = ("field_access", obj, p[3])
-    #     #p[0] = ("loop_method_call", field, p[5], p[7] or [])
-    #     p[0] = ("body_expr", ("method_call", field, p[5], p[7] or []))
-
 # def compl_mul1d(x_ft, weights1):
 #     return torch.einsum("ix,iox->ox", x_ft, weights1)
+
+
+
+
+
+# put this in features/classes.py
+#def p_chained_object_single(p):
+    #     "chained_object : ID DOT ID"
+    #     p[0] = ("field_access", ("var", p[1]), p[3])
+
+    # def p_chained_object_recursive(p):
+    #     "chained_object : chained_object DOT ID"
+    #     p[0] = ("field_access", p[1], p[3])
+
+    # def p_func_loop_stmt_general_method_call(p):
+    #     """func_loop_stmt : chained_object DOT ID LPAREN func_args RPAREN NEWLINE"""
+    #     p[0] = (
+    #         "body_expr",
+    #         ("method_call", p[1], p[3], p[5] or [])
+    #     )
+
