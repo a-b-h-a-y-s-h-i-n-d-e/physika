@@ -1,51 +1,17 @@
-def get_1d_array_length(x: ℝ[m]): ℝ:
-    total: ℝ = 0
-    temp: ℝ = 0
-    for i:
-        temp = x[i]
-        total += 1
-    return total
-
-def get_2d_array_num_rows(x: ℂ[m, n]): ℝ:
-    total: ℝ = 0
-    temp: ℝ = 0
-    for i:
-        temp = x[i]
-        total += 1
-    return total`
-
-def tanh(x: R): R:
-    ex: R = exp(x)
-    enx: R = exp(-x)
-    return (ex - enx) / (ex + enx)
-
-def gelu1d(x: R): R:
-    c: R = 0.7978845608
-    results: R = 0.5 * x * (1.0 * tanh(c * (x + 0.044715 * x * x * x)))
-    return results
-
-def gelu2d(x: R[m, n]): R[m, n]:
-    rows = get_2d_array_num_rows(x)
-    cols = get_1d_array_length(x[0])
-    results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> gelu1d(x[i, j])
-    return results
-
 class Conv1d(W: R[out, in], b: R[out, 1]):
     def λ(x: R[in, n]) -> R[out, n]:
-        z = W @ x + b
+        z: R[out, n] = W @ x + b
         return z
     def update_params(lr: R, grads: R[List]):
         this.W = this.W - lr * grads[0]
         this.b = this.b - lr * grads[1]
 
 
-
-
 class MLP(W1: R[mid, in],  b1: R[mid, 1], W2: R[out, mid], b2: R[out, 1]):
     def λ(x: R[in, n]) -> R[out, n]:
-        z1 = W1 @ x + b1
-        a1 = gelu(z1)
-        z2 = W2 @ a1 + b2
+        z1: R[mid, n] = W1 @ x + b1
+        a1: R[mid, n] = gelu(z1)
+        z2: R[mid, n] = W2 @ a1 + b2
         return z2
     def update_params(lr: R, grads: R[List]):
         this.W1 = this.W1 - lr * grads[0]
@@ -57,12 +23,13 @@ class MLP(W1: R[mid, in],  b1: R[mid, 1], W2: R[out, mid], b2: R[out, 1]):
 class SpectralConv(weights1: ℂ[in_ch, out_ch, modes], in_ch: ℕ, out_ch: ℕ, modes: ℕ):
     def λ(x: ℂ[in_ch, n]) -> ℂ[out_ch, n]:
         x_ft: ℂ[in_ch, n_ft] = rfft(x)
-        x_ft = truncate_modes(x_ft, modes)
-        out_ft = compl_mul1d(x_ft, weights1)
-        results = irfft(out_ft, len(x[0]))
+        x_ft: ℂ[in_ch, modes] = truncate_modes(x_ft, modes)
+        out_ft: ℂ[out_ch, modes] = compl_mul1d(x_ft, weights1)
+        results: ℂ[out_ch, n] = irfft(out_ft, len(x[0]))
         return results
     def update_params(lr: R, grads: R[List]):
         this.weights1 = this.weights1 - lr * grads[0]
+
 
 class FNO1d:
     p: Conv1d
@@ -80,24 +47,29 @@ class FNO1d:
     w3: Conv1d
     q: MLP
     def λ(x: R[1, n]) -> R[1, n]:
+        # Lifting
         x = p(x)
+        # Layer 1
         x1 = conv0(x)
         x1 = mlp0(x1)
         x2 = w0(x)
         x = gelu(x1 + x2)
-        # second part
+        # Layer 2
         x1 = conv1(x)
         x1 = mlp1(x1)
         x2 = w1(x)
         x = gelu(x1 + x2)
+        # Layer 3
         x1 = conv2(x)
         x1 = mlp2(x1)
         x2 = w2(x)
         x = gelu(x1 + x2)
+        # Layer 4
         x1 = conv3(x)
         x1 = mlp3(x1)
         x2 = w3(x)
         x = x1 + x2
+        # Projection
         x = q(x)
         return x
     def loss(pred: R[1, n], label: R[1, n]) -> R:
@@ -146,9 +118,6 @@ class FNO1d:
 
 
 
-
-
-
 # ------------------------------------------
 # Initialize objects for each block
 # ------------------------------------------
@@ -171,7 +140,6 @@ weights0: ℂ[width, width, modes] = random_complex(width, width, modes)
 weights1: ℂ[width, width, modes] = random_complex(width, width, modes)
 weights2: ℂ[width, width, modes] = random_complex(width, width, modes)
 weights3: ℂ[width, width, modes] = random_complex(width, width, modes)
-
 
 conv0 = SpectralConv(weights0, width, width, modes)
 conv1 = SpectralConv(weights1, width, width, modes)
@@ -226,13 +194,17 @@ test_X: ℝ[m,1,n] = dataset[0]
 test_y: ℝ[m,1,n] = dataset[1]
 
 
-epochs: N = 300
-results = fno_obj.train(train_X, train_y, epochs, 0.0001)   
-results
+epochs: N = 2000
+loss = fno_obj.train(train_X, train_y, epochs, 0.0001)   
+loss
 
 
-pred = fno_obj(test_X[1])
-compare_states(pred, test_y[1])
+test_idx = 5
+pred = fno_obj(test_X[test_idx])
+compare_states(pred, test_y[test_idx])
+
+
+
 
 
 # def compare_states(pred_state, true_state):
