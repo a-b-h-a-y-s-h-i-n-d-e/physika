@@ -13,7 +13,7 @@ r_macro
 r_ascii
 
 r_vector : ℝ[3] = [1.0, 2.0, 3.0]
-r_matrix : R[2, 2] = [[1.0, 2.0], [3.0, 4.0]]
+r_matrix : ℝ[2, 2] = [[1.0, 2.0], [3.0, 4.0]]
 
 r_vector
 r_matrix
@@ -33,7 +33,7 @@ z_mathbb
 z_macro
 z_ascii
 
-z_vector : Z[3] = [1, 2, 3]
+z_vector : ℤ[3] = [1, 2, 3]
 z_vector
 
 
@@ -51,7 +51,7 @@ n_mathbb
 n_macro
 n_ascii
 
-n_vector : N[4] = [0, 1, 2, 3]
+n_vector : ℕ[4] = [0, 1, 2, 3]
 n_vector
 
 
