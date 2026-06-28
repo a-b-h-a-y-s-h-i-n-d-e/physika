@@ -760,6 +760,7 @@ def ast_to_torch_expr(node: ASTNode,
             else:
                 vars_code = arg_strs[0]
             expr_code = arg_strs[1]
+            # lambda function to convert input to tensor if its not a tensor
             return ("(lambda *args: "
                     f"sp.lambdify({vars_code}, {expr_code}, modules='torch')"
                     "("
