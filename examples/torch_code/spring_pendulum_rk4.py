@@ -13,7 +13,7 @@ def spring_pendulum(x):
 class RK4(nn.Module):
     def __init__(self, dt):
         super().__init__()
-        self.dt = nn.Parameter(torch.as_tensor(dt).float())
+        self.dt = nn.Parameter(torch.as_tensor(dt))
 
     def forward(self, x):
         this = self

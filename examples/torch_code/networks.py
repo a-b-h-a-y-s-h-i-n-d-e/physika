@@ -38,10 +38,10 @@ def sigma(x):
 class OneLayerNet(nn.Module):
     def __init__(self, W0, c0, w1, b1):
         super().__init__()
-        self.W0 = nn.Parameter(torch.as_tensor(W0).float())
-        self.c0 = nn.Parameter(torch.as_tensor(c0).float())
-        self.w1 = nn.Parameter(torch.as_tensor(w1).float())
-        self.b1 = nn.Parameter(torch.as_tensor(b1).float())
+        self.W0 = nn.Parameter(torch.as_tensor(W0))
+        self.c0 = nn.Parameter(torch.as_tensor(c0))
+        self.w1 = nn.Parameter(torch.as_tensor(w1))
+        self.b1 = nn.Parameter(torch.as_tensor(b1))
 
     def forward(self, x):
         this = self
@@ -69,10 +69,10 @@ class OneLayerNet(nn.Module):
 class FullyConnectedNetwork(nn.Module):
     def __init__(self, W, B, w, b, n):
         super().__init__()
-        self.W = nn.Parameter(torch.as_tensor(W).float())
-        self.B = nn.Parameter(torch.as_tensor(B).float())
-        self.w = nn.Parameter(torch.as_tensor(w).float())
-        self.b = nn.Parameter(torch.as_tensor(b).float())
+        self.W = nn.Parameter(torch.as_tensor(W))
+        self.B = nn.Parameter(torch.as_tensor(B))
+        self.w = nn.Parameter(torch.as_tensor(w))
+        self.b = nn.Parameter(torch.as_tensor(b))
         self.n = torch.as_tensor(n).float() if isinstance(n, (int, float, torch.Tensor)) else n
 
     def forward(self, x):
