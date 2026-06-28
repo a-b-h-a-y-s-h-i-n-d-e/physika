@@ -75,11 +75,8 @@ class FullyConnectedNetwork(nn.Module):
                 pred = self(X[int(j)])
                 current_loss = self.loss(pred, y[int(j)])
                 epoch_loss = (epoch_loss + current_loss)
-                dW = compute_grad(current_loss, self.W)
-                dB = compute_grad(current_loss, self.B)
-                dw = compute_grad(current_loss, self.w)
-                db = compute_grad(current_loss, self.b)
-                self.update_params(lr, dW, dB, dw, db)
+                learnable_grads = compute_grad(current_loss, self.learnable_params)
+                self.update_params(lr, learnable_grads)
             last_loss = (epoch_loss / len_dataset)
         return last_loss
 
@@ -96,21 +93,17 @@ class FullyConnectedNetwork(nn.Module):
             total_loss = (total_loss + current_loss)
         return (total_loss / len_dataset)
 
-    def update_params(self, lr, dW, dB, dw, db):
+    def update_params(self, lr, learnable_grads):
         this = self
         lr = torch.as_tensor(lr).float()
-        dW = torch.as_tensor(dW).float()
-        dB = torch.as_tensor(dB).float()
-        dw = torch.as_tensor(dw).float()
-        db = torch.as_tensor(db).float()
         with torch.no_grad():
-            self.W.copy_((self.W - (lr * dW)))
+            self.W.copy_((self.W - (lr * learnable_grads[int(0)])))
         with torch.no_grad():
-            self.B.copy_((self.B - (lr * dB)))
+            self.B.copy_((self.B - (lr * learnable_grads[int(1)])))
         with torch.no_grad():
-            self.w.copy_((self.w - (lr * dw)))
+            self.w.copy_((self.w - (lr * learnable_grads[int(2)])))
         with torch.no_grad():
-            self.b.copy_((self.b - (lr * db)))
+            self.b.copy_((self.b - (lr * learnable_grads[int(3)])))
 
     @property
     def params(self):

@@ -67,11 +67,8 @@ class FullyConnectedNetwork(W: ℝ[2,3,3], B: ℝ[2,3,1], w: ℝ[1,3], b: ℝ):
                 pred = this(X[j])
                 current_loss = this.loss(pred, y[j])
                 epoch_loss = epoch_loss + current_loss
-                dW = grad(current_loss, this.W)
-                dB = grad(current_loss, this.B)
-                dw = grad(current_loss, this.w)
-                db = grad(current_loss, this.b)
-                this.update_params(lr, dW, dB, dw, db)
+                learnable_grads = grad(current_loss, this.learnable_params)
+                this.update_params(lr, learnable_grads)
             last_loss = epoch_loss / len_dataset
         return last_loss
     def evaluate(X: ℝ[4, 3, 1], y: ℝ[4]) → ℝ:
@@ -83,11 +80,11 @@ class FullyConnectedNetwork(W: ℝ[2,3,3], B: ℝ[2,3,1], w: ℝ[1,3], b: ℝ):
             current_loss = this.loss(pred, y[j])
             total_loss = total_loss + current_loss
         return total_loss / len_dataset
-    def update_params(lr: R, dW: R, dB: R, dw: R, db: R):
-        this.W = this.W - lr * dW
-        this.B = this.B - lr * dB
-        this.w = this.w - lr * dw
-        this.b = this.b - lr * db
+    def update_params(lr: R, learnable_grads: R[m]):
+        this.W = this.W - lr * learnable_grads[0]
+        this.B = this.B - lr * learnable_grads[1]
+        this.w = this.w - lr * learnable_grads[2]
+        this.b = this.b - lr * learnable_grads[3]
 
 
 # ------------------------------------------------------------
