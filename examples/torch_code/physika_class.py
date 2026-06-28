@@ -78,6 +78,47 @@ class Particle(nn.Module):
                 if g is not None:
                     p -= lr * g
 
+class A(nn.Module):
+    def __init__(self, x):
+        super().__init__()
+        self.x = torch.as_tensor(x).float()
+
+    @property
+    def params(self):
+        return list(self.parameters())
+
+    def update(self, lr, grads):
+        with torch.no_grad():
+            for p, g in zip(self.parameters(), grads):
+                if g is not None:
+                    p -= lr * g
+
+class B(nn.Module):
+    def __init__(self, objA):
+        super().__init__()
+        self.add_module('objA', objA)
+
+    def access_member(self):
+        this = self
+        self.objA.x = 2.0
+        return self.objA.x
+
+    def access_memeber_in_loop(self):
+        this = self
+        for i in range(int(0), int(1)):
+            self.objA.x = 3.0
+        return self.objA.x
+
+    @property
+    def params(self):
+        return list(self.parameters())
+
+    def update(self, lr, grads):
+        with torch.no_grad():
+            for p, g in zip(self.parameters(), grads):
+                if g is not None:
+                    p -= lr * g
+
 # === Program ===
 a = Vec(3.0, 4.0)
 b = Vec(1.0, 0.0)
@@ -115,3 +156,7 @@ physika_print(compute_grad(vec.norm_sq(), x1))
 x1 = torch.tensor(5.0, requires_grad=True)
 vec = Vec(x1, 4.0)
 physika_print(compute_grad(vec.x, x1))
+obj_A = A(1.0)
+obj_B = B(obj_A)
+physika_print(obj_B.access_member())
+physika_print(obj_B.access_memeber_in_loop())
