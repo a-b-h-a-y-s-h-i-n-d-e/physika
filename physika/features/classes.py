@@ -159,8 +159,8 @@ def build_class(constructor_params: Optional[list], body_items: list) -> dict:
     }
 
 
-def emit_method(method: dict, all_params: list, to_expr: Callable,
-                scalar_only: bool) -> list[str]:
+def emit_method(method: dict, all_params: list, constructor_params: list,
+                to_expr: Callable, scalar_only: bool) -> list[str]:
     """
     Emit code for a class method as an ``nn.Module`` class.
 
@@ -219,29 +219,28 @@ def emit_method(method: dict, all_params: list, to_expr: Callable,
         stmt_method_lines: list[str] = []
         emit_body_stmts(statements, 2, stmt_method_lines, list(param_names),
                         set(), to_expr, scalar_only)
-        param_name_set = {
-            p[0] if isinstance(p, tuple) else p
-            for p in all_params
+        learnable_param_name_set = {
+            pname
+            for pname, ptype in constructor_params if is_learnable(ptype)
         }
         for line in stmt_method_lines:
             line_sub = re.sub(r'\bthis\b', 'self', line)
-            line_sub = replace_class_params(line_sub, all_params)
 
-            # detect field assignment: self.X = expr
-            field_assign = re.match(r'^(\s+)(self\.\w+)\s*=\s*(.+)$', line_sub)
+            # check if this is a field assignment on a learnable param
+            field_assign = re.match(r'^(\s+)(self\.[\w]+)\s*=\s*(.+)$',
+                                    line_sub)
             if field_assign:
                 indent = field_assign.group(1)
                 field = field_assign.group(2)
                 expr = field_assign.group(3)
-                # check if field is a learnable parameter
                 field_name = field.split('.')[1]
-                if field_name in param_name_set:
+                if field_name in learnable_param_name_set:
                     method_lines.append(f"{indent}with torch.no_grad():")
                     method_lines.append(f"{indent}    {field}.copy_({expr})")
                 else:
                     method_lines.append(line_sub)
             else:
-                method_lines.append(replace_class_params(line_sub, all_params))
+                method_lines.append(line_sub)
 
     if body is not None:
         this_re = r'\bthis\b'
@@ -412,7 +411,7 @@ def generate_class(name: str, class_def: dict) -> str:
         class_lines.extend(
             emit_method({
                 **method, "params": method_params
-            }, all_params, ast_to_torch_expr, scalar_only))
+            }, all_params, constructor_params, ast_to_torch_expr, scalar_only))
 
     # params property and gradient descent update helper
     class_lines += [
