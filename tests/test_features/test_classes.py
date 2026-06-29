@@ -718,3 +718,9 @@ class TestPhysikaClass:
         assert torch.allclose(ns()["dKE_dv"].float(),
                               torch.tensor([2.0, 3.4]),
                               atol=1e-4)
+
+        result_access = ns()["obj_B"].access_member()
+        assert float(result_access) == 2.0
+
+        result_loop = ns()["obj_B"].access_memeber_in_loop()
+        assert float(result_loop) == 3.0
