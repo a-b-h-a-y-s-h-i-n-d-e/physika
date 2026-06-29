@@ -51,7 +51,7 @@ class FullyConnectedNetwork(nn.Module):
     def forward(self, x):
         this = self
         x = torch.as_tensor(x).float()
-        for k in range(len(self.W)):
+        for k in range(int(0), int(2)):
             x = sigma(((self.W[int(k)] @ x) + self.B[int(k)]))
         results = ((self.w @ x) + self.b)
         return results[int(0), int(0)]
