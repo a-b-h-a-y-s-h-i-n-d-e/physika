@@ -1,0 +1,172 @@
+def get_1d_array_length(x: ℝ[m]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+def zero_1d_array(len: ℝ): ℝ[m]:
+    results: ℝ[len] = for i: ℕ(len) -> i*0
+    return results
+
+
+def zero_2d_array(rows: R, cols: R): R[m, n]:
+    results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+    return results
+
+
+def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+    x: ℝ[n] = zero_1d_array(n)
+    dx: ℝ = (end - start) / (n - 1)
+    for i:ℕ(0, n):
+        x[i] = start + i * dx
+    return x
+
+true_alpha: R = 2.0
+Lx: R = 1.0
+Ly: R = 1.0
+
+# numerical parameters
+
+nx: R = 40
+ny: R = 40
+tf: R = 10
+
+dx: R = Lx / nx
+dy: R = Ly / ny
+
+
+fourier: ℝ = 0.49
+dt: ℝ = fourier / (1/dx**2 + 1/dy**2) / true_alpha
+nt: ℝ = 100
+
+# Boundary conditions
+T1: R = 0
+T2: R = 0
+T3: R = 0
+T4: R = 0
+
+
+
+T = zero_2d_array(nx, ny)
+
+x = linspace(0, Lx, nx)
+y = linspace(0, Ly, ny)
+
+
+T0: R[nx, ny] = zero_2d_array(nx, ny)
+for i:N(0, nx):
+    for j:N(0, ny):
+        T0[i, j] = exp(-50 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
+
+
+
+
+
+def heat_equation(T: R[m, n], dx: R, dy: R, alpha: R): R[m, n]:
+    f: R[m, n] = zero_2d_array(nx, ny)
+    for i:N(1, nx-1):
+        for j:N(1, ny-1):
+            f[i, j] = alpha * (
+                ((T[i-1, j] - 2 * T[i, j] + T[i+1, j]) / (dx**2)) +
+                ((T[i, j-1] - 2 * T[i, j] + T[i, j+1]) / (dy**2))
+            )
+    return f
+
+
+def solver(alpha: R, T0: R[m, n], dx: R, dy: R, dt: R, nt: R): R[m, n]:
+    T: R[m, n] = T0
+    for step:N(0, nt):
+        T = T + dt * heat_equation(T, dx, dy, alpha)
+        for i:N(0, nx):
+            T[i, 0] = 0
+            T[i, ny-1] = 0
+        for j:N(0, ny):
+            T[0, j] = 0
+            T[nx-1, j] = 0
+    return T
+
+true_solution = solver(true_alpha, T0, dx, dy, dt, nt)
+
+
+def calculate_loss(alpha: R): R:
+    predictions = solver(alpha, T0, dx, dy, dt, nt)
+    diff = predictions - true_solution
+    loss = mean(diff**2)
+    return loss
+
+def adam(alpha: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
+    beta1: ℝ = 0.9
+    beta2: ℝ = 0.999
+    eps: ℝ = 1e-8
+    m_new: ℝ = beta1 * m + (1.0 - beta1) * g
+    v_new: ℝ = beta2 * v + (1.0 - beta2) * g**2
+    m_hat: ℝ = m_new / (1.0 - beta1**t)
+    v_hat: ℝ = v_new / (1.0 - beta2**t)
+    alpha_new: ℝ = alpha - lr * m_hat / (sqrt(v_hat) + eps)
+    return [alpha_new, m_new, v_new, t + 1.0]
+
+
+alpha: R = 1.5
+
+pred_solution = solver(alpha, T0, dx, dy, dt, nt)
+visualize_trajectory(true_solution, pred_solution, x, y)
+
+m_adam: ℝ = 0.0
+v_adam: ℝ = 0.0
+t_adam: ℝ = 1.0
+lr: ℝ = 0.1
+
+epochs: ℕ = 0
+
+for i:N(epochs):
+    physika_print(i)
+    g = grad(calculate_loss, alpha)
+    result = adam(alpha, g, m_adam, v_adam, t_adam, lr)
+    alpha = result[0]
+    m_adam = result[1]
+    v_adam = result[2]
+    t_adam = result[3]
+    physika_print(alpha)
+
+
+pred_solution = solver(alpha, T0, dx, dy, dt, nt)
+
+visualize_trajectory(true_solution, pred_solution, x, y)
+
+
+# import numpy as np
+# import matplotlib.pyplot as plt
+# from mpl_toolkits.mplot3d import Axes3D  # noqa: F401, needed for 3d projection
+
+# def visualize_trajectory(true_solution, pred_solution, x, y):
+#     T_true_np = true_solution.detach().cpu().numpy()
+#     T_pred_np = pred_solution.detach().cpu().numpy()
+#     x_np = x.detach().cpu().numpy()
+#     y_np = y.detach().cpu().numpy()
+
+#     X, Y = np.meshgrid(x_np, y_np, indexing='ij')
+
+#     # shared color scale so both plots are visually comparable
+#     vmin = min(T_true_np.min(), T_pred_np.min())
+#     vmax = max(T_true_np.max(), T_pred_np.max())
+
+#     fig = plt.figure(figsize=(14, 6))
+
+#     ax1 = fig.add_subplot(121, projection='3d')
+#     ax1.plot_surface(X, Y, T_true_np, cmap='gist_rainbow_r',
+#                       edgecolor='none', vmin=vmin, vmax=vmax)
+
+#     ax1.set_zlim(vmin, vmax)
+#     ax1.set_title('True Solution')
+
+#     ax2 = fig.add_subplot(122, projection='3d')
+#     ax2.plot_surface(X, Y, T_pred_np, cmap='gist_rainbow_r',
+#                       edgecolor='none', vmin=vmin, vmax=vmax)
+
+#     ax2.set_zlim(vmin, vmax)
+#     ax2.set_title('Predicted Solution')
+
+#     plt.tight_layout()
+#     plt.show()
