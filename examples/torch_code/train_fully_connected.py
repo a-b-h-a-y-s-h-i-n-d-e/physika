@@ -42,10 +42,10 @@ def sigma(x):
 class FullyConnectedNetwork(nn.Module):
     def __init__(self, W, B, w, b):
         super().__init__()
-        self.W = nn.Parameter(torch.as_tensor(W).float())
-        self.B = nn.Parameter(torch.as_tensor(B).float())
-        self.w = nn.Parameter(torch.as_tensor(w).float())
-        self.b = nn.Parameter(torch.as_tensor(b).float())
+        self.W = nn.Parameter(torch.as_tensor(W))
+        self.B = nn.Parameter(torch.as_tensor(B))
+        self.w = nn.Parameter(torch.as_tensor(w))
+        self.b = nn.Parameter(torch.as_tensor(b))
         self.learnable_params = [self.W, self.B, self.w, self.b]
 
     def forward(self, x):

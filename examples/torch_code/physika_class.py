@@ -84,6 +84,7 @@ class A(nn.Module):
     def __init__(self, x):
         super().__init__()
         self.x = torch.as_tensor(x).float()
+        self.learnable_params = [self.x]
 
     @property
     def params(self):
@@ -99,6 +100,7 @@ class B(nn.Module):
     def __init__(self, objA):
         super().__init__()
         self.add_module('objA', objA)
+        self.learnable_params = []
 
     def access_member(self):
         this = self

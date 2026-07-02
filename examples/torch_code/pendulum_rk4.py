@@ -13,7 +13,7 @@ def pendulum(x):
 class RK4(nn.Module):
     def __init__(self, dt):
         super().__init__()
-        self.dt = nn.Parameter(torch.as_tensor(dt).float())
+        self.dt = nn.Parameter(torch.as_tensor(dt))
         self.learnable_params = [self.dt]
 
     def forward(self, x):
