@@ -33,12 +33,13 @@ nx: R = 40
 ny: R = 40
 tf: R = 10
 
-dx: R = Lx / nx
-dy: R = Ly / ny
+dx: R = Lx / (nx - 1)
+dy: R = Ly / (ny - 1)
 
 
 fourier: ℝ = 0.49
-dt: ℝ = fourier / (1/dx**2 + 1/dy**2) / true_alpha
+dt: ℝ = fourier / (1/dx**2 + 1/dy**2) / 10.0
+#dt: R = 0.01
 nt: ℝ = 100
 
 # Boundary conditions
@@ -58,7 +59,7 @@ y = linspace(0, Ly, ny)
 T0: R[nx, ny] = zero_2d_array(nx, ny)
 for i:N(0, nx):
     for j:N(0, ny):
-        T0[i, j] = exp(-50 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
+        T0[i, j] = exp(-20 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
 
 
 
@@ -87,7 +88,8 @@ def solver(alpha: R, T0: R[m, n], dx: R, dy: R, dt: R, nt: R): R[m, n]:
             T[nx-1, j] = 0
     return T
 
-true_solution = solver(true_alpha, T0, dx, dy, dt, nt)
+true_solution = solver(true_alpha, T0, dx, dy, dt, nt) 
+#visualize_solution(true_solution, x, y)
 
 
 def calculate_loss(alpha: R): R:
@@ -108,17 +110,17 @@ def adam(alpha: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
     return [alpha_new, m_new, v_new, t + 1.0]
 
 
-alpha: R = 1.5
+alpha: R = 3.0
 
-pred_solution = solver(alpha, T0, dx, dy, dt, nt)
-visualize_trajectory(true_solution, pred_solution, x, y)
+guess_solution = solver(alpha, T0, dx, dy, dt, nt)
+#visualize_trajectory(true_solution, guess_solution, x, y)
 
 m_adam: ℝ = 0.0
 v_adam: ℝ = 0.0
 t_adam: ℝ = 1.0
 lr: ℝ = 0.1
 
-epochs: ℕ = 0
+epochs: ℕ = 10
 
 for i:N(epochs):
     physika_print(i)
@@ -135,6 +137,25 @@ pred_solution = solver(alpha, T0, dx, dy, dt, nt)
 
 visualize_trajectory(true_solution, pred_solution, x, y)
 
+# def visualize_solution(solution, x, y):
+#     T_np = solution.detach().cpu().numpy()
+#     x_np = x.detach().cpu().numpy()
+#     y_np = y.detach().cpu().numpy()
+
+#     X, Y = np.meshgrid(x_np, y_np, indexing='ij')
+
+#     fig = plt.figure(figsize=(8, 6))
+#     ax = fig.add_subplot(111, projection='3d')
+
+#     ax.plot_surface(
+#         X,
+#         Y,
+#         T_np,
+#         cmap='gist_rainbow_r',
+#         edgecolor='none'
+#     )
+
+#     plt.show()
 
 # import numpy as np
 # import matplotlib.pyplot as plt
