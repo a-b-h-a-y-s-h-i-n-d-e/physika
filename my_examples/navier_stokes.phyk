@@ -1,0 +1,185 @@
+# --------------------------------------------------
+# Helper functions
+# --------------------------------------------------
+
+def zero_1d_array(len: ℝ): ℝ[m]:
+    results: ℝ[len] = for i: ℕ(len) -> i*0
+    return results
+
+def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+    x: ℝ[n] = zero_1d_array(n)
+    Δx: ℝ = (end - start) / (n - 1)
+    for i:ℕ(0, n):
+        x[i] = start + i * Δx
+    return x
+
+def zero_2d_array(rows: ℝ, cols: ℝ): ℝ[m, n]:
+    results: ℝ[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+    return results
+# --------------------------------------------------
+
+
+n_points: R = 41
+domain_size: R = 1.0
+n_iterations: R = 500
+
+# this is dt
+time_step_length: R = 0.001
+kinematic_viscosity: R = 0.1
+density: R = 1.0
+horizontal_velocity_top: R = 1.0
+
+n_pressure_poisson_iterations: R = 50
+stability_safety_factor: R = 0.5
+
+# this is dx and dy
+element_length: R = domain_size / (n_points - 1)
+
+x = linspace(0.0, domain_size, n_points)
+y = linspace(0.0, domain_size, n_points)
+
+u_prev = zero_2d_array(n_points, n_points)
+v_prev = zero_2d_array(n_points, n_points)
+p_prev = zero_2d_array(n_points, n_points)
+
+
+def central_difference_x(f: R[m, n]): R[m, n]:
+    diff = zero_2d_array(n_points, n_points)
+    for i:N(1, n_points - 1):
+        for j:N(1, n_points - 1):
+            diff[i, j] = (f[i, j+1] - f[i, j - 1]) / (2 * element_length)
+    return diff
+
+def central_difference_y(f: R[m, n]): R[m, n]:
+    diff = zero_2d_array(n_points, n_points)
+    for i:N(1, n_points - 1):
+        for j:N(1, n_points - 1):
+            diff[i, j] = (f[i + 1, j] - f[i - 1, j]) / (2 * element_length)
+    return diff
+
+def laplace(f: R[m, n]): R[m, n]:
+    diff = zero_2d_array(n_points, n_points)
+    for i:N(1, n_points - 1):
+        for j:N(1, n_points - 1):
+            diff[i, j] = (
+                f[i, j-1] + f[i-1, j] + f[i, j+1] + f[i+1, j] - 4 * f[i, j]
+            ) / (element_length**2)
+    return diff
+
+
+
+f = zero_2d_array(n_points, n_points)
+
+for i:N(n_points):
+    for j:N(n_points):
+        t_x = j * element_length
+        t_y = i * element_length
+        f[i, j] = t_x**2 + t_y**2
+
+
+n_iterations: R = 10
+
+for i:N(n_iterations):
+    d_u_prev__d_x = central_difference_x(u_prev)
+    d_u_prev__d_y = central_difference_y(u_prev)
+    d_v_prev__d_x = central_difference_x(v_prev)
+    d_v_prev__d_y = central_difference_y(v_prev)
+    laplace__u_prev = laplace(u_prev)
+    laplace__v_prev = laplace(v_prev)
+    u_tent = u_prev + time_step_length * (
+        - (
+            u_prev * d_u_prev__d_x + v_prev * d_u_prev__d_y
+        ) + kinematic_viscosity * laplace__u_prev
+    )
+    v_tent = v_prev + time_step_length * (
+        - (
+            u_prev * d_v_prev__d_x + v_prev * d_v_prev__d_y
+        ) + kinematic_viscosity * laplace__v_prev
+    )
+    for j:N(n_points):
+        u_tent[0, j] = 0.0
+        u_tent[n_points-1, j] = horizontal_velocity_top
+        v_tent[0, j] = 0.0
+        v_tent[n_points-1, j] = 0.0
+        u_tent[j, 0] = 0.0
+        u_tent[j, n_points-1] = 0.0
+        v_tent[j, 0] = 0.0
+        v_tent[j, n_points-1] = 0.0
+    d_u_tent__d_x = central_difference_x(u_tent)
+    d_v_tent__d_y = central_difference_y(v_tent)
+    rhs = (density / time_step_length * (d_u_tent__d_x + d_v_tent__d_y))
+    for k:N(n_pressure_poisson_iterations):
+        p_next = zero_2d_array(n_points, n_points)
+        for i:N(1, n_points-1):
+            for j:N(1, n_points-1):
+                p_next[i, j] = 0.25 * (
+                    p_prev[i, j-1] + 
+                    p_prev[i-1, j] + 
+                    p_prev[i, j+1] + 
+                    p_prev[i+1, j] -
+                    element_length**2 * rhs[i, j]
+                )
+        p_prev = p_next
+    for i:N(n_points):
+        p_next[i, n_points-1] = p_next[i, n_points-2]
+        p_next[0, i] = p_next[1, i]
+        p_next[i, 0] = p_next[i, 1]
+        p_next[n_points-1, i] = 0.0
+    d_p_next__d_x = central_difference_x(p_next)
+    d_p_next__d_y = central_difference_y(p_next)
+    u_next = (
+        u_tent -
+        time_step_length / density *
+        d_p_next__d_x
+    )
+    v_next = (
+        v_tent -
+        time_step_length / density *
+        d_p_next__d_y
+    )
+    for i:N(n_points):
+        u_next[0, i] = 0.0
+        u_next[i, 0] = 0.0
+        u_next[i, n_points-1] = 0.0
+        u_next[n_points-1, i] = horizontal_velocity_top
+        v_next[0, i] = 0.0
+        v_next[i, 0] = 0.0
+        v_next[i, n_points-1] = 0.0
+        v_next[n_points-1, i] = 0.0
+    u_prev = u_next
+    v_prev = v_next
+    p_prev = p_next
+
+
+X = zero_2d_array(n_points, n_points)
+Y = zero_2d_array(n_points, n_points)
+
+for i:N(n_points):
+    for j:N(n_points):
+        X[i, j] = j * element_length
+        Y[i, j] = i * element_length
+
+plot(X, Y, u_next, v_next, p_next)
+
+
+
+
+
+
+# def plot(X, Y, u_next, v_next, p_next):
+#     X = X.cpu().numpy()
+#     Y = Y.cpu().numpy()
+#     u_next = u_next.cpu().numpy()
+#     v_next = v_next.cpu().numpy()
+#     p_next = p_next.cpu().numpy()
+#     import matplotlib.pyplot as plt
+#     plt.style.use("dark_background")
+#     plt.figure()
+#     plt.contourf(X[::2, ::2], Y[::2, ::2], p_next[::2, ::2], cmap="coolwarm")
+#     plt.colorbar()
+
+#     plt.quiver(X[::2, ::2], Y[::2, ::2], u_next[::2, ::2], v_next[::2, ::2], color="black")
+#     plt.streamplot(X[::2, ::2], Y[::2, ::2], u_next[::2, ::2], v_next[::2, ::2], color="black")
+#     plt.xlim((0, 1))
+#     plt.ylim((0, 1))
+#     plt.show()
