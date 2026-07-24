@@ -36,7 +36,7 @@ def find_module(module_name: str, source_file_path: Path) -> Path:
     """
     module_path = Path(module_name.replace(".", "/"))
     module_file = module_path.with_suffix(".phyk")
-    search_paths = [source_file_path.parent, Path(".")]
+    search_paths = [source_file_path.parent, *source_file_path.parent.parents]
     for path in search_paths:
         file_name = path / module_file
         if file_name.exists():
