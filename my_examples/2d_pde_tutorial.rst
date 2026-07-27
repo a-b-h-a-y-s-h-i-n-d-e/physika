@@ -1,11 +1,12 @@
 Parameter learning 2D PDEs
 ======================================
 
+
 In this tutorial we will learn how to estimate/learn parameter of different 
 2D PDEs such as Heat equation, Wave equation, Navier stokes equation etc. in Physika.
 The tutorial is divided into 3 parts as per each PDE example.
 
-I also recommend first exploring our 1D PDE tutorials on the Heat and Wave equations, as 
+We recommend first exploring our 1D PDE tutorials on the Heat and Wave equations, as 
 they introduce the key concepts and techniques that are used throughout the 2D examples in this tutorial.
 
 
@@ -31,11 +32,9 @@ Helper functions
         results: ℝ[len] = for i: ℕ(len) -> i*0
         return results
 
-
-    def zero_2d_array(rows: R, cols: R): R[m, n]:
-        results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+    def zero_2d_array(rows: ℝ, cols: ℝ): ℝ[m, n]:
+        results: ℝ[rows, cols] = for i:ℕ(rows) -> for j:ℕ(cols) -> j*0
         return results
-
 
     def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
         x: ℝ[n] = zero_1d_array(n)
@@ -50,16 +49,16 @@ Set Up the Domain
 
 .. code-block::
 
-    true_alpha: R = 2.0
-    Lx: R = 1.0
-    Ly: R = 1.0
+    true_α: ℝ = 2.0
+    Lx: ℝ = 1.0
+    Ly: ℝ = 1.0
 
-    nx: R = 40
-    ny: R = 40
-    tf: R = 10
+    nx: ℝ = 40
+    ny: ℝ = 40
+    tf: ℝ = 10
 
-    dx: R = Lx / (nx - 1)
-    dy: R = Ly / (ny - 1)
+    dx: ℝ = Lx / (nx - 1)
+    dy: ℝ = Ly / (ny - 1)
 
 ``Lx`` and ``Ly`` define the length on both the axis, ``nx`` and ``ny`` set the
 number of grid points along each axis, and ``dx`` and ``dy`` are the
@@ -86,20 +85,20 @@ Grid and initial condition
 .. code-block::
 
     # Boundary conditions
-    T1: R = 0
-    T2: R = 0
-    T3: R = 0
-    T4: R = 0
+    T1: ℝ = 0
+    T2: ℝ = 0
+    T3: ℝ = 0
+    T4: ℝ = 0
 
-    T = zero_2d_array(nx, ny)
+    T: ℝ[nx, ny] = zero_2d_array(nx, ny)
 
-    x = linspace(0, Lx, nx)
-    y = linspace(0, Ly, ny)
+    x: ℝ[nx] = linspace(0, Lx, nx)
+    y: ℝ[ny] = linspace(0, Ly, ny)
 
 
-    T0: R[nx, ny] = zero_2d_array(nx, ny)
-    for i:N(0, nx):
-        for j:N(0, ny):
+    T0: ℝ[nx, ny] = zero_2d_array(nx, ny)
+    for i:ℕ(0, nx):
+        for j:ℕ(0, ny):
             T0[i, j] = exp(-20 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
 
 ``T1``–``T4`` set the (zero) Dirichlet boundary conditions on the four edges
@@ -127,9 +126,9 @@ heat equation becomes:
 
 .. code-block:: text
 
-    def heat_equation(T: R[m, n], dx: R, dy: R, alpha: R): R[m, n]:
-        f: R[m, n] = zero_2d_array(nx, ny)
-        f[1:nx-1, 1:ny-1] = alpha * (
+    def heat_equation(T: ℝ[m, n], dx: ℝ, dy: ℝ, α: ℝ): ℝ[m, n]:
+        f: ℝ[m, n] = zero_2d_array(nx, ny)
+        f[1:nx-1, 1:ny-1] = α * (
             ((T[0:nx-2, 1:ny-1] - 2 * T[1:nx-1, 1:ny-1] + T[2:nx, 1:ny-1]) / (dx**2)) +
             ((T[1:nx-1, 0:ny-2] - 2 * T[1:nx-1, 1:ny-1] + T[1:nx-1, 2:ny]) / (dy**2))
         )
@@ -141,17 +140,17 @@ Build the solver
 
 .. code-block:: text
 
-    def solver(alpha: R, T0: R[m, n], dx: R, dy: R, dt: R, nt: R): R[m, n]:
-        T: R[m, n] = T0
-        for step:N(0, nt):
-            T = T + dt * heat_equation(T, dx, dy, alpha)
+    def solver(α: ℝ, T0: ℝ[m, n], dx: ℝ, dy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+        T: ℝ[m, n] = T0
+        for step:ℕ(0, nt):
+            T = T + dt * heat_equation(T, dx, dy, α)
             T[:, 0] = 0
             T[:, ny-1] = 0
             T[0, :] = 0
             T[nx-1, :] = 0
         return T
-    
-    true_solution = solver(true_alpha, T0, dx, dy, dt, nt) 
+
+    true_solution: ℝ[nx, ny] = solver(true_α, T0, dx, dy, dt, nt)
 
 At each time step, we first update the interior of the domain using an
 explicit Euler step with the spatial derivatives from ``heat_equation``,
@@ -168,10 +167,10 @@ temperature profiles:
 
 .. code-block:: text
 
-    def calculate_loss(alpha: R): R:
-        predictions = solver(alpha, T0, dx, dy, dt, nt)
-        diff = predictions - true_solution
-        loss = mean(diff**2)
+    def calculate_loss(α: ℝ): ℝ:
+        predictions: ℝ[nx, ny] = solver(α, T0, dx, dy, dt, nt)
+        diff: ℝ[nx, ny] = predictions - true_solution
+        loss: ℝ = mean(diff**2)
         return loss
 
 
@@ -195,7 +194,7 @@ We are using Adam optimizer here:
 .. code-block:: text
 
 
-    def adam(alpha: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
+    def adam(α: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
         beta1: ℝ = 0.9
         beta2: ℝ = 0.999
         eps: ℝ = 1e-8
@@ -203,35 +202,36 @@ We are using Adam optimizer here:
         v_new: ℝ = beta2 * v + (1.0 - beta2) * g**2
         m_hat: ℝ = m_new / (1.0 - beta1**t)
         v_hat: ℝ = v_new / (1.0 - beta2**t)
-        alpha_new: ℝ = alpha - lr * m_hat / (sqrt(v_hat) + eps)
-        return [alpha_new, m_new, v_new, t + 1.0]
+        α_new: ℝ = α - lr * m_hat / (sqrt(v_hat) + eps)
+        return [α_new, m_new, v_new, t + 1.0]
 
 
 Training
 ^^^^^^^^^^
-We start with an initial guess of :math:`\alpha = 3.0` and train for 20 epochs:
+We start with an initial guess of :math:`\alpha = 4.0` and train for 200 epochs
+Once the training is finished, the :math:`\alpha` should be close to 2.0.
 
 
 .. code-block:: text
 
-    alpha: R = 3.0
+    α: ℝ = 4.0
 
     m_adam: ℝ = 0.0
     v_adam: ℝ = 0.0
     t_adam: ℝ = 1.0
-    lr: ℝ = 0.1
+    lr: ℝ = 0.01
 
-    epochs: ℕ = 20
+    epochs: ℕ = 200
 
-    for i:N(epochs):
+    for i:ℕ(epochs):
         physika_print(i)
-        g = grad(calculate_loss, alpha)
-        result = adam(alpha, g, m_adam, v_adam, t_adam, lr)
-        alpha = result[0]
+        g = grad(calculate_loss, α)
+        result = adam(α, g, m_adam, v_adam, t_adam, lr)
+        α = result[0]
         m_adam = result[1]
         v_adam = result[2]
         t_adam = result[3]
-        physika_print(alpha)
+        physika_print(α)
 
 
 Visualize results
@@ -240,15 +240,15 @@ Visualize results
 
 .. code-block:: text
 
-    pred_solution = solver(alpha, T0, dx, dy, dt, nt)
-    visualize_trajectory(true_solution, pred_solution, x, y)
+    pred_solution: ℝ[nx, ny] = solver(alpha, T0, dx, dy, dt, nt)
+    visualize_trajectory_heat(true_solution, pred_solution, x, y)
 
 .. note::
-    Add ``visualize_trajectory`` function in ``physika/runtime.py`` file:
+    Add ``visualize_trajectory_heat`` function in ``physika/runtime.py`` file:
 
     .. code-block:: python
 
-        def visualize_trajectory(true_solution, pred_solution, x, y):
+        def visualize_trajectory_heat(true_solution, pred_solution, x, y):
             import matplotlib.pyplot as plt
             import numpy as np
             
@@ -293,6 +293,172 @@ Visualize results
 
 
 
+Full code (2D heat equation)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: text
+
+    # -------------------------------------
+    # Helper functions
+    # -------------------------------------
+
+    def zero_1d_array(len: ℝ): ℝ[m]:
+        results: ℝ[len] = for i: ℕ(len) -> i*0
+        return results
+
+
+    def zero_2d_array(rows: ℝ, cols: ℝ): ℝ[m, n]:
+        results: ℝ[rows, cols] = for i:ℕ(rows) -> for j:ℕ(cols) -> j*0
+        return results
+
+
+    def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+        x: ℝ[n] = zero_1d_array(n)
+        dx: ℝ = (end - start) / (n - 1)
+        for i:ℕ(0, n):
+            x[i] = start + i * dx
+        return x
+
+
+    # -------------------------------------
+    # Set Up the Domain
+    # -------------------------------------
+
+    true_α: ℝ = 2.0
+    Lx: ℝ = 1.0
+    Ly: ℝ = 1.0
+
+    nx: ℝ = 40
+    ny: ℝ = 40
+    tf: ℝ = 10
+
+    dx: ℝ = Lx / (nx - 1)
+    dy: ℝ = Ly / (ny - 1)
+
+
+    # -------------------------------------
+    # Time stepping
+    # -------------------------------------
+
+    fourier: ℝ = 0.49
+    dt: ℝ = fourier / (1/dx**2 + 1/dy**2) / 10.0
+    nt: ℝ = 100
+
+
+    # -------------------------------------
+    # Grid and initial condition
+    # -------------------------------------
+
+    # Boundary conditions
+    T1: ℝ = 0
+    T2: ℝ = 0
+    T3: ℝ = 0
+    T4: ℝ = 0
+
+    T: ℝ[nx, ny] = zero_2d_array(nx, ny)
+
+    x: ℝ[nx] = linspace(0, Lx, nx)
+    y: ℝ[ny] = linspace(0, Ly, ny)
+
+
+    T0: ℝ[nx, ny] = zero_2d_array(nx, ny)
+    for i:ℕ(0, nx):
+        for j:ℕ(0, ny):
+            T0[i, j] = exp(-20 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
+
+
+    # -------------------------------------
+    # Discretize the Heat equation
+    # -------------------------------------
+
+
+    def heat_equation(T: ℝ[m, n], dx: ℝ, dy: ℝ, α: ℝ): ℝ[m, n]:
+        f: ℝ[m, n] = zero_2d_array(nx, ny)
+        f[1:nx-1, 1:ny-1] = α * (
+            ((T[0:nx-2, 1:ny-1] - 2 * T[1:nx-1, 1:ny-1] + T[2:nx, 1:ny-1]) / (dx**2)) +
+            ((T[1:nx-1, 0:ny-2] - 2 * T[1:nx-1, 1:ny-1] + T[1:nx-1, 2:ny]) / (dy**2))
+        )
+        return f
+
+
+    # -------------------------------------
+    # Build the solver
+    # -------------------------------------
+
+    def solver(α: ℝ, T0: ℝ[m, n], dx: ℝ, dy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+        T: ℝ[m, n] = T0
+        for step:ℕ(0, nt):
+            T = T + dt * heat_equation(T, dx, dy, α)
+            T[:, 0] = 0
+            T[:, ny-1] = 0
+            T[0, :] = 0
+            T[nx-1, :] = 0
+        return T
+
+    true_solution: ℝ[nx, ny] = solver(true_α, T0, dx, dy, dt, nt)
+
+    # -------------------------------------
+    # Loss function
+    # -------------------------------------
+
+
+    def calculate_loss(α: ℝ): ℝ:
+        predictions: ℝ[nx, ny] = solver(α, T0, dx, dy, dt, nt)
+        diff: ℝ[nx, ny] = predictions - true_solution
+        loss: ℝ = mean(diff**2)
+        return loss
+
+    # -------------------------------------
+    # Optimizer
+    # -------------------------------------
+
+    def adam(α: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
+        beta1: ℝ = 0.9
+        beta2: ℝ = 0.999
+        eps: ℝ = 1e-8
+        m_new: ℝ = beta1 * m + (1.0 - beta1) * g
+        v_new: ℝ = beta2 * v + (1.0 - beta2) * g**2
+        m_hat: ℝ = m_new / (1.0 - beta1**t)
+        v_hat: ℝ = v_new / (1.0 - beta2**t)
+        α_new: ℝ = α - lr * m_hat / (sqrt(v_hat) + eps)
+        return [α_new, m_new, v_new, t + 1.0]
+
+
+    # -------------------------------------
+    # Training
+    # -------------------------------------
+
+
+    α: ℝ = 4.0
+
+    guess_solution: ℝ[nx, ny] = solver(α, T0, dx, dy, dt, nt)
+    #visualize_trajectory_heat(true_solution, guess_solution, x, y)
+
+    m_adam: ℝ = 0.0
+    v_adam: ℝ = 0.0
+    t_adam: ℝ = 1.0
+    lr: ℝ = 0.01
+
+    epochs: ℕ = 200
+
+    for i:ℕ(epochs):
+        physika_print(i)
+        g = grad(calculate_loss, α)
+        result = adam(α, g, m_adam, v_adam, t_adam, lr)
+        α = result[0]
+        m_adam = result[1]
+        v_adam = result[2]
+        t_adam = result[3]
+        physika_print(α)
+
+    # α should be closer to 2.0
+    α
+
+    pred_solution: ℝ[nx, ny] = solver(α, T0, dx, dy, dt, nt)
+    visualize_trajectory_heat(true_solution, pred_solution, x, y)
+
+
+
 
 
 2D Wave equation
@@ -323,8 +489,8 @@ Helper functions
         results: ℝ[len] = for i: ℕ(len) -> i*0
         return results
 
-    def zero_2d_array(rows: R, cols: R): R[m, n]:
-        results: R[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+    def zero_2d_array(rows: ℝ, cols:ℝ ): ℝ[m, n]:
+        results: ℝ[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
         return results
 
     def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
@@ -340,17 +506,16 @@ Set Up the Domain
 
 .. code-block:: text
 
-    Lx: R = 1.0
-    Ly: R = 1.0
+    Lx: ℝ = 1.0
+    Ly: ℝ = 1.0
+    nx: ℝ = 40
+    ny: ℝ = 40
+    tf: ℝ = 2.0
 
-    nx: R = 40
-    ny: R = 40
-    tf: R = 2.0
+    dx: ℝ = Lx / (nx - 1)
+    dy: ℝ = Ly / (ny - 1)
 
-    dx: R = Lx / (nx - 1)
-    dy: R = Ly / (ny - 1)
-
-    true_c: R = 1.0
+    true_c: ℝ = 1.0
 
 ``Lx`` and ``Ly`` define the size of the rectangular domain, while ``nx`` and
 ``ny`` specify the number of grid points along the :math:`x` and
@@ -415,8 +580,8 @@ wave equation becomes:
 
 .. code-block:: text
 
-    def wave_equation(u: R[m, n], dx: R, dy: R, c: R): R[m, n]:
-        lap: R[m, n] = zero_2d_array(nx, ny)
+    def wave_equation(u: ℝ[m, n], dx: ℝ, dy: ℝ, c: ℝ): ℝ[m, n]:
+        lap: ℝ[m, n] = zero_2d_array(nx, ny)
         lap[1:nx-1, 1:ny-1] = c**2 * (
             ((u[0:nx-2, 1:ny-1] - 2 * u[1:nx-1, 1:ny-1] + u[2:nx, 1:ny-1]) / (dx**2)) +
             ((u[1:nx-1, 0:ny-2] - 2 * u[1:nx-1, 1:ny-1] + u[1:nx-1, 2:ny]) / (dy**2))
@@ -433,10 +598,10 @@ Build the solver
 
 .. code-block:: text
 
-    def solver(c: R, u0: R[m, n], v0: R[m, n], dx: R, dy: R, dt: R, nt: R): R[m, n]:
-        u_prev: R[m, n] = u0
-        u_curr: R[m, n] = u0
-        for step:N(0, nt):
+    def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], dx: ℝ, dy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+        u_prev: ℝ[m, n] = u0
+        u_curr: ℝ[m, n] = u0
+        for step:ℕ(0, nt):
             accel = wave_equation(u_curr, dx, dy, c)
             u_next = 2 * u_curr - u_prev + dt**2 * accel
             u_next[:, 0] = 0
@@ -447,7 +612,7 @@ Build the solver
             u_curr = u_next
         return u_curr
 
-    true_solution = solver(true_c, u0, v0, dx, dy, dt, nt)
+    true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, dx, dy, dt, nt)
 
 The solver advances the solution using a second-order finite-difference
 time-stepping scheme. At each step, the acceleration is computed from the
@@ -464,10 +629,10 @@ displacement fields:
 
 .. code-block:: text
 
-    def calculate_loss(c: R): R:
-        predictions = solver(c, u0, v0, dx, dy, dt, nt)
-        diff = predictions - true_solution
-        loss = mean(diff**2)
+    def calculate_loss(c: ℝ): ℝ:
+        predictions: ℝ[nx, ny] = solver(c, u0, v0, dx, dy, dt, nt)
+        diff: ℝ[nx, ny] = predictions - true_solution
+        loss: ℝ = mean(diff**2)
         return loss
 
 
@@ -541,3 +706,164 @@ Visualize results
    :width: 700px
 
    Comparison between the ground truth and learned wave field after training.
+
+
+
+Full code (2D wave equation)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: text
+
+    # -------------------------------------
+    # Helper functions
+    # -------------------------------------
+
+
+    def get_1d_array_length(x: ℝ[m]): ℝ:
+        total: ℝ = 0
+        temp: ℝ = 0
+        for i:
+            temp = x[i]
+            total += 1
+        return total
+
+    def zero_1d_array(len: ℝ): ℝ[m]:
+        results: ℝ[len] = for i: ℕ(len) -> i*0
+        return results
+
+    def zero_2d_array(rows: ℝ, cols:ℝ ): ℝ[m, n]:
+        results: ℝ[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+        return results
+
+    def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+        x: ℝ[n] = zero_1d_array(n)
+        dx: ℝ = (end - start) / (n - 1)
+        for i:ℕ(0, n):
+            x[i] = start + i * dx
+        return x
+
+    # -------------------------------------
+    # Set up the domain
+    # -------------------------------------
+
+    Lx: ℝ = 1.0
+    Ly: ℝ = 1.0
+    nx: ℝ = 40
+    ny: ℝ = 40
+    tf: ℝ = 2.0
+
+    dx: ℝ = Lx / (nx - 1)
+    dy: ℝ = Ly / (ny - 1)
+
+    true_c: ℝ = 1.0
+
+    # -------------------------------------
+    # Time stepping
+    # -------------------------------------
+
+    cfl: ℝ = 0.4
+    dt: ℝ = cfl / (5.0 * sqrt(1/dx**2 + 1/dy**2))
+    nt: ℝ = 50
+
+    # -------------------------------------
+    # Grid and Initial condition
+    # -------------------------------------
+
+    x: ℝ[nx] = linspace(0, Lx, nx)
+    y: ℝ[ny] = linspace(0, Ly, ny)
+
+    pi: ℝ = 3.14
+    u0: ℝ[nx,ny] = zero_2d_array(nx, ny)
+
+    for i:ℕ(0, nx):
+        for j:ℕ(0, ny):
+            u0[i,j] = sin(2 * pi * x[i]) * sin(pi * y[j])
+
+    v0: ℝ[nx,ny] = zero_2d_array(nx, ny)
+
+    # -------------------------------------
+    # Discretize the wave equation
+    # -------------------------------------
+
+
+    def wave_equation(u: ℝ[m, n], dx: ℝ, dy: ℝ, c: ℝ): ℝ[m, n]:
+        lap: ℝ[m, n] = zero_2d_array(nx, ny)
+        lap[1:nx-1, 1:ny-1] = c**2 * (
+            ((u[0:nx-2, 1:ny-1] - 2 * u[1:nx-1, 1:ny-1] + u[2:nx, 1:ny-1]) / (dx**2)) +
+            ((u[1:nx-1, 0:ny-2] - 2 * u[1:nx-1, 1:ny-1] + u[1:nx-1, 2:ny]) / (dy**2))
+        )
+        return lap
+
+    # -------------------------------------
+    # Build the solver
+    # -------------------------------------
+
+    def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], dx: ℝ, dy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+        u_prev: ℝ[m, n] = u0
+        u_curr: ℝ[m, n] = u0
+        for step:ℕ(0, nt):
+            accel = wave_equation(u_curr, dx, dy, c)
+            u_next = 2 * u_curr - u_prev + dt**2 * accel
+            u_next[:, 0] = 0
+            u_next[:, ny-1] = 0
+            u_next[0, :] = 0
+            u_next[nx-1, :] = 0
+            u_prev = u_curr
+            u_curr = u_next
+        return u_curr
+
+    true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, dx, dy, dt, nt)
+
+
+    # -------------------------------------
+    # Loss function
+    # -------------------------------------
+
+    def calculate_loss(c: ℝ): ℝ:
+        predictions: ℝ[nx, ny] = solver(c, u0, v0, dx, dy, dt, nt)
+        diff: ℝ[nx, ny] = predictions - true_solution
+        loss: ℝ = mean(diff**2)
+        return loss
+
+    # -------------------------------------
+    # Optimizer
+    # -------------------------------------
+
+    def adam(c: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
+        beta1: ℝ = 0.9
+        beta2: ℝ = 0.999
+        eps: ℝ = 1e-8
+        m_new: ℝ = beta1 * m + (1.0 - beta1) * g
+        v_new: ℝ = beta2 * v + (1.0 - beta2) * g**2
+        m_hat: ℝ = m_new / (1.0 - beta1**t)
+        v_hat: ℝ = v_new / (1.0 - beta2**t)
+        c_new: ℝ = c - lr * m_hat / (sqrt(v_hat) + eps)
+        return [c_new, m_new, v_new, t + 1.0]
+
+    # -------------------------------------
+    # Training
+    # -------------------------------------
+
+    c: ℝ = 3.0
+
+
+    m_adam: ℝ = 0.0
+    v_adam: ℝ = 0.0
+    t_adam: ℝ = 1.0
+    lr: ℝ = 0.01
+
+    epochs: ℕ = 400
+
+
+    for i:ℕ(epochs):
+        physika_print(i)
+        g = grad(calculate_loss, c)
+        result = adam(c, g, m_adam, v_adam, t_adam, lr)
+        c = result[0]
+        m_adam = result[1]
+        v_adam = result[2]
+        t_adam = result[3]
+        physika_print(c)
+
+    pred_solution: ℝ[nx, ny] = solver(c, u0, v0, dx, dy, dt, nt)
+    visualize_trajectory(true_solution, pred_solution, x, y)
