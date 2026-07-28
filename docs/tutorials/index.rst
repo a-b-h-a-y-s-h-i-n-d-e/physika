@@ -23,3 +23,4 @@ Tutorials
    learn_flux_limiter_euler_equations
    fft_tutorial
    fourier_neural_operator
+   2d_pde_parameter_estimation
