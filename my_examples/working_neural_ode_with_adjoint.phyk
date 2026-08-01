@@ -1,0 +1,369 @@
+def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+    x: ℝ[n] = zeros(n)
+    dx: ℝ = (end - start) / (n - 1)
+    for i:ℕ(0, n):
+        x[i] = start + i * dx
+    return x
+
+
+# ------------------------------------------------------------
+# 
+# ------------------------------------------------------------
+
+
+def rk4_step(state: ℝ[2, 1], t: ℝ, dt: ℝ, ode_func: ODEFunc): ℝ[2, 1]:
+    k1: ℝ[2, 1] = ode_func(state)
+    k2_state: ℝ[2, 1] = state + 0.5 * dt * k1
+    k2: ℝ[2, 1] = ode_func(k2_state)
+    k3_state: ℝ[2, 1] = state + 0.5 * dt * k2
+    k3: ℝ[2, 1] = ode_func(k3_state)
+    k4_state: ℝ[2, 1] = state + dt * k3
+    k4: ℝ[2, 1] = ode_func(k4_state)
+    return state + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+
+
+
+def odesolver(ode_func: ODEFunc, y0: R[2, 1], dt: R, timesteps: R[n]): R[m, 2, 1]:
+    n_times: N = len(timesteps)
+    trajectory: ℝ[n_times,2,1] = zeros(n_times, 2, 1)
+    state: R[2, 1] = y0
+    trajectory[0] = state
+    for i:N(1, n_times):
+        current_t = timesteps[i-1]
+        state = rk4_step(state, current_t, dt, ode_func)
+        trajectory[i] = state
+    return trajectory
+
+# ------------------------------------------------------------
+# 
+# ------------------------------------------------------------
+
+def simple_pendulum(state: ℝ[2,1]): ℝ[2,1]:
+    q: ℝ = state[0,0]
+    p: ℝ = state[1,0]
+    dq: ℝ = p
+    dp: ℝ = 0.0 - sin(q)
+    return [[dq], [dp]]
+
+
+def damped_oscillator(state: ℝ[2,1]): ℝ[2,1]:
+    q: ℝ = state[0,0]
+    p: ℝ = state[1,0]
+    gamma: ℝ = 0.2
+    dq: ℝ = p
+    dp: ℝ = 0.0 - q - gamma * p
+    return [[dq], [dp]]
+
+
+def generate_dataset(y0: ℝ[2,1], dt: ℝ, timesteps: R[n]): ℝ[m,2,1]:
+    n_times = len(timesteps)
+    trajectory: ℝ[n_times, 2, 1] = zeros(n_times, 2, 1)
+    state: ℝ[2,1] = y0
+    trajectory[0] = state
+    for i: ℕ(1, n_times):
+        current_t = timesteps[i-1]
+        state = rk4_step(state, current_t, dt, simple_pendulum)
+        trajectory[i] = state
+    return trajectory
+
+
+t_start: ℝ = 0.0
+t_end: ℝ = 15.0
+dt: ℝ = 0.1
+
+n_steps: ℕ = int((t_end - t_start) / dt) + 1
+
+timesteps: ℝ[n_steps] = linspace(t_start, t_end, n_steps)
+
+y0: ℝ[2,1] = [[1.0], [0.0]]
+
+true_trajectory = generate_dataset(y0, dt, timesteps)
+
+
+# ------------------------------------------------------------
+# 
+# ------------------------------------------------------------
+
+
+
+def mse_loss(pred_traj: R[m, 2, 1], true_traj: R[m, 2, 1]): R:
+    diff = pred_traj - true_traj
+    return mean(diff**2)
+
+
+class ODEFunc(W1: ℝ[Z, 2], B1: ℝ[Z, 1], W2: ℝ[Z, Z], B2: ℝ[2, 1]):
+    def λ(x: ℝ[2, 1]) → ℝ[2, 1]:
+        h1: R[Z, 1] = tanh(this.W1 @ x + this.B1)
+        out: R[2, 1] = this.W2 @ h1 + this.B2
+        return out
+    def update_params(lr: R, learnable_grads: R[m]):
+        this.W1 = this.W1 - lr * learnable_grads[0]
+        this.B1 = this.B1 - lr * learnable_grads[1]
+        this.W2 = this.W2 - lr * learnable_grads[2]
+        this.B2 = this.B2 - lr * learnable_grads[3]
+
+
+
+
+
+n_neurons: ℕ = 128
+
+μ: ℝ = 0.0
+σ: ℝ = 0.01
+
+W1: ℝ[n_neurons, 2] = for i: ℕ(n_neurons) -> ε: ℝ[2] ~ Normal(μ, σ, 2)
+B1: ℝ[n_neurons, 1] = for i: ℕ(n_neurons) -> [0.01]
+W2: ℝ[2, n_neurons] = for i: ℕ(2) -> ε: ℝ[n_neurons] ~ Normal(μ, σ, n_neurons)
+B2: ℝ[2, 1] = [[0.01], [0.01]]
+
+model = ODEFunc(W1, B1, W2, B2)
+
+
+# -----------------------------------------------------------
+# SGD
+# ----------------------------------------------------------
+
+
+
+
+
+def compute_vjpsa(z: R[2, 1], a: R[2, 1], model: ODEFunc): R[m]:
+    f_val = model(z)
+    scalar = sum(a * f_val)
+    dadt = -grad(scalar, z)
+    dW1 = -grad(scalar, model.W1)
+    dB1 = -grad(scalar, model.B1)
+    dW2 = -grad(scalar, model.W2)
+    dB2 = -grad(scalar, model.B2)
+    return [f_val, dadt, dW1, dB1, dW2, dB2]
+
+
+
+def compute_vjpss(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): ℝ[m]:
+    f_val = model(z)
+    scalar = sum(a * f_val)
+    all_grads = grad(scalar, [z, model.W1, model.B1, model.W2, model.B2])
+    dadt = -all_grads[0]
+    dW1  = -all_grads[1]
+    dB1  = -all_grads[2]
+    dW2  = -all_grads[3]
+    dB2  = -all_grads[4]
+    return [f_val, dadt, dW1, dB1, dW2, dB2]
+
+
+def compute_vjps(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): ℝ[m]:
+    result = compute_vjp(z, a, model)
+    f_val = result[0]
+    dadt = result[1]
+    dW1 = result[2]
+    dB1 = result[3]
+    dW2 = result[4]
+    dB2 = result[5]
+    return [f_val, dadt, dW1, dB1, dW2, dB2]
+
+
+
+def rk4_step_adjoint(z: R[2, 1], a: R[2, 1], W1g: R[n_neurons, 2], B1g: R[n_neurons, 1], W2g: R[2, n_neurons], B2g: R[2, 1], dt: R, model: ODEFunc): R[m]:
+    # k1
+    vjp_results = compute_vjps(z, a, model)
+    dz1 = vjp_results[0]
+    da1 = vjp_results[1]
+    dW1_1 = vjp_results[2]
+    dB1_1 = vjp_results[3]
+    dW2_1 = vjp_results[4]
+    dB2_1 = vjp_results[5]
+    # k2
+    z2 = z + 0.5 * (-dt) * dz1
+    a2 = a + 0.5 * (-dt) * da1
+    vjp_results = compute_vjps(z2, a2, model)
+    dz2 = vjp_results[0]
+    da2 = vjp_results[1]
+    dW1_2 = vjp_results[2]
+    dB1_2 = vjp_results[3]
+    dW2_2 = vjp_results[4]
+    dB2_2 = vjp_results[5]
+    # k3
+    z3 = z + 0.5 * (-dt) * dz2
+    a3 = a + 0.5 * (-dt) * da2
+    vjp_results = compute_vjps(z3, a3, model)
+    dz3 = vjp_results[0]
+    da3 = vjp_results[1]
+    dW1_3 = vjp_results[2]
+    dB1_3 = vjp_results[3]
+    dW2_3 = vjp_results[4]
+    dB2_3 = vjp_results[5]
+    # k4
+    z4 = z + (-dt) * dz3
+    a4 = a + (-dt) * da3
+    vjp_results = compute_vjps(z4, a4, model)
+    dz4 = vjp_results[0]
+    da4 = vjp_results[1]
+    dW1_4 = vjp_results[2]
+    dB1_4 = vjp_results[3]
+    dW2_4 = vjp_results[4]
+    dB2_4 = vjp_results[5]
+    # update
+    new_z = z + (-dt / 6.0)* (dz1 + 2.0 * dz2 + 2.0 * dz3 + dz4)
+    new_a = a + (-dt / 6.0) * (da1 + 2.0*da2 + 2.0*da3 + da4)
+    new_W1g = W1g + (-dt / 6.0) * (dW1_1 + 2.0*dW1_2 + 2.0*dW1_3 + dW1_4)
+    new_B1g = B1g + (-dt / 6.0) * (dB1_1 + 2.0*dB1_2 + 2.0*dB1_3 + dB1_4)
+    new_W2g = W2g + (-dt / 6.0) * (dW2_1 + 2.0*dW2_2 + 2.0*dW2_3 + dW2_4)
+    new_B2g = B2g + (-dt / 6.0) * (dB2_1 + 2.0*dB2_2 + 2.0*dB2_3 + dB2_4)
+    return [new_z, new_a, new_W1g, new_B1g, new_W2g, new_B2g]
+
+
+
+def adjoint_solver(pred_traj: R[m, 2, 1], true_trajectory: R[m, 2, 1], dt: R, n_steps: N, model: ODEFunc): R[m]:
+    last_true = true_trajectory[n_steps-1]
+    z = pred_traj[n_steps-1]
+    a = 2.0 * (z - last_true)
+    W1g = zeros(n_neurons, 2)
+    B1g = zeros(n_neurons, 1)
+    W2g = zeros(2, n_neurons)
+    B2g = zeros(2, 1)
+    for i:N(n_steps-1):
+        idx = n_steps - 1 - i 
+        results_adjoint = rk4_step_adjoint(z, a, W1g, B1g, W2g, B2g, dt, model)
+        z = results_adjoint[0]
+        a = results_adjoint[1]
+        W1g = results_adjoint[2]
+        B1g = results_adjoint[3]
+        W2g = results_adjoint[4]
+        B2g = results_adjoint[5]
+        z = pred_traj[idx]
+        a = a + 2.0 * (pred_traj[idx] - true_trajectory[idx])
+    return [W1g, B1g, W2g, B2g, z, a]
+
+
+class AdamOptimizer:
+    lr: R
+    beta1: R 
+    beta2: R 
+    eps: R
+    t: R
+    m: R[m, n]
+    v: R[m, n]
+    def step(param: ℝ[2,1], grad: ℝ[2,1]) → ℝ[m,n]:
+        t_new = this.t + 1.0
+        m_new: ℝ[m,n] = this.beta1 * this.m + (1.0 - this.beta1) * grad
+        v_new: ℝ[m,n] = this.beta2 * this.v + (1.0 - this.beta2) * grad**2
+        m_hat = m_new / (1.0 - this.beta1**t_new)
+        v_hat = v_new / (1.0 - this.beta2**t_new)
+        param_new: ℝ[m,n] = param - this.lr * m_hat / (sqrt(v_hat) + this.eps)
+        return [param_new, m_new, v_new, t_new]
+
+
+lr: R = 0.001
+adam_W1 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(n_neurons,2), zeros(n_neurons,2))
+adam_B1 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(n_neurons,1), zeros(n_neurons,1))
+adam_W2 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(2,n_neurons), zeros(2,n_neurons))
+adam_B2 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(2,1), zeros(2,1))
+
+
+
+epochs: N = 1000
+#lr: R = 0.01
+
+
+
+
+for i:N(epochs):
+    physika_print(i)
+    # -------------------
+    # Forward pass 
+    # -------------------
+    pred_traj = odesolver(model, y0, dt, timesteps)
+    diff = pred_traj - true_trajectory
+    loss = mean(diff**2)
+    # -------------------
+    # adjoint method
+    # -------------------
+    results = adjoint_solver(pred_traj, true_trajectory, dt, n_steps, model)
+    dW1 = results[0]
+    dB1 = results[1]
+    dW2 = results[2]
+    dB2 = results[3]
+    z_t0 = results[4]
+    a_t0 = results[5]
+    result_W1 = adam_W1.step(model.W1, dW1)
+    result_B1 = adam_B1.step(model.B1, dB1)
+    result_W2 = adam_W2.step(model.W2, dW2)
+    result_B2 = adam_B2.step(model.B2, dB2)
+    new_W1 = result_W1[0]
+    new_B1 = result_B1[0]
+    new_W2 = result_W2[0]
+    new_B2 = result_B2[0]
+    adam_W1 = AdamOptimizer(adam_W1.lr, adam_W1.beta1, adam_W1.beta2, adam_W1.eps, result_W1[3], result_W1[1], result_W1[2])
+    adam_B1 = AdamOptimizer(adam_B1.lr, adam_B1.beta1, adam_B1.beta2, adam_B1.eps, result_B1[3], result_B1[1], result_B1[2])
+    adam_W2 = AdamOptimizer(adam_W2.lr, adam_W2.beta1, adam_W2.beta2, adam_W2.eps, result_W2[3], result_W2[1], result_W2[2])
+    adam_B2 = AdamOptimizer(adam_B2.lr, adam_B2.beta1, adam_B2.beta2, adam_B2.eps, result_B2[3], result_B2[1], result_B2[2])
+    model = ODEFunc(new_W1, new_B1, new_W2, new_B2)
+    physika_print(loss)
+
+
+
+
+
+
+
+
+
+predicted_trajectory: ℝ[m, 2, 1] = odesolver(model, y0, dt, timesteps)
+plot_phase_space(true_trajectory, predicted_trajectory)
+
+
+
+# def plot_phase_space(true_trajectory, pred_trajectory):
+#     import matplotlib.pyplot as plt
+
+#     true_trajectory = true_trajectory.detach().numpy()
+#     pred_trajectory = pred_trajectory.detach().numpy()
+
+#     true_x = true_trajectory[:, 0, 0]
+#     true_y = true_trajectory[:, 1, 0]
+
+#     pred_x = pred_trajectory[:, 0, 0]
+#     pred_y = pred_trajectory[:, 1, 0]
+
+#     plt.figure(figsize=(6, 6))
+
+#     plt.plot(true_x, true_y, label="True", linewidth=2)
+#     plt.plot(
+#         pred_x,
+#         pred_y,
+#         "--",
+#         color="orange",
+#         label="Predicted",
+#         linewidth=2,
+#     )
+
+#     plt.xlabel("x")
+#     plt.ylabel("y")
+#     plt.title("Phase Space Trajectory")
+
+#     plt.axis("equal")
+#     plt.grid(True)
+#     plt.legend()
+
+#     plt.show()
+
+# import torch
+# import numpy as np
+
+# def compute_vjp(z, a, model):
+#     z = z.detach().requires_grad_(True)
+#     f_val = model(z)                     # <-- real forward pass, zero duplication
+#     scalar = torch.sum(a.detach() * f_val)
+
+#     grads = torch.autograd.grad(
+#         scalar,
+#         [z, model.W1, model.B1, model.W2, model.B2],
+#         retain_graph=False,
+#         create_graph=False,
+#     )
+#     dz, dW1, dB1, dW2, dB2 = grads
+#     return [f_val.detach(), -dz, -dW1, -dB1, -dW2, -dB2]
+
+
+
+
