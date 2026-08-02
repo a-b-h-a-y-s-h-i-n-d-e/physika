@@ -38,9 +38,9 @@ Helper functions
 
     def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
         x: ℝ[n] = zero_1d_array(n)
-        dx: ℝ = (end - start) / (n - 1)
+        Δx: ℝ = (end - start) / (n - 1)
         for i:ℕ(0, n):
-            x[i] = start + i * dx
+            x[i] = start + i * Δx
         return x
 
 
@@ -57,11 +57,11 @@ Set Up the Domain
     ny: ℝ = 40
     tf: ℝ = 10
 
-    dx: ℝ = Lx / (nx - 1)
-    dy: ℝ = Ly / (ny - 1)
+    Δx: ℝ = Lx / (nx - 1)
+    Δy: ℝ = Ly / (ny - 1)
 
 ``Lx`` and ``Ly`` define the length on both the axis, ``nx`` and ``ny`` set the
-number of grid points along each axis, and ``dx`` and ``dy`` are the
+number of grid points along each axis, and ``Δx`` and ``Δy`` are the
 resulting grid spacings.
 
 
@@ -71,7 +71,7 @@ Time stepping
 .. code-block::
 
     fourier: ℝ = 0.49
-    dt: ℝ = fourier / (1/dx**2 + 1/dy**2) / 10.0
+    dt: ℝ = fourier / (1/Δx**2 + 1/Δy**2) / 10.0
     nt: ℝ = 100
 
 The time step ``dt`` is computed from the Fourier number to satisfy the
@@ -126,11 +126,11 @@ heat equation becomes:
 
 .. code-block:: text
 
-    def heat_equation(T: ℝ[m, n], dx: ℝ, dy: ℝ, α: ℝ): ℝ[m, n]:
+    def heat_equation(T: ℝ[m, n], Δx: ℝ, Δy: ℝ, α: ℝ): ℝ[m, n]:
         f: ℝ[m, n] = zero_2d_array(nx, ny)
         f[1:nx-1, 1:ny-1] = α * (
-            ((T[0:nx-2, 1:ny-1] - 2 * T[1:nx-1, 1:ny-1] + T[2:nx, 1:ny-1]) / (dx**2)) +
-            ((T[1:nx-1, 0:ny-2] - 2 * T[1:nx-1, 1:ny-1] + T[1:nx-1, 2:ny]) / (dy**2))
+            ((T[0:nx-2, 1:ny-1] - 2 * T[1:nx-1, 1:ny-1] + T[2:nx, 1:ny-1]) / (Δx**2)) +
+            ((T[1:nx-1, 0:ny-2] - 2 * T[1:nx-1, 1:ny-1] + T[1:nx-1, 2:ny]) / (Δy**2))
         )
         return f
 
@@ -142,13 +142,13 @@ heat equation becomes:
 
    .. code-block:: text
 
-       def heat_equation(T: ℝ[m, n], dx: ℝ, dy: ℝ, α: ℝ): ℝ[m, n]:
+       def heat_equation(T: ℝ[m, n], Δx: ℝ, Δy: ℝ, α: ℝ): ℝ[m, n]:
            f: ℝ[m, n] = zero_2d_array(nx, ny)
            for i:ℕ(1, nx-1):
                for j:ℕ(1, ny-1):
                    f[i, j] = α * (
-                       ((T[i-1, j] - 2 * T[i, j] + T[i+1, j]) / (dx**2)) +
-                       ((T[i, j-1] - 2 * T[i, j] + T[i, j+1]) / (dy**2))
+                       ((T[i-1, j] - 2 * T[i, j] + T[i+1, j]) / (Δx**2)) +
+                       ((T[i, j-1] - 2 * T[i, j] + T[i, j+1]) / (Δy**2))
                    )
            return f
 
@@ -164,17 +164,17 @@ Build the solver
 
 .. code-block:: text
 
-    def solver(α: ℝ, T0: ℝ[m, n], dx: ℝ, dy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+    def solver(α: ℝ, T0: ℝ[m, n], Δx: ℝ, Δy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
         T: ℝ[m, n] = T0
         for step:ℕ(0, nt):
-            T = T + dt * heat_equation(T, dx, dy, α)
+            T = T + dt * heat_equation(T, Δx, Δy, α)
             T[:, 0] = 0
             T[:, ny-1] = 0
             T[0, :] = 0
             T[nx-1, :] = 0
         return T
 
-    true_solution: ℝ[nx, ny] = solver(true_α, T0, dx, dy, dt, nt)
+    true_solution: ℝ[nx, ny] = solver(true_α, T0, Δx, Δy, dt, nt)
 
 At each time step, we first update the interior of the domain using an
 explicit Euler step with the spatial derivatives from ``heat_equation``,
@@ -192,7 +192,7 @@ temperature profiles:
 .. code-block:: text
 
     def calculate_loss(α: ℝ): ℝ:
-        predictions: ℝ[nx, ny] = solver(α, T0, dx, dy, dt, nt)
+        predictions: ℝ[nx, ny] = solver(α, T0, Δx, Δy, dt, nt)
         diff: ℝ[nx, ny] = predictions - true_solution
         loss: ℝ = mean(diff**2)
         return loss
@@ -264,7 +264,7 @@ Visualize results
 
 .. code-block:: text
 
-    pred_solution: ℝ[nx, ny] = solver(alpha, T0, dx, dy, dt, nt)
+    pred_solution: ℝ[nx, ny] = solver(alpha, T0, Δx, Δy, dt, nt)
     visualize_trajectory_heat(true_solution, pred_solution, x, y)
 
 .. note::
@@ -338,9 +338,9 @@ Full code (2D heat equation)
 
     def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
         x: ℝ[n] = zero_1d_array(n)
-        dx: ℝ = (end - start) / (n - 1)
+        Δx: ℝ = (end - start) / (n - 1)
         for i:ℕ(0, n):
-            x[i] = start + i * dx
+            x[i] = start + i * Δx
         return x
 
 
@@ -356,8 +356,8 @@ Full code (2D heat equation)
     ny: ℝ = 40
     tf: ℝ = 10
 
-    dx: ℝ = Lx / (nx - 1)
-    dy: ℝ = Ly / (ny - 1)
+    Δx: ℝ = Lx / (nx - 1)
+    Δy: ℝ = Ly / (ny - 1)
 
 
     # -------------------------------------
@@ -365,7 +365,7 @@ Full code (2D heat equation)
     # -------------------------------------
 
     fourier: ℝ = 0.49
-    dt: ℝ = fourier / (1/dx**2 + 1/dy**2) / 10.0
+    dt: ℝ = fourier / (1/Δx**2 + 1/Δy**2) / 10.0
     nt: ℝ = 100
 
 
@@ -396,11 +396,11 @@ Full code (2D heat equation)
     # -------------------------------------
 
 
-    def heat_equation(T: ℝ[m, n], dx: ℝ, dy: ℝ, α: ℝ): ℝ[m, n]:
+    def heat_equation(T: ℝ[m, n], Δx: ℝ, Δy: ℝ, α: ℝ): ℝ[m, n]:
         f: ℝ[m, n] = zero_2d_array(nx, ny)
         f[1:nx-1, 1:ny-1] = α * (
-            ((T[0:nx-2, 1:ny-1] - 2 * T[1:nx-1, 1:ny-1] + T[2:nx, 1:ny-1]) / (dx**2)) +
-            ((T[1:nx-1, 0:ny-2] - 2 * T[1:nx-1, 1:ny-1] + T[1:nx-1, 2:ny]) / (dy**2))
+            ((T[0:nx-2, 1:ny-1] - 2 * T[1:nx-1, 1:ny-1] + T[2:nx, 1:ny-1]) / (Δx**2)) +
+            ((T[1:nx-1, 0:ny-2] - 2 * T[1:nx-1, 1:ny-1] + T[1:nx-1, 2:ny]) / (Δy**2))
         )
         return f
 
@@ -409,17 +409,17 @@ Full code (2D heat equation)
     # Build the solver
     # -------------------------------------
 
-    def solver(α: ℝ, T0: ℝ[m, n], dx: ℝ, dy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+    def solver(α: ℝ, T0: ℝ[m, n], Δx: ℝ, Δy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
         T: ℝ[m, n] = T0
         for step:ℕ(0, nt):
-            T = T + dt * heat_equation(T, dx, dy, α)
+            T = T + dt * heat_equation(T, Δx, Δy, α)
             T[:, 0] = 0
             T[:, ny-1] = 0
             T[0, :] = 0
             T[nx-1, :] = 0
         return T
 
-    true_solution: ℝ[nx, ny] = solver(true_α, T0, dx, dy, dt, nt)
+    true_solution: ℝ[nx, ny] = solver(true_α, T0, Δx, Δy, dt, nt)
 
     # -------------------------------------
     # Loss function
@@ -427,7 +427,7 @@ Full code (2D heat equation)
 
 
     def calculate_loss(α: ℝ): ℝ:
-        predictions: ℝ[nx, ny] = solver(α, T0, dx, dy, dt, nt)
+        predictions: ℝ[nx, ny] = solver(α, T0, Δx, Δy, dt, nt)
         diff: ℝ[nx, ny] = predictions - true_solution
         loss: ℝ = mean(diff**2)
         return loss
@@ -455,7 +455,7 @@ Full code (2D heat equation)
 
     α: ℝ = 4.0
 
-    guess_solution: ℝ[nx, ny] = solver(α, T0, dx, dy, dt, nt)
+    guess_solution: ℝ[nx, ny] = solver(α, T0, Δx, Δy, dt, nt)
     #visualize_trajectory_heat(true_solution, guess_solution, x, y)
 
     m_adam: ℝ = 0.0
@@ -478,7 +478,7 @@ Full code (2D heat equation)
     # α should be closer to 2.0
     α
 
-    pred_solution: ℝ[nx, ny] = solver(α, T0, dx, dy, dt, nt)
+    pred_solution: ℝ[nx, ny] = solver(α, T0, Δx, Δy, dt, nt)
     visualize_trajectory_heat(true_solution, pred_solution, x, y)
 
 
@@ -519,9 +519,9 @@ Helper functions
 
     def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
         x: ℝ[n] = zero_1d_array(n)
-        dx: ℝ = (end - start) / (n - 1)
+        Δx: ℝ = (end - start) / (n - 1)
         for i:ℕ(0, n):
-            x[i] = start + i * dx
+            x[i] = start + i * Δx
         return x
 
 
@@ -536,15 +536,15 @@ Set Up the Domain
     ny: ℝ = 40
     tf: ℝ = 2.0
 
-    dx: ℝ = Lx / (nx - 1)
-    dy: ℝ = Ly / (ny - 1)
+    Δx: ℝ = Lx / (nx - 1)
+    Δy: ℝ = Ly / (ny - 1)
 
     true_c: ℝ = 1.0
 
 ``Lx`` and ``Ly`` define the size of the rectangular domain, while ``nx`` and
 ``ny`` specify the number of grid points along the :math:`x` and
 :math:`y` directions. The corresponding spatial grid spacings are
-``dx`` and ``dy``.
+``Δx`` and ``Δy``.
 
 
 Time stepping
@@ -553,7 +553,7 @@ Time stepping
 .. code-block:: text
 
     cfl: ℝ = 0.4
-    dt: ℝ = cfl / (5.0 * sqrt(1/dx**2 + 1/dy**2))
+    dt: ℝ = cfl / (5.0 * sqrt(1/Δx**2 + 1/Δy**2))
     nt: ℝ = 50
 
 The time step ``dt`` is chosen using the CFL number to satisfy the stability
@@ -604,11 +604,11 @@ wave equation becomes:
 
 .. code-block:: text
 
-    def wave_equation(u: ℝ[m, n], dx: ℝ, dy: ℝ, c: ℝ): ℝ[m, n]:
+    def wave_equation(u: ℝ[m, n], Δx: ℝ, Δy: ℝ, c: ℝ): ℝ[m, n]:
         lap: ℝ[m, n] = zero_2d_array(nx, ny)
         lap[1:nx-1, 1:ny-1] = c**2 * (
-            ((u[0:nx-2, 1:ny-1] - 2 * u[1:nx-1, 1:ny-1] + u[2:nx, 1:ny-1]) / (dx**2)) +
-            ((u[1:nx-1, 0:ny-2] - 2 * u[1:nx-1, 1:ny-1] + u[1:nx-1, 2:ny]) / (dy**2))
+            ((u[0:nx-2, 1:ny-1] - 2 * u[1:nx-1, 1:ny-1] + u[2:nx, 1:ny-1]) / (Δx**2)) +
+            ((u[1:nx-1, 0:ny-2] - 2 * u[1:nx-1, 1:ny-1] + u[1:nx-1, 2:ny]) / (Δy**2))
         )
         return lap
 
@@ -624,13 +624,13 @@ displacement field using second-order central differences. Multiplying by
 
    .. code-block:: text
 
-        def wave_equation(u: ℝ[m, n], dx: ℝ, dy: ℝ, c: ℝ): ℝ[m, n]:
+        def wave_equation(u: ℝ[m, n], Δx: ℝ, Δy: ℝ, c: ℝ): ℝ[m, n]:
             lap: ℝ[m, n] = zero_2d_array(nx, ny)
             for i:ℕ(1, nx-1):
                 for j:ℕ(1, ny-1):
                     lap[i, j] = c**2 * (
-                        ((u[i-1,j] - 2*u[i,j] + u[i+1,j]) / (dx**2)) +
-                        ((u[i,j-1] - 2*u[i,j] + u[i,j+1]) / (dy**2))
+                        ((u[i-1,j] - 2*u[i,j] + u[i+1,j]) / (Δx**2)) +
+                        ((u[i,j-1] - 2*u[i,j] + u[i,j+1]) / (Δy**2))
                     )
             return lap
 
@@ -645,11 +645,11 @@ Build the solver
 
 .. code-block:: text
 
-    def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], dx: ℝ, dy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+    def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], Δx: ℝ, Δy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
         u_prev: ℝ[m, n] = u0
         u_curr: ℝ[m, n] = u0
         for step:ℕ(0, nt):
-            accel = wave_equation(u_curr, dx, dy, c)
+            accel = wave_equation(u_curr, Δx, Δy, c)
             u_next = 2 * u_curr - u_prev + dt**2 * accel
             u_next[:, 0] = 0
             u_next[:, ny-1] = 0
@@ -659,7 +659,7 @@ Build the solver
             u_curr = u_next
         return u_curr
 
-    true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, dx, dy, dt, nt)
+    true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, Δx, Δy, dt, nt)
 
 The solver advances the solution using a second-order finite-difference
 time-stepping scheme. At each step, the acceleration is computed from the
@@ -677,7 +677,7 @@ displacement fields:
 .. code-block:: text
 
     def calculate_loss(c: ℝ): ℝ:
-        predictions: ℝ[nx, ny] = solver(c, u0, v0, dx, dy, dt, nt)
+        predictions: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, dt, nt)
         diff: ℝ[nx, ny] = predictions - true_solution
         loss: ℝ = mean(diff**2)
         return loss
@@ -744,7 +744,7 @@ Visualize results
 
 .. code-block:: text
 
-    pred_solution: ℝ[nx, ny] = solver(c, u0, v0, dx, dy, dt, nt)
+    pred_solution: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, dt, nt)
     visualize_trajectory_wave(true_solution, pred_solution, x, y)
 
 .. note::
@@ -818,9 +818,9 @@ Full code (2D wave equation)
 
     def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
         x: ℝ[n] = zero_1d_array(n)
-        dx: ℝ = (end - start) / (n - 1)
+        Δx: ℝ = (end - start) / (n - 1)
         for i:ℕ(0, n):
-            x[i] = start + i * dx
+            x[i] = start + i * Δx
         return x
 
     # -------------------------------------
@@ -833,8 +833,8 @@ Full code (2D wave equation)
     ny: ℝ = 40
     tf: ℝ = 2.0
 
-    dx: ℝ = Lx / (nx - 1)
-    dy: ℝ = Ly / (ny - 1)
+    Δx: ℝ = Lx / (nx - 1)
+    Δy: ℝ = Ly / (ny - 1)
 
     true_c: ℝ = 1.0
 
@@ -843,7 +843,7 @@ Full code (2D wave equation)
     # -------------------------------------
 
     cfl: ℝ = 0.4
-    dt: ℝ = cfl / (5.0 * sqrt(1/dx**2 + 1/dy**2))
+    dt: ℝ = cfl / (5.0 * sqrt(1/Δx**2 + 1/Δy**2))
     nt: ℝ = 50
 
     # -------------------------------------
@@ -867,11 +867,11 @@ Full code (2D wave equation)
     # -------------------------------------
 
 
-    def wave_equation(u: ℝ[m, n], dx: ℝ, dy: ℝ, c: ℝ): ℝ[m, n]:
+    def wave_equation(u: ℝ[m, n], Δx: ℝ, Δy: ℝ, c: ℝ): ℝ[m, n]:
         lap: ℝ[m, n] = zero_2d_array(nx, ny)
         lap[1:nx-1, 1:ny-1] = c**2 * (
-            ((u[0:nx-2, 1:ny-1] - 2 * u[1:nx-1, 1:ny-1] + u[2:nx, 1:ny-1]) / (dx**2)) +
-            ((u[1:nx-1, 0:ny-2] - 2 * u[1:nx-1, 1:ny-1] + u[1:nx-1, 2:ny]) / (dy**2))
+            ((u[0:nx-2, 1:ny-1] - 2 * u[1:nx-1, 1:ny-1] + u[2:nx, 1:ny-1]) / (Δx**2)) +
+            ((u[1:nx-1, 0:ny-2] - 2 * u[1:nx-1, 1:ny-1] + u[1:nx-1, 2:ny]) / (Δy**2))
         )
         return lap
 
@@ -879,11 +879,11 @@ Full code (2D wave equation)
     # Build the solver
     # -------------------------------------
 
-    def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], dx: ℝ, dy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+    def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], Δx: ℝ, Δy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
         u_prev: ℝ[m, n] = u0
         u_curr: ℝ[m, n] = u0
         for step:ℕ(0, nt):
-            accel = wave_equation(u_curr, dx, dy, c)
+            accel = wave_equation(u_curr, Δx, Δy, c)
             u_next = 2 * u_curr - u_prev + dt**2 * accel
             u_next[:, 0] = 0
             u_next[:, ny-1] = 0
@@ -893,7 +893,7 @@ Full code (2D wave equation)
             u_curr = u_next
         return u_curr
 
-    true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, dx, dy, dt, nt)
+    true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, Δx, Δy, dt, nt)
 
 
     # -------------------------------------
@@ -901,7 +901,7 @@ Full code (2D wave equation)
     # -------------------------------------
 
     def calculate_loss(c: ℝ): ℝ:
-        predictions: ℝ[nx, ny] = solver(c, u0, v0, dx, dy, dt, nt)
+        predictions: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, dt, nt)
         diff: ℝ[nx, ny] = predictions - true_solution
         loss: ℝ = mean(diff**2)
         return loss
@@ -946,7 +946,7 @@ Full code (2D wave equation)
         t_adam = result[3]
         physika_print(c)
 
-    pred_solution: ℝ[nx, ny] = solver(c, u0, v0, dx, dy, dt, nt)
+    pred_solution: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, dt, nt)
     visualize_trajectory_wave(true_solution, pred_solution, x, y)
 
 
