@@ -71,10 +71,10 @@ Time stepping
 .. code-block::
 
     fourier: ℝ = 0.49
-    dt: ℝ = fourier / (1/Δx**2 + 1/Δy**2) / 10.0
+    Δt: ℝ = fourier / (1/Δx**2 + 1/Δy**2) / 10.0
     nt: ℝ = 100
 
-The time step ``dt`` is computed from the Fourier number to satisfy the
+The time step ``Δt`` is computed from the Fourier number to satisfy the
 stability condition for explicit time-stepping, and ``nt`` is the total
 number of time steps to simulate.
 
@@ -164,17 +164,17 @@ Build the solver
 
 .. code-block:: text
 
-    def solver(α: ℝ, T0: ℝ[m, n], Δx: ℝ, Δy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+    def solver(α: ℝ, T0: ℝ[m, n], Δx: ℝ, Δy: ℝ, Δt: ℝ, nt: ℝ): ℝ[m, n]:
         T: ℝ[m, n] = T0
         for step:ℕ(0, nt):
-            T = T + dt * heat_equation(T, Δx, Δy, α)
+            T = T + Δt * heat_equation(T, Δx, Δy, α)
             T[:, 0] = 0
             T[:, ny-1] = 0
             T[0, :] = 0
             T[nx-1, :] = 0
         return T
 
-    true_solution: ℝ[nx, ny] = solver(true_α, T0, Δx, Δy, dt, nt)
+    true_solution: ℝ[nx, ny] = solver(true_α, T0, Δx, Δy, Δt, nt)
 
 At each time step, we first update the interior of the domain using an
 explicit Euler step with the spatial derivatives from ``heat_equation``,
@@ -192,7 +192,7 @@ temperature profiles:
 .. code-block:: text
 
     def calculate_loss(α: ℝ): ℝ:
-        predictions: ℝ[nx, ny] = solver(α, T0, Δx, Δy, dt, nt)
+        predictions: ℝ[nx, ny] = solver(α, T0, Δx, Δy, Δt, nt)
         diff: ℝ[nx, ny] = predictions - true_solution
         loss: ℝ = mean(diff**2)
         return loss
@@ -264,7 +264,7 @@ Visualize results
 
 .. code-block:: text
 
-    pred_solution: ℝ[nx, ny] = solver(alpha, T0, Δx, Δy, dt, nt)
+    pred_solution: ℝ[nx, ny] = solver(alpha, T0, Δx, Δy, Δt, nt)
     visualize_trajectory_heat(true_solution, pred_solution, x, y)
 
 .. note::
@@ -365,7 +365,7 @@ Full code (2D heat equation)
     # -------------------------------------
 
     fourier: ℝ = 0.49
-    dt: ℝ = fourier / (1/Δx**2 + 1/Δy**2) / 10.0
+    Δt: ℝ = fourier / (1/Δx**2 + 1/Δy**2) / 10.0
     nt: ℝ = 100
 
 
@@ -409,17 +409,17 @@ Full code (2D heat equation)
     # Build the solver
     # -------------------------------------
 
-    def solver(α: ℝ, T0: ℝ[m, n], Δx: ℝ, Δy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+    def solver(α: ℝ, T0: ℝ[m, n], Δx: ℝ, Δy: ℝ, Δt: ℝ, nt: ℝ): ℝ[m, n]:
         T: ℝ[m, n] = T0
         for step:ℕ(0, nt):
-            T = T + dt * heat_equation(T, Δx, Δy, α)
+            T = T + Δt * heat_equation(T, Δx, Δy, α)
             T[:, 0] = 0
             T[:, ny-1] = 0
             T[0, :] = 0
             T[nx-1, :] = 0
         return T
 
-    true_solution: ℝ[nx, ny] = solver(true_α, T0, Δx, Δy, dt, nt)
+    true_solution: ℝ[nx, ny] = solver(true_α, T0, Δx, Δy, Δt, nt)
 
     # -------------------------------------
     # Loss function
@@ -427,7 +427,7 @@ Full code (2D heat equation)
 
 
     def calculate_loss(α: ℝ): ℝ:
-        predictions: ℝ[nx, ny] = solver(α, T0, Δx, Δy, dt, nt)
+        predictions: ℝ[nx, ny] = solver(α, T0, Δx, Δy, Δt, nt)
         diff: ℝ[nx, ny] = predictions - true_solution
         loss: ℝ = mean(diff**2)
         return loss
@@ -455,7 +455,7 @@ Full code (2D heat equation)
 
     α: ℝ = 4.0
 
-    guess_solution: ℝ[nx, ny] = solver(α, T0, Δx, Δy, dt, nt)
+    guess_solution: ℝ[nx, ny] = solver(α, T0, Δx, Δy, Δt, nt)
     #visualize_trajectory_heat(true_solution, guess_solution, x, y)
 
     m_adam: ℝ = 0.0
@@ -478,7 +478,7 @@ Full code (2D heat equation)
     # α should be closer to 2.0
     α
 
-    pred_solution: ℝ[nx, ny] = solver(α, T0, Δx, Δy, dt, nt)
+    pred_solution: ℝ[nx, ny] = solver(α, T0, Δx, Δy, Δt, nt)
     visualize_trajectory_heat(true_solution, pred_solution, x, y)
 
 
@@ -553,10 +553,10 @@ Time stepping
 .. code-block:: text
 
     cfl: ℝ = 0.4
-    dt: ℝ = cfl / (5.0 * sqrt(1/Δx**2 + 1/Δy**2))
+    Δt: ℝ = cfl / (5.0 * sqrt(1/Δx**2 + 1/Δy**2))
     nt: ℝ = 50
 
-The time step ``dt`` is chosen using the CFL number to satisfy the stability
+The time step ``Δt`` is chosen using the CFL number to satisfy the stability
 condition for the explicit finite-difference wave solver. ``nt`` specifies the
 total number of time steps used in the simulation.
 
@@ -645,12 +645,12 @@ Build the solver
 
 .. code-block:: text
 
-    def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], Δx: ℝ, Δy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+    def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], Δx: ℝ, Δy: ℝ, Δt: ℝ, nt: ℝ): ℝ[m, n]:
         u_prev: ℝ[m, n] = u0
         u_curr: ℝ[m, n] = u0
         for step:ℕ(0, nt):
             accel = wave_equation(u_curr, Δx, Δy, c)
-            u_next = 2 * u_curr - u_prev + dt**2 * accel
+            u_next = 2 * u_curr - u_prev + Δt**2 * accel
             u_next[:, 0] = 0
             u_next[:, ny-1] = 0
             u_next[0, :] = 0
@@ -659,7 +659,7 @@ Build the solver
             u_curr = u_next
         return u_curr
 
-    true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, Δx, Δy, dt, nt)
+    true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, Δx, Δy, Δt, nt)
 
 The solver advances the solution using a second-order finite-difference
 time-stepping scheme. At each step, the acceleration is computed from the
@@ -677,7 +677,7 @@ displacement fields:
 .. code-block:: text
 
     def calculate_loss(c: ℝ): ℝ:
-        predictions: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, dt, nt)
+        predictions: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, Δt, nt)
         diff: ℝ[nx, ny] = predictions - true_solution
         loss: ℝ = mean(diff**2)
         return loss
@@ -744,7 +744,7 @@ Visualize results
 
 .. code-block:: text
 
-    pred_solution: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, dt, nt)
+    pred_solution: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, Δt, nt)
     visualize_trajectory_wave(true_solution, pred_solution, x, y)
 
 .. note::
@@ -843,7 +843,7 @@ Full code (2D wave equation)
     # -------------------------------------
 
     cfl: ℝ = 0.4
-    dt: ℝ = cfl / (5.0 * sqrt(1/Δx**2 + 1/Δy**2))
+    Δt: ℝ = cfl / (5.0 * sqrt(1/Δx**2 + 1/Δy**2))
     nt: ℝ = 50
 
     # -------------------------------------
@@ -879,12 +879,12 @@ Full code (2D wave equation)
     # Build the solver
     # -------------------------------------
 
-    def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], Δx: ℝ, Δy: ℝ, dt: ℝ, nt: ℝ): ℝ[m, n]:
+    def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], Δx: ℝ, Δy: ℝ, Δt: ℝ, nt: ℝ): ℝ[m, n]:
         u_prev: ℝ[m, n] = u0
         u_curr: ℝ[m, n] = u0
         for step:ℕ(0, nt):
             accel = wave_equation(u_curr, Δx, Δy, c)
-            u_next = 2 * u_curr - u_prev + dt**2 * accel
+            u_next = 2 * u_curr - u_prev + Δt**2 * accel
             u_next[:, 0] = 0
             u_next[:, ny-1] = 0
             u_next[0, :] = 0
@@ -893,7 +893,7 @@ Full code (2D wave equation)
             u_curr = u_next
         return u_curr
 
-    true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, Δx, Δy, dt, nt)
+    true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, Δx, Δy, Δt, nt)
 
 
     # -------------------------------------
@@ -901,7 +901,7 @@ Full code (2D wave equation)
     # -------------------------------------
 
     def calculate_loss(c: ℝ): ℝ:
-        predictions: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, dt, nt)
+        predictions: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, Δt, nt)
         diff: ℝ[nx, ny] = predictions - true_solution
         loss: ℝ = mean(diff**2)
         return loss
@@ -946,7 +946,7 @@ Full code (2D wave equation)
         t_adam = result[3]
         physika_print(c)
 
-    pred_solution: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, dt, nt)
+    pred_solution: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, Δt, nt)
     visualize_trajectory_wave(true_solution, pred_solution, x, y)
 
 
