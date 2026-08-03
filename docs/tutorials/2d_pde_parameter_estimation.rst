@@ -85,21 +85,12 @@ Grid and initial condition
 .. code-block::
 
     # Boundary conditions
-    T1: ℝ = 0
-    T2: ℝ = 0
-    T3: ℝ = 0
-    T4: ℝ = 0
-
-    T: ℝ[nx, ny] = zero_2d_array(nx, ny)
+    T1: ℝ, T2: ℝ, T3: ℝ, T4: ℝ = 0, 0, 0, 0
 
     x: ℝ[nx] = linspace(0, Lx, nx)
     y: ℝ[ny] = linspace(0, Ly, ny)
 
-
-    T0: ℝ[nx, ny] = zero_2d_array(nx, ny)
-    for i:ℕ(0, nx):
-        for j:ℕ(0, ny):
-            T0[i, j] = exp(-20 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
+    T0: R[nx, ny] = for i:N(nx) → for j:N(ny) → exp(-20 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
 
 ``T1``–``T4`` set the (zero) Dirichlet boundary conditions on the four edges
 of the plate. We then build the spatial grid using ``x`` and ``y``, and
@@ -374,21 +365,12 @@ Full code (2D heat equation)
     # -------------------------------------
 
     # Boundary conditions
-    T1: ℝ = 0
-    T2: ℝ = 0
-    T3: ℝ = 0
-    T4: ℝ = 0
-
-    T: ℝ[nx, ny] = zero_2d_array(nx, ny)
+    T1: ℝ, T2: ℝ, T3: ℝ, T4: ℝ = 0, 0, 0, 0
 
     x: ℝ[nx] = linspace(0, Lx, nx)
     y: ℝ[ny] = linspace(0, Ly, ny)
 
-
-    T0: ℝ[nx, ny] = zero_2d_array(nx, ny)
-    for i:ℕ(0, nx):
-        for j:ℕ(0, ny):
-            T0[i, j] = exp(-20 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
+    T0: R[nx, ny] = for i:N(nx) → for j:N(ny) → exp(-20 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
 
 
     # -------------------------------------
