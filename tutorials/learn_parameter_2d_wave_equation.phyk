@@ -1,0 +1,160 @@
+# -------------------------------------
+# Helper functions
+# -------------------------------------
+
+
+def get_1d_array_length(x: ℝ[m]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+def zero_1d_array(len: ℝ): ℝ[m]:
+    results: ℝ[len] = for i: ℕ(len) -> i*0
+    return results
+
+def zero_2d_array(rows: ℝ, cols:ℝ ): ℝ[m, n]:
+    results: ℝ[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
+    return results
+
+def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+    x: ℝ[n] = zero_1d_array(n)
+    Δx: ℝ = (end - start) / (n - 1)
+    for i:ℕ(0, n):
+        x[i] = start + i * Δx
+    return x
+
+# -------------------------------------
+# Set up the domain
+# -------------------------------------
+
+Lx: ℝ = 1.0
+Ly: ℝ = 1.0
+nx: ℝ = 40
+ny: ℝ = 40
+tf: ℝ = 2.0
+
+Δx: ℝ = Lx / (nx - 1)
+Δy: ℝ = Ly / (ny - 1)
+
+true_c: ℝ = 1.0
+
+# -------------------------------------
+# Time stepping
+# -------------------------------------
+
+cfl: ℝ = 0.4
+Δt: ℝ = cfl / (5.0 * sqrt(1/Δx**2 + 1/Δy**2))
+nt: ℝ = 50
+
+# -------------------------------------
+# Grid and Initial condition
+# -------------------------------------
+
+x: ℝ[nx] = linspace(0, Lx, nx)
+y: ℝ[ny] = linspace(0, Ly, ny)
+
+pi: ℝ = 3.14
+u0: ℝ[nx,ny] = zero_2d_array(nx, ny)
+
+for i:ℕ(0, nx):
+    for j:ℕ(0, ny):
+        u0[i,j] = sin(2 * pi * x[i]) * sin(pi * y[j])
+
+v0: ℝ[nx,ny] = zero_2d_array(nx, ny)
+
+# -------------------------------------
+# Discretize the wave equation
+# -------------------------------------
+
+
+def wave_equation(u: ℝ[m, n], Δx: ℝ, Δy: ℝ, c: ℝ): ℝ[m, n]:
+    lap: ℝ[m, n] = zero_2d_array(nx, ny)
+    lap[1:nx-1, 1:ny-1] = c**2 * (
+        ((u[0:nx-2, 1:ny-1] - 2 * u[1:nx-1, 1:ny-1] + u[2:nx, 1:ny-1]) / (Δx**2)) +
+        ((u[1:nx-1, 0:ny-2] - 2 * u[1:nx-1, 1:ny-1] + u[1:nx-1, 2:ny]) / (Δy**2))
+    )
+    return lap
+
+# -------------------------------------
+# Build the solver
+# -------------------------------------
+
+def solver(c: ℝ, u0: ℝ[m, n], v0: ℝ[m, n], Δx: ℝ, Δy: ℝ, Δt: ℝ, nt: ℝ): ℝ[m, n]:
+    u_prev: ℝ[m, n] = u0
+    u_curr: ℝ[m, n] = u0
+    for step:ℕ(0, nt):
+        accel = wave_equation(u_curr, Δx, Δy, c)
+        u_next = 2 * u_curr - u_prev + Δt**2 * accel
+        u_next[:, 0] = 0
+        u_next[:, ny-1] = 0
+        u_next[0, :] = 0
+        u_next[nx-1, :] = 0
+        u_prev = u_curr
+        u_curr = u_next
+    return u_curr
+
+true_solution: ℝ[nx, ny] = solver(true_c, u0, v0, Δx, Δy, Δt, nt)
+
+
+# -------------------------------------
+# Loss function
+# -------------------------------------
+
+def calculate_loss(c: ℝ): ℝ:
+    predictions: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, Δt, nt)
+    diff: ℝ[nx, ny] = predictions - true_solution
+    loss: ℝ = mean(diff**2)
+    return loss
+
+# -------------------------------------
+# Optimizer
+# -------------------------------------
+
+def adam(c: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
+    beta1: ℝ = 0.9
+    beta2: ℝ = 0.999
+    eps: ℝ = 1e-8
+    m_new: ℝ = beta1 * m + (1.0 - beta1) * g
+    v_new: ℝ = beta2 * v + (1.0 - beta2) * g**2
+    m_hat: ℝ = m_new / (1.0 - beta1**t)
+    v_hat: ℝ = v_new / (1.0 - beta2**t)
+    c_new: ℝ = c - lr * m_hat / (sqrt(v_hat) + eps)
+    return [c_new, m_new, v_new, t + 1.0]
+
+# -------------------------------------
+# Training
+# -------------------------------------
+
+c: ℝ = 3.0
+
+
+m_adam: ℝ = 0.0
+v_adam: ℝ = 0.0
+t_adam: ℝ = 1.0
+lr: ℝ = 0.01
+
+# -----------------------------------------------------------
+# Set epochs to 400, here it is 1 so the tutorial 
+# runs quickly through tests/test_tutorials.py.
+# -----------------------------------------------------------
+
+epochs: ℕ = 1
+
+
+for i:ℕ(epochs):
+    physika_print(i)
+    g = grad(calculate_loss, c)
+    result = adam(c, g, m_adam, v_adam, t_adam, lr)
+    c = result[0]
+    m_adam = result[1]
+    v_adam = result[2]
+    t_adam = result[3]
+    physika_print(c)
+
+pred_solution: ℝ[nx, ny] = solver(c, u0, v0, Δx, Δy, Δt, nt)
+#visualize_trajectory_wave(true_solution, pred_solution, x, y)
+
+

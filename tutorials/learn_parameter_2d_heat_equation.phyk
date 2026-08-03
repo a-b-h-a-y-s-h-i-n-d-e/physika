@@ -1,0 +1,164 @@
+# -------------------------------------
+# Helper functions
+# -------------------------------------
+
+def zero_1d_array(len: ℝ): ℝ[m]:
+    results: ℝ[len] = for i: ℕ(len) -> i*0
+    return results
+
+
+def zero_2d_array(rows: ℝ, cols: ℝ): ℝ[m, n]:
+    results: ℝ[rows, cols] = for i:ℕ(rows) -> for j:ℕ(cols) -> j*0
+    return results
+
+
+def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+    x: ℝ[n] = zero_1d_array(n)
+    Δx: ℝ = (end - start) / (n - 1)
+    for i:ℕ(0, n):
+        x[i] = start + i * Δx
+    return x
+
+
+# -------------------------------------
+# Set Up the Domain
+# -------------------------------------
+
+true_α: ℝ = 2.0
+Lx: ℝ = 1.0
+Ly: ℝ = 1.0
+
+nx: ℝ = 40
+ny: ℝ = 40
+tf: ℝ = 10
+
+Δx: ℝ = Lx / (nx - 1)
+Δy: ℝ = Ly / (ny - 1)
+
+
+# -------------------------------------
+# Time stepping
+# -------------------------------------
+
+fourier: ℝ = 0.49
+Δt: ℝ = fourier / (1/Δx**2 + 1/Δy**2) / 10.0
+nt: ℝ = 100
+
+
+# -------------------------------------
+# Grid and initial condition
+# -------------------------------------
+
+# Boundary conditions
+T1: ℝ, T2: ℝ, T3: ℝ, T4: ℝ = 0, 0, 0, 0
+
+
+
+
+x: ℝ[nx] = linspace(0, Lx, nx)
+y: ℝ[ny] = linspace(0, Ly, ny)
+
+
+#T0: ℝ[nx, ny] = zero_2d_array(nx, ny)
+#for i:ℕ(0, nx):
+#    for j:ℕ(0, ny):
+#        T0[i, j] = exp(-20 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
+
+T0: R[nx, ny] = for i:N(nx) → for j:N(ny) → exp(-20 * (((x[i]-0.5)**2) + ((y[j]-0.5)**2)))
+
+
+# -------------------------------------
+# Discretize the Heat equation
+# -------------------------------------
+
+
+def heat_equation(T: ℝ[m, n], Δx: ℝ, Δy: ℝ, α: ℝ): ℝ[m, n]:
+    f: ℝ[m, n] = zero_2d_array(nx, ny)
+    f[1:nx-1, 1:ny-1] = α * (
+        ((T[0:nx-2, 1:ny-1] - 2 * T[1:nx-1, 1:ny-1] + T[2:nx, 1:ny-1]) / (Δx**2)) +
+        ((T[1:nx-1, 0:ny-2] - 2 * T[1:nx-1, 1:ny-1] + T[1:nx-1, 2:ny]) / (Δy**2))
+    )
+    return f
+
+
+# -------------------------------------
+# Build the solver
+# -------------------------------------
+
+def solver(α: ℝ, T0: ℝ[m, n], Δx: ℝ, Δy: ℝ, Δt: ℝ, nt: ℝ): ℝ[m, n]:
+    T: ℝ[m, n] = T0
+    for step:ℕ(0, nt):
+        T = T + Δt * heat_equation(T, Δx, Δy, α)
+        T[:, 0] = 0
+        T[:, ny-1] = 0
+        T[0, :] = 0
+        T[nx-1, :] = 0
+    return T
+
+true_solution: ℝ[nx, ny] = solver(true_α, T0, Δx, Δy, Δt, nt)
+
+# -------------------------------------
+# Loss function
+# -------------------------------------
+
+
+def calculate_loss(α: ℝ): ℝ:
+    predictions: ℝ[nx, ny] = solver(α, T0, Δx, Δy, Δt, nt)
+    diff: ℝ[nx, ny] = predictions - true_solution
+    loss: ℝ = mean(diff**2)
+    return loss
+
+# -------------------------------------
+# Optimizer
+# -------------------------------------
+
+def adam(α: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
+    beta1: ℝ = 0.9
+    beta2: ℝ = 0.999
+    eps: ℝ = 1e-8
+    m_new: ℝ = beta1 * m + (1.0 - beta1) * g
+    v_new: ℝ = beta2 * v + (1.0 - beta2) * g**2
+    m_hat: ℝ = m_new / (1.0 - beta1**t)
+    v_hat: ℝ = v_new / (1.0 - beta2**t)
+    α_new: ℝ = α - lr * m_hat / (sqrt(v_hat) + eps)
+    return [α_new, m_new, v_new, t + 1.0]
+
+
+# -------------------------------------
+# Training
+# -------------------------------------
+
+
+α: ℝ = 4.0
+
+guess_solution: ℝ[nx, ny] = solver(α, T0, Δx, Δy, Δt, nt)
+#visualize_trajectory_heat(true_solution, guess_solution, x, y)
+
+m_adam: ℝ = 0.0
+v_adam: ℝ = 0.0
+t_adam: ℝ = 1.0
+lr: ℝ = 0.01
+
+# -----------------------------------------------------------
+# Set epochs to 200, here it is 1 so the tutorial 
+# runs quickly through tests/test_tutorials.py.
+# -----------------------------------------------------------
+
+epochs: ℕ = 1
+
+for i:ℕ(epochs):
+    physika_print(i)
+    g = grad(calculate_loss, α)
+    result = adam(α, g, m_adam, v_adam, t_adam, lr)
+    α = result[0]
+    m_adam = result[1]
+    v_adam = result[2]
+    t_adam = result[3]
+    physika_print(α)
+
+# α should be closer to 2.0
+α
+
+pred_solution: ℝ[nx, ny] = solver(α, T0, Δx, Δy, Δt, nt)
+#visualize_trajectory_heat(true_solution, pred_solution, x, y)
+

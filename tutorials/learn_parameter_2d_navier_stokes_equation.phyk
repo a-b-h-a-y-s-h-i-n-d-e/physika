@@ -1,0 +1,261 @@
+# --------------------------------------------------
+# Helper functions
+# --------------------------------------------------
+
+def zero_1d_array(len: ℝ): ℝ[m]:
+    results: ℝ[len] = for i: ℕ(len) -> i*0
+    return results
+
+def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+    x: ℝ[n] = zero_1d_array(n)
+    Δx: ℝ = (end - start) / (n - 1)
+    for i:ℕ(0, n):
+        x[i] = start + i * Δx
+    return x
+
+def zero_2d_array(rows: ℝ, cols: ℝ): ℝ[m, n]:
+    results: ℝ[rows, cols] = for i:ℕ(rows) -> for j:ℕ(cols) -> j*0
+    return results
+
+
+# --------------------------------------------------
+# Problem setup
+# --------------------------------------------------
+
+
+n_points: ℝ = 21
+domain_size: ℝ = 1.0
+n_iterations: ℝ = 500
+
+time_step_length: ℝ = 0.001
+ν: ℝ = 0.1
+true_ρ: ℝ = 1.0
+horizontal_velocity_top: ℝ = 1.0
+
+n_pressure_poisson_iterations: ℝ = 10
+stability_safety_factor: ℝ = 0.5
+
+element_length: ℝ = domain_size / (n_points - 1)
+
+x: ℝ[n_points] = linspace(0.0, domain_size, n_points)
+y: ℝ[n_points] = linspace(0.0, domain_size, n_points)
+
+
+
+# --------------------------------------------------
+# Discretize spatial derivatives
+# --------------------------------------------------
+
+
+
+def central_difference_x(f: ℝ[m, n]): ℝ[m, n]:
+    diff: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+    diff[1:n_points-1, 1:n_points-1] = (
+        f[1:n_points-1, 2:n_points] -
+        f[1:n_points-1, 0:n_points-2]
+    ) / (2 * element_length)
+    return diff
+
+def central_difference_y(f: ℝ[m, n]): ℝ[m, n]:
+    diff: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+    diff[1:n_points-1, 1:n_points-1] = (
+        f[2:n_points, 1:n_points-1] -
+        f[0:n_points-2, 1:n_points-1]
+    ) / (2 * element_length)
+    return diff
+
+def laplace(f: ℝ[m, n]): ℝ[m, n]:
+    diff: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+    diff[1:n_points-1, 1:n_points-1] = (
+        f[1:n_points-1, 0:n_points-2] +   # left
+        f[0:n_points-2, 1:n_points-1] +   # up
+        f[1:n_points-1, 2:n_points] +     # right
+        f[2:n_points, 1:n_points-1] -     # down
+        4 * f[1:n_points-1, 1:n_points-1]
+    ) / (element_length ** 2)
+    return diff
+
+
+
+f: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+
+for i:ℕ(n_points):
+    for j:ℕ(n_points):
+        t_x = j * element_length
+        t_y = i * element_length
+        f[i, j] = t_x**2 + t_y**2
+
+
+# --------------------------------------------------
+# Build the solver
+# --------------------------------------------------
+
+
+n_iterations: ℝ = 5
+
+
+def solver(ρ: ℝ): ℝ[3, m, n]:
+    u_prev: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+    v_prev: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+    p_prev: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+    for i:ℕ(n_iterations):
+        d_u_prev__d_x = central_difference_x(u_prev)
+        d_u_prev__d_y = central_difference_y(u_prev)
+        d_v_prev__d_x = central_difference_x(v_prev)
+        d_v_prev__d_y = central_difference_y(v_prev)
+        laplace__u_prev = laplace(u_prev)
+        laplace__v_prev = laplace(v_prev)
+        u_tent = u_prev + time_step_length * (
+            - (
+                u_prev * d_u_prev__d_x + v_prev * d_u_prev__d_y
+            ) + ν * laplace__u_prev
+        )
+        v_tent = v_prev + time_step_length * (
+            - (
+                u_prev * d_v_prev__d_x + v_prev * d_v_prev__d_y
+            ) + ν * laplace__v_prev
+        )
+        u_tent[0, :] = 0.0
+        u_tent[-1, :] = horizontal_velocity_top
+        u_tent[:, 0] = 0.0
+        u_tent[:, -1] = 0.0
+        v_tent[0, :] = 0.0
+        v_tent[-1, :] = 0.0
+        v_tent[:, 0] = 0.0
+        v_tent[:, -1] = 0.0
+        d_u_tent__d_x = central_difference_x(u_tent)
+        d_v_tent__d_y = central_difference_y(v_tent)
+        rhs = (ρ / time_step_length * (d_u_tent__d_x + d_v_tent__d_y))
+        for k:ℕ(n_pressure_poisson_iterations):
+            p_next = zero_2d_array(n_points, n_points)
+            p_next[1:-1, 1:-1] = 0.25 * (
+                p_prev[1:-1, :-2] +
+                p_prev[:-2, 1:-1] +
+                p_prev[1:-1, 2:] +
+                p_prev[2:, 1:-1] -
+                element_length**2 * rhs[1:-1, 1:-1]
+            )
+            p_next[:, -1] = p_next[:, -2]
+            p_next[0, :] = p_next[1, :]
+            p_next[:, 0] = p_next[:, 1]
+            p_next[-1, :] = 0.0
+            p_prev = p_next
+        d_p_next__d_x = central_difference_x(p_next)
+        d_p_next__d_y = central_difference_y(p_next)
+        u_next = (
+            u_tent -
+            time_step_length / ρ *
+            d_p_next__d_x
+        )
+        v_next = (
+            v_tent -
+            time_step_length / ρ *
+            d_p_next__d_y
+        )
+        u_next[0, :] = 0.0
+        u_next[:, 0] = 0.0
+        u_next[:, -1] = 0.0
+        u_next[-1, :] = horizontal_velocity_top
+        v_next[0, :] = 0.0
+        v_next[:, 0] = 0.0
+        v_next[:, -1] = 0.0
+        v_next[-1, :] = 0.0
+        u_prev = u_next
+        v_prev = v_next
+        p_prev = p_next
+    return [u_prev, v_prev, p_prev]
+
+
+
+
+
+true_solution: ℝ[3, n_points, n_points] = solver(true_ρ)
+true_u: ℝ[n_points, n_points] = true_solution[0]
+true_v: ℝ[n_points, n_points] = true_solution[1]
+true_p: ℝ[n_points, n_points] = true_solution[2]
+
+
+
+# --------------------------------------------------
+# Define loss function and optimizer
+# --------------------------------------------------
+
+
+def calculate_loss(ρ: ℝ): ℝ:
+    predictions: ℝ[3, n_points, n_points] = solver(ρ)
+    pred_u: ℝ[n_points, n_points] = predictions[0]
+    pred_v: ℝ[n_points, n_points] = predictions[1]
+    pred_p: ℝ[n_points, n_points] = predictions[2]
+    loss_u: ℝ = mean((pred_u - true_u)**2)
+    loss_v: ℝ = mean((pred_v - true_v)**2)
+    loss_p: ℝ = mean((pred_p - true_p)**2)
+    loss: ℝ = loss_u + loss_v + loss_p
+    return loss
+
+def adam(ρ: ℝ, g: ℝ, m: ℝ, v: ℝ, t: ℝ, lr: ℝ) : ℝ[4]:
+    beta1: ℝ = 0.9
+    beta2: ℝ = 0.999
+    eps: ℝ = 1e-8
+    m_new: ℝ = beta1 * m + (1.0 - beta1) * g
+    v_new: ℝ = beta2 * v + (1.0 - beta2) * g**2
+    m_hat: ℝ = m_new / (1.0 - beta1**t)
+    v_hat: ℝ = v_new / (1.0 - beta2**t)
+    ρ_new: ℝ = ρ - lr * m_hat / (sqrt(v_hat) + eps)
+    return [ρ_new, m_new, v_new, t + 1.0]
+
+
+
+# --------------------------------------------------
+# Training loop
+# --------------------------------------------------
+
+
+ρ: ℝ = 3.0
+
+m_adam: ℝ = 0.0
+v_adam: ℝ = 0.0
+t_adam: ℝ = 1.0
+lr: ℝ = 0.01
+
+# -----------------------------------------------------------
+# Set epochs to 400, here it is 1 so the tutorial 
+# runs quickly through tests/test_tutorials.py.
+# -----------------------------------------------------------
+
+epochs: ℕ = 1
+
+for i:ℕ(epochs):
+    physika_print(i)
+    g = grad(calculate_loss, ρ)
+    result = adam(ρ, g, m_adam, v_adam, t_adam, lr)
+    ρ = result[0]
+    m_adam = result[1]
+    v_adam = result[2]
+    t_adam = result[3]
+    physika_print(ρ)
+
+# value of `ρ` should be close to 1.0
+ρ
+
+# --------------------------------------------------
+# Final results
+# --------------------------------------------------
+
+
+pred_solution: ℝ[3, n_points, n_points] = solver(ρ)
+pred_u: ℝ[n_points, n_points] = pred_solution[0]
+pred_v: ℝ[n_points, n_points] = pred_solution[1]
+pred_p: ℝ[n_points, n_points] = pred_solution[2]
+
+
+X: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+Y: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+
+for i:ℕ(n_points):
+    for j:ℕ(n_points):
+        X[i, j] = j * element_length
+        Y[i, j] = i * element_length
+
+
+#plot_navier_stokes_comparison(X, Y, true_u, true_v, true_p, pred_u, pred_v, pred_p)
+
