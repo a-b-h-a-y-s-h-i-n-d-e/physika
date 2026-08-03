@@ -84,7 +84,7 @@ Time stepping
    Here we are using a Fourier number of ``0.49``, with an
    additional safety factor of ``10`` for extra margin.
 
-The time step ``Δt`` is computed from the Fourier number to satisfy the
+The time step ``Δt`` is computed from the CFL number [SimScaleCFL]_ to satisfy the
 stability condition for explicit time-stepping, and ``nt`` is the total
 number of time steps to simulate.
 
@@ -114,7 +114,7 @@ Discretize the Heat equation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Using second-order central differences for the spatial derivatives, the 2D
-heat equation becomes:
+heat equation becomes [CadenceHeat2D]_ :
 
 .. math::
 
@@ -202,7 +202,7 @@ temperature profiles:
 Optimizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We are using Adam optimizer here:
+We are using Adam optimizer here [KingmaBa2014]_ :
 
 
 .. math::
@@ -538,7 +538,7 @@ Time stepping
    where ``c`` is the wave speed. Here we are using  Fourier number of ``0.4``, with an additional safety factor of ``5``
    for extra margin.
 
-The time step ``Δt`` is chosen using the CFL number to satisfy the stability
+The time step ``Δt`` is chosen using the CFL number [SimScaleCFL]_ to satisfy the stability
 condition for the explicit finite-difference wave solver. ``nt`` specifies the
 total number of time steps used in the simulation.
 
@@ -571,7 +571,7 @@ Discretize the Wave equation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Using second-order central differences for the spatial derivatives, the 2D
-wave equation becomes:
+wave equation becomes [AdamsWave2D]_ :
 
 .. math::
 
@@ -669,7 +669,7 @@ displacement fields:
 Optimizer
 ^^^^^^^^^
 
-We are using Adam optimizer here:
+We are using Adam optimizer here [KingmaBa2014]_ :
 
 .. math::
 
@@ -940,7 +940,7 @@ Full code (2D wave equation)
 2D Navier-Stokes equation (Lid-driven cavity)
 ---------------------------------------------
 
-The 2D incompressible Navier-Stokes equations are:
+The 2D incompressible Navier-Stokes equations are [NavierStokesWiki]_ :
 
 .. math::
 
@@ -1047,7 +1047,7 @@ Build the solver
 Unlike the heat and wave equations, where the solver is a single
 straightforward update step, the Navier-Stokes solver involves several
 coupled steps. We'll walk through each one in detail below before
-assembling them into the full solver.
+assembling them into the full solver. [ANLINSChorin]_ [CadenceNavierStokes]_  
 
 
 
@@ -1301,7 +1301,7 @@ solution is from that reference:
         return loss
 
 We then minimize :math:`\mathcal{L}(\rho)` with respect to :math:`\rho` using
-gradient descent via the Adam optimizer:
+gradient descent via the Adam optimizer [KingmaBa2014]_ :
 
 .. math::
 
@@ -1685,10 +1685,37 @@ Full code (2D Navier stokes equation)
 
     plot_navier_stokes_comparison(X, Y, true_u, true_v, true_p, pred_u, pred_v, pred_p)
 
- 
+
 
 References
 ----------
+
+.. [NavierStokesWiki] Wikipedia contributors. *Navier–Stokes Equations*.
+   https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations
+
+.. [ANLINSChorin] Argonne National Laboratory. *INSChorin Module*.
+   Cardinal Documentation.
+   https://cardinal.cels.anl.gov/modules/navier_stokes/inschorin.html
+
+.. [CadenceHeat2D] Cadence System Analysis. *Using the 2D Finite Difference
+   Method for Heat Transfer Analysis*.
+   https://resources.system-analysis.cadence.com/blog/msa2022-using-the-2d-finite-difference-method-for-heat-transfer-analysis
+
+.. [SimScaleCFL] SimScale. *What Is the CFL Condition?*
+   https://www.simscale.com/blog/cfl-condition/
+
+.. [KingmaBa2014] Kingma, D. P., & Ba, J. (2014).
+   *Adam: A Method for Stochastic Optimization*.
+   https://arxiv.org/pdf/1412.6980
+
+.. [AdamsWave2D] Adams, V. H.
+   *Finite Difference Discretization of the 2D Wave Equation*.
+   https://vanhunteradams.com/DE1/Drum/Discretization.html
+
+.. [CadenceNavierStokes] Cadence System Analysis.
+   *Formulating the 2D Incompressible Steady-State Navier–Stokes Equation*.
+   https://resources.system-analysis.cadence.com/blog/msa2022-formulating-the-2d-incompressible-steady-state-navier-stokes-equation
+
 
 - Navier-Stokes equation (lid-driven cavity):
   `Ceyron, "lid_driven_cavity_python_simple.py", machine-learning-and-simulation <https://github.com/Ceyron/machine-learning-and-simulation/blob/main/english/simulation_scripts/lid_driven_cavity_python_simple.py>`_
