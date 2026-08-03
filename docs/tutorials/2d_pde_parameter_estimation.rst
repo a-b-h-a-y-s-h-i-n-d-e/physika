@@ -74,6 +74,16 @@ Time stepping
     Δt: ℝ = fourier / (1/Δx**2 + 1/Δy**2) / 10.0
     nt: ℝ = 100
 
+.. note::
+   For the 2D heat equation, the ``CFL stability condition`` for explicit time-stepping is defined as:
+
+   .. math::
+
+      \alpha \, \Delta t \left(\frac{1}{\Delta x^2} + \frac{1}{\Delta y^2}\right) \leq 0.5
+
+   Here we are using a Fourier number of ``0.49``, with an
+   additional safety factor of ``10`` for extra margin.
+
 The time step ``Δt`` is computed from the Fourier number to satisfy the
 stability condition for explicit time-stepping, and ``nt`` is the total
 number of time steps to simulate.
@@ -538,9 +548,20 @@ Time stepping
     Δt: ℝ = cfl / (5.0 * sqrt(1/Δx**2 + 1/Δy**2))
     nt: ℝ = 50
 
+.. note::
+   For the 2D wave equation, the ``CFL stability condition`` for explicit time-stepping is defined as:
+
+   .. math::
+
+      c \, \Delta t \, \sqrt{\frac{1}{\Delta x^2} + \frac{1}{\Delta y^2}} \leq 1
+
+   where ``c`` is the wave speed. Here we are using  Fourier number of ``0.4``, with an additional safety factor of ``5``
+   for extra margin.
+
 The time step ``Δt`` is chosen using the CFL number to satisfy the stability
 condition for the explicit finite-difference wave solver. ``nt`` specifies the
 total number of time steps used in the simulation.
+
 
 
 Grid and initial condition
