@@ -13,6 +13,8 @@ they introduce the key concepts and techniques that are used throughout the 2D e
 2D Heat equation
 ----------------
 
+The 2d Heat equation is [HeatEquationWiki]_ :
+
 .. math::
 
    \frac{\partial u}{\partial t} = \alpha \left( \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} \right)
@@ -481,7 +483,9 @@ Full code (2D heat equation)
 2D Wave equation
 ----------------
 
-.. math::
+The 2d Wave equation is [WaveEquationWiki]_ :
+
+.. math:: 
 
    \frac{\partial^2 u}{\partial t^2}
    =
@@ -1687,16 +1691,22 @@ Full code (2D Navier stokes equation)
 References
 ----------
 
-.. [NavierStokesWiki] Wikipedia contributors. *Navier–Stokes Equations*.
-   https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations
-
-.. [ANLINSChorin] Argonne National Laboratory. *INSChorin Module*.
-   Cardinal Documentation.
-   https://cardinal.cels.anl.gov/modules/navier_stokes/inschorin.html
+.. [HeatEquationWiki] Wikipedia. *Heat Equation*.
+   https://en.wikipedia.org/wiki/Heat_equation
 
 .. [CadenceHeat2D] Cadence System Analysis. *Using the 2D Finite Difference
    Method for Heat Transfer Analysis*.
    https://resources.system-analysis.cadence.com/blog/msa2022-using-the-2d-finite-difference-method-for-heat-transfer-analysis
+
+.. [WaveEquationWiki] Wikipedia. *Wave Equation*.
+   https://en.wikipedia.org/wiki/Wave_equation
+
+.. [AdamsWave2D] Adams, V. H.
+   *Finite Difference Discretization of the 2D Wave Equation*.
+   https://vanhunteradams.com/DE1/Drum/Discretization.html
+
+.. [NavierStokesWiki] Wikipedia. *Navier–Stokes Equations*.
+   https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations
 
 .. [SimScaleCFL] SimScale. *What Is the CFL Condition?*
    https://www.simscale.com/blog/cfl-condition/
@@ -1705,9 +1715,9 @@ References
    *Adam: A Method for Stochastic Optimization*.
    https://arxiv.org/pdf/1412.6980
 
-.. [AdamsWave2D] Adams, V. H.
-   *Finite Difference Discretization of the 2D Wave Equation*.
-   https://vanhunteradams.com/DE1/Drum/Discretization.html
+.. [ANLINSChorin] Argonne National Laboratory. *INSChorin Module*.
+   Cardinal Documentation.
+   https://cardinal.cels.anl.gov/modules/navier_stokes/inschorin.html
 
 .. [CadenceNavierStokes] Cadence System Analysis.
    *Formulating the 2D Incompressible Steady-State Navier–Stokes Equation*.
