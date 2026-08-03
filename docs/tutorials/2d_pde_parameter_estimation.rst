@@ -1425,9 +1425,6 @@ Full code (2D Navier stokes equation)
 
 .. code-block:: text
 
-    # https://github.com/Ceyron/machine-learning-and-simulation/blob/main/english/simulation_scripts/lid_driven_cavity_python_simple.py
-    # https://arxiv.org/pdf/physics/0407002
-
     # --------------------------------------------------
     # Helper functions
     # --------------------------------------------------
