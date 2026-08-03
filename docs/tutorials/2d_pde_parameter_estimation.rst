@@ -495,27 +495,6 @@ are the spatial coordinates, :math:`t` is time, and :math:`c` is the wave
 speed, the parameter we want to learn.
 
 
-Helper functions
-^^^^^^^^^^^^^^^^
-
-
-.. code-block:: text
-
-    def zero_1d_array(len: ℝ): ℝ[m]:
-        results: ℝ[len] = for i: ℕ(len) -> i*0
-        return results
-
-    def zero_2d_array(rows: ℝ, cols:ℝ ): ℝ[m, n]:
-        results: ℝ[rows, cols] = for i:N(rows) -> for j:N(cols) -> j*0
-        return results
-
-    def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
-        x: ℝ[n] = zero_1d_array(n)
-        Δx: ℝ = (end - start) / (n - 1)
-        for i:ℕ(0, n):
-            x[i] = start + i * Δx
-        return x
-
 
 Set Up the Domain
 ^^^^^^^^^^^^^^^^^
