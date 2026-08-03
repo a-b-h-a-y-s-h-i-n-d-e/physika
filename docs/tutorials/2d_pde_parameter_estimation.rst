@@ -105,8 +105,8 @@ Grid and initial condition
 ``T1``–``T4`` set the (zero) Dirichlet boundary conditions on the four edges
 of the plate. We then build the spatial grid using ``x`` and ``y``, and
 initialize the temperature field ``T0`` as a Gaussian pulse centered at the
-middle of the domain — this is the initial condition the PDE will evolve
-forward in time from.
+middle of the domain, this is the initial condition the PDE solver will evolve
+forward in time.
 
 
 
@@ -313,8 +313,9 @@ Visualize results
    :alt: Learned PDE trajectory vs ground truth
    :align: center
    :width: 700px
+   :name: fig-2d-heat-results
 
-   Comparison between ground truth and learned trajectory after training.
+   Figure 1: Comparison between ground truth and learned trajectory after training.
 
 
 
@@ -767,8 +768,9 @@ Visualize results
    :alt: Learned PDE trajectory vs ground truth
    :align: center
    :width: 700px
+   :name: fig-2d-wave-results
 
-   Comparison between the ground truth and learned wave field after training.
+   Figure 2: Comparison between the ground truth and learned wave field after training.
 
 
 
@@ -958,7 +960,8 @@ where,
 - :math:`\nu` is the kinematic viscosity
 - :math:`\rho` is the fluid density, the parameter we want to learn
 
-The last equation is the incompressibility (continuity) constraint.
+The third equation (continuity equation) of Navier-stokes represents incompressibility property of the fluid. As the fluid flow is in
+a steady-state, the field properties are not functions of time and the equation reduces to one comprising of velocity vector.
 
 
 Problem setup
@@ -976,23 +979,22 @@ Problem setup
     horizontal_velocity_top: ℝ = 1.0
 
     n_pressure_poisson_iterations: ℝ = 10
-    stability_safety_factor: R = 0.5
+    stability_safety_factor: ℝ = 0.5
 
-    element_length: R = domain_size / (n_points - 1)
+    element_length: ℝ = domain_size / (n_points - 1)
 
-    x = linspace(0.0, domain_size, n_points)
-    y = linspace(0.0, domain_size, n_points)
+    x: ℝ[n_points] = linspace(0.0, domain_size, n_points)
+    y: ℝ[n_points] = linspace(0.0, domain_size, n_points)
 
 - ``domain_size`` is the length of the (square) cavity
-- ``n_points`` is the number of grid points along each axis
+- ``n_points`` is the number of grid points along each axis (for both x and y axis)
 - ``element_length`` is the grid spacing (used as both :math:`\Delta x` and
   :math:`\Delta y` since the grid is uniform)
-- ``time_step_length`` is :math:`\Delta t`
-- ``kinematic_viscosity`` is :math:`\nu`
-- ``density`` is :math:`\rho` (the parameter we want to learn)
+- ``time_step_length`` is :math:`\Delta t`, which is size of each step
+- ``ν`` is :math:`\nu` also known as kinematic viscosity
+- ``density`` is :math:`\rho` also known as density (the parameter we want to learn)
 - ``horizontal_velocity_top`` is the lid velocity that drives the flow
-- ``n_pressure_poisson_iterations`` controls how many Jacobi iterations are
-  used to solve the pressure Poisson equation at each time step
+- ``n_pressure_poisson_iterations`` is the number of passes we run at each time step to solve pressure field.
 
 
 Discretize the spatial derivatives
@@ -1012,24 +1014,24 @@ throughout the solver.
 
 .. code-block:: text
 
-    def central_difference_x(f: R[m, n]): R[m, n]:
-        diff = zero_2d_array(n_points, n_points)
+    def central_difference_x(f: ℝ[m, n]): ℝ[m, n]:
+        diff: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
         diff[1:n_points-1, 1:n_points-1] = (
             f[1:n_points-1, 2:n_points] -
             f[1:n_points-1, 0:n_points-2]
         ) / (2 * element_length)
         return diff
 
-    def central_difference_y(f: R[m, n]): R[m, n]:
-        diff = zero_2d_array(n_points, n_points)
+    def central_difference_y(f: ℝ[m, n]): ℝ[m, n]:
+        diff: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
         diff[1:n_points-1, 1:n_points-1] = (
             f[2:n_points, 1:n_points-1] -
             f[0:n_points-2, 1:n_points-1]
         ) / (2 * element_length)
         return diff
 
-    def laplace(f: R[m, n]): R[m, n]:
-        diff = zero_2d_array(n_points, n_points)
+    def laplace(f: ℝ[m, n]): ℝ[m, n]:
+        diff: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
         diff[1:n_points-1, 1:n_points-1] = (
             f[1:n_points-1, 0:n_points-2] +   # left
             f[0:n_points-2, 1:n_points-1] +   # up
@@ -1049,8 +1051,8 @@ assembling them into the full solver.
 
 
 
-Tentative velocity step
-^^^^^^^^^^^^^^^^^^^^^^^^
+Prediction step for the velocity field 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The projection method first computes a *tentative* velocity field by
 advancing the momentum equations while ignoring the pressure gradient term:
@@ -1063,7 +1065,7 @@ advancing the momentum equations while ignoring the pressure gradient term:
     \end{align*}
 
 Here :math:`u^{*}, v^{*}` denote the tentative velocities, which don't yet
-satisfy the incompressibility constraint — that's corrected in the pressure
+satisfy the incompressibility constraint which gets corrected in the pressure
 projection step below.
 
 .. code-block:: text
@@ -1109,22 +1111,16 @@ After this we update the velocity boundary values.
     v_tent[:, -1] = 0.0
 
 
-Pressure Poisson equation
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Correction step for the pressure field
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since the tentative velocity doesn't satisfy :math:`\nabla \cdot \mathbf{u} = 0`,
-we solve for a pressure field that corrects it. Taking the divergence of
-the momentum equation gives a Poisson equation for pressure:
+The predicted velocity field is then used to compute a provisional pressure field using a Poisson equation derived from the incompressibility constraint.
+The pressure correction is applied to remove any divergence from the predicted velocity field.
 
 .. math::
 
     \nabla^2 p = \frac{\rho}{\Delta t}\left(\frac{\partial u^{*}}{\partial x} + \frac{\partial v^{*}}{\partial y}\right)
 
-which we solve iteratively using Jacobi iteration, discretized as:
-
-.. math::
-
-    p^{k+1}_{i,j} = \frac{1}{4}\left(p^{k}_{i,j-1} + p^{k}_{i-1,j} + p^{k}_{i,j+1} + p^{k}_{i+1,j} - \Delta x^2 \cdot \text{rhs}_{i,j}\right)
 
 .. code-block:: text
 
@@ -1142,8 +1138,7 @@ which we solve iteratively using Jacobi iteration, discretized as:
         )
 
 After this again we will update boundary values, where 
-We use homogeneous Neumann conditions (:math:`\partial p/\partial n = 0`)
-on the left, right, and bottom walls, and fix :math:`p = 0` on the top wall:
+we use homogeneous Neumann conditions on the left, right, and bottom walls, and fix :math:`p = 0` on the top wall:
 
 
 .. code-block:: text
@@ -1289,20 +1284,20 @@ solution is from that reference:
 
 .. code-block:: text
 
-    true_solution = solver(density)
-    true_u = true_solution[0]
-    true_v = true_solution[1]
-    true_p = true_solution[2]
+    true_solution: ℝ[3, n_points, n_points] = solver(true_ρ)
+    true_u: ℝ[n_points, n_points] = true_solution[0]
+    true_v: ℝ[n_points, n_points] = true_solution[1]
+    true_p: ℝ[n_points, n_points] = true_solution[2]
 
-    def calculate_loss(density: R): R:
-        predictions = solver(density)
-        pred_u = predictions[0]
-        pred_v = predictions[1]
-        pred_p = predictions[2]
-        loss_u = mean((pred_u - true_u)**2)
-        loss_v = mean((pred_v - true_v)**2)
-        loss_p = mean((pred_p - true_p)**2)
-        loss = loss_u + loss_v + loss_p
+    def calculate_loss(ρ: ℝ): ℝ:
+        predictions: ℝ[3, n_points, n_points] = solver(ρ)
+        pred_u: ℝ[n_points, n_points] = predictions[0]
+        pred_v: ℝ[n_points, n_points] = predictions[1]
+        pred_p: ℝ[n_points, n_points] = predictions[2]
+        loss_u: ℝ = mean((pred_u - true_u)**2)
+        loss_v: ℝ = mean((pred_v - true_v)**2)
+        loss_p: ℝ = mean((pred_p - true_p)**2)
+        loss: ℝ = loss_u + loss_v + loss_p
         return loss
 
 We then minimize :math:`\mathcal{L}(\rho)` with respect to :math:`\rho` using
@@ -1333,7 +1328,7 @@ the loss with respect to the density at step :math:`t`.
         density_new: ℝ = density - lr * m_hat / (sqrt(v_hat) + eps)
         return [density_new, m_new, v_new, t + 1.0]
 
-    ρ: R = 3.0
+    ρ: ℝ = 3.0
 
     m_adam: ℝ = 0.0
     v_adam: ℝ = 0.0
@@ -1365,11 +1360,17 @@ fields:
 
 .. code-block:: text
 
-    X = zero_2d_array(n_points, n_points)
-    Y = zero_2d_array(n_points, n_points)
+    pred_solution: ℝ[3, n_points, n_points] = solver(ρ)
+    pred_u: ℝ[n_points, n_points] = pred_solution[0]
+    pred_v: ℝ[n_points, n_points] = pred_solution[1]
+    pred_p: ℝ[n_points, n_points] = pred_solution[2]
 
-    for i:N(n_points):
-        for j:N(n_points):
+
+    X: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+    Y: ℝ[n_points, n_points] = zero_2d_array(n_points, n_points)
+
+    for i:ℕ(n_points):
+        for j:ℕ(n_points):
             X[i, j] = j * element_length
             Y[i, j] = i * element_length
 
@@ -1412,8 +1413,9 @@ fields:
    :alt: Learned PDE trajectory vs ground truth
    :align: center
    :width: 700px
+   :name: fig-2d-navier-stokes-results
 
-   Comparison between the ground truth and learned velocity/pressure fields after training.
+   Figure 3: Comparison between the ground truth and learned velocity/pressure fields after training.
 
 
 
