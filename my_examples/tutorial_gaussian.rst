@@ -2,7 +2,7 @@ Linear solve using Gaussian Elimination
 ============================================
 
 In this tutorial we will learn how to solve linear equations using Linear solve method, particularly
-Gaussian Elimination method
+Gaussian Elimination method [Wikipedia_GaussianElim]_ .
 
 The Equation
 ------------
@@ -113,7 +113,7 @@ Step 2 - Forward elimination
 
 This section will get further divied into 3 sub-section, which are
 
-- Find pivot row
+- Partial pivoting
 - swap rows using buffer
 - Elimination
 
@@ -128,7 +128,7 @@ We will go through each of this in detail, but to give some context, here is the
     row_buffer: ℝ[new_col] = zeros(new_col)
     for i:ℕ(a_row):
         # -------------------------
-        # Find pivot row
+        # Partial pivoting
         # -------------------------
         max_row = i
         for k:ℕ(i + 1, a_row):
@@ -159,13 +159,13 @@ The outer for loop will loop through each row of the augmented matrix ``a_row`` 
 
 Now we will go step by step in first iteration of outer loop.
 
-2.1 Find Pivot row
+2.1 Partial pivoting
 ********************
 
 .. code-block:: text
 
     # -------------------------
-    # Find pivot row
+    # Partial pivoting
     # -------------------------
     max_row = i
     for k:ℕ(i + 1, a_row):
@@ -173,7 +173,8 @@ Now we will go step by step in first iteration of outer loop.
             max_row = k
 
 For the first iteration of outer loop, the ``max_row`` value is 0, which is the first row and
-before starting of this pivot loop, the pivot is at first value of first row, column which is denoted by red box in below matrix
+before starting of this pivot loop, The pivot values are the diagonal values so for the first iteration the pivot is
+at first value of first row, column which is denoted by red box in below matrix [Chasnov_PartialPivot]_ 
 
 .. math::
 
@@ -568,7 +569,7 @@ Full code
         row_buffer: ℝ[new_col] = zeros(new_col)
         for i:ℕ(a_row):
             # -------------------------
-            # Find pivot row
+            # Partial pivoting
             # -------------------------
             max_row = i
             for k:ℕ(i + 1, a_row):
@@ -614,3 +615,13 @@ Full code
 
     gaussian_solve(A, b)
 
+
+
+References
+----------
+
+.. [Wikipedia_GaussianElim] Wikipedia contributors, *Gaussian elimination*, Wikipedia,
+  The Free Encyclopedia. https://en.wikipedia.org/wiki/Gaussian_elimination
+.. [Chasnov_PartialPivot] J. R. Chasnov, *Partial Pivoting*, in Numerical Methods,
+  LibreTexts, Hong Kong University of Science and Technology.
+  https://math.libretexts.org/Bookshelves/Applied_Mathematics/Numerical_Methods_(Chasnov)/03%3A_System_of_Equations/3.03%3A_Partial_Pivoting
