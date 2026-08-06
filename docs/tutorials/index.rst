@@ -88,3 +88,9 @@ Tutorials
    cnn_tutorial
    fft_tutorial
    fourier_neural_operator
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Numerical solvers
+
+   linear_solve_gaussian_elimination
