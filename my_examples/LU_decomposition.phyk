@@ -1,0 +1,64 @@
+def get_2d_array_num_rows(x: ℝ[m, n]): N:
+    total: N = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+
+
+def pivot_matrix(M: R[n, n]): R[n, n]:
+    m = get_2d_array_num_rows(M)
+    id_mat: R[m, m] = zeros(m, m)
+    for i:N(m):
+        for j:N(m):
+            if i == j:
+                id_mat[i, j] = 1.0
+            else:
+                id_mat[i, j] = 0.0
+    row_buffer: R[m] = zeros(m)
+    for j:N(m):
+        max_row = j
+        for i:N(j + 1, m):
+            if abs(M[i, j]) > abs(M[max_row, j]):
+                max_row = i
+        if max_row != j:
+            for k:N(m):
+                for k:N(m):
+                    row_buffer[k] = id_mat[j, k]
+                for k:N(m):
+                    id_mat[j, k] = id_mat[max_row, k]
+                for k:N(m):
+                    id_mat[max_row, k] = row_buffer[k]
+    return id_mat
+
+
+
+def lu_decomposition(A: R[n, n]): R[3, n, n]:
+    n_size = get_2d_array_num_rows(A)
+    
+    L: R[n_size, n_size] = zeros(n_size, n_size)
+    U: R[n_size, n_size] = zeros(n_size, n_size)
+    
+    P = pivot_matrix(A)
+    PA = P @ A
+    for j:N(n_size):
+        L[j, j] = 1.0
+        for i:N(j + 1):
+            partial = 0.0
+            for k:N(i):
+                partial = partial + U[k, j] * L[i, k]
+            U[i, j] = PA[i, j] - partial
+        
+        for i:N(j, n_size):
+            partial = 0.0
+            for k:N(j):
+                partial = partial + U[k, j] * L[i, k]
+            L[i, j] = (PA[i, j] - partial) / U[j, j]
+    
+    return [P, L, U]
+
+
+A = [[-1.0, 0.0, 3.0], [2.0, 1.0, 3.0], [1.0, 1.0, 2.0]]
+lu_decomposition(A)
