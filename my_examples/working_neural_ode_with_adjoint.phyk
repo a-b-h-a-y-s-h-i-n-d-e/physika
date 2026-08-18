@@ -159,7 +159,8 @@ def compute_vjps(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): ℝ[m]:
     dB1 = result[3]
     dW2 = result[4]
     dB2 = result[5]
-    return [f_val, dadt, dW1, dB1, dW2, dB2]
+    vjps_results: list = [f_val, dadt, dW1, dB1, dW2, dB2]
+    return vjps_results
 
 
 
@@ -209,7 +210,8 @@ def rk4_step_adjoint(z: R[2, 1], a: R[2, 1], W1g: R[n_neurons, 2], B1g: R[n_neur
     new_B1g = B1g + (-dt / 6.0) * (dB1_1 + 2.0*dB1_2 + 2.0*dB1_3 + dB1_4)
     new_W2g = W2g + (-dt / 6.0) * (dW2_1 + 2.0*dW2_2 + 2.0*dW2_3 + dW2_4)
     new_B2g = B2g + (-dt / 6.0) * (dB2_1 + 2.0*dB2_2 + 2.0*dB2_3 + dB2_4)
-    return [new_z, new_a, new_W1g, new_B1g, new_W2g, new_B2g]
+    rk4_results: list = [new_z, new_a, new_W1g, new_B1g, new_W2g, new_B2g]
+    return rk4_results
 
 
 
@@ -232,7 +234,8 @@ def adjoint_solver(pred_traj: R[m, 2, 1], true_trajectory: R[m, 2, 1], dt: R, n_
         B2g = results_adjoint[5]
         z = pred_traj[idx]
         a = a + 2.0 * (pred_traj[idx] - true_trajectory[idx])
-    return [W1g, B1g, W2g, B2g, z, a]
+    adjoint_results: list = [W1g, B1g, W2g, B2g, z, a]
+    return adjoint_results
 
 
 class AdamOptimizer:
@@ -250,7 +253,8 @@ class AdamOptimizer:
         m_hat = m_new / (1.0 - this.beta1**t_new)
         v_hat = v_new / (1.0 - this.beta2**t_new)
         param_new: ℝ[m,n] = param - this.lr * m_hat / (sqrt(v_hat) + this.eps)
-        return [param_new, m_new, v_new, t_new]
+        step_results: list = [param_new, m_new, v_new, t_new]
+        return step_results
 
 
 lr: R = 0.001
@@ -268,7 +272,7 @@ epochs: N = 1000
 
 
 for i:N(epochs):
-    physika_print(i)
+    print(i)
     # -------------------
     # Forward pass 
     # -------------------
@@ -298,7 +302,7 @@ for i:N(epochs):
     adam_W2 = AdamOptimizer(adam_W2.lr, adam_W2.beta1, adam_W2.beta2, adam_W2.eps, result_W2[3], result_W2[1], result_W2[2])
     adam_B2 = AdamOptimizer(adam_B2.lr, adam_B2.beta1, adam_B2.beta2, adam_B2.eps, result_B2[3], result_B2[1], result_B2[2])
     model = ODEFunc(new_W1, new_B1, new_W2, new_B2)
-    physika_print(loss)
+    print(loss)
 
 
 
@@ -363,7 +367,3 @@ plot_phase_space(true_trajectory, predicted_trajectory)
 #     )
 #     dz, dW1, dB1, dW2, dB2 = grads
 #     return [f_val.detach(), -dz, -dW1, -dB1, -dW2, -dB2]
-
-
-
-
