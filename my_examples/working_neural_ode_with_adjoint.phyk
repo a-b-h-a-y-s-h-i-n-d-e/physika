@@ -124,31 +124,25 @@ model = ODEFunc(W1, B1, W2, B2)
 # ----------------------------------------------------------
 
 
-
-
-
-def compute_vjpsa(z: R[2, 1], a: R[2, 1], model: ODEFunc): R[m]:
-    f_val = model(z)
-    scalar = sum(a * f_val)
-    dadt = -grad(scalar, z)
-    dW1 = -grad(scalar, model.W1)
-    dB1 = -grad(scalar, model.B1)
-    dW2 = -grad(scalar, model.W2)
-    dB2 = -grad(scalar, model.B2)
-    return [f_val, dadt, dW1, dB1, dW2, dB2]
-
-
-
 def compute_vjpss(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): ℝ[m]:
+    z = detach_grad(z)
+    a = detach(a)
     f_val = model(z)
+    #print(model.learnable_params)
+    model_params = model.learnable_params
     scalar = sum(a * f_val)
-    all_grads = grad(scalar, [z, model.W1, model.B1, model.W2, model.B2])
-    dadt = -all_grads[0]
-    dW1  = -all_grads[1]
-    dB1  = -all_grads[2]
-    dW2  = -all_grads[3]
-    dB2  = -all_grads[4]
-    return [f_val, dadt, dW1, dB1, dW2, dB2]
+    parameter_list: list = [z, model_params[0], model_params[1], model_params[2], model_params[3]]
+    result = grad(scalar, parameter_list)
+    dadt = -result[0]
+    dW1 = -result[1]
+    dB1 = -result[2]
+    dW2 = -result[3]
+    dB2 = -result[4]
+    f_val = detach(f_val)
+    vjps_results: list = [f_val, dadt, dW1, dB1, dW2, dB2]
+    return vjps_results
+
+
 
 
 def compute_vjps(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): ℝ[m]:
@@ -365,5 +359,14 @@ plot_phase_space(true_trajectory, predicted_trajectory)
 #         retain_graph=False,
 #         create_graph=False,
 #     )
+#     dz, dW1, dB1, dW2, dB2 = grads
+#     return [f_val.detach(), -dz, -dW1, -dB1, -dW2, -dB2]
+
+
+# def detach(x):
+#     return x.detach()
+
+# def detach_grad(x):
+#     return x.detach().requires_grad_(True)
 #     dz, dW1, dB1, dW2, dB2 = grads
 #     return [f_val.detach(), -dz, -dW1, -dB1, -dW2, -dB2]
