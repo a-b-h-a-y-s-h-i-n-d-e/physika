@@ -52,7 +52,7 @@ def damped_oscillator(state: ℝ[2,1]): ℝ[2,1]:
     gamma: ℝ = 0.2
     dq: ℝ = p
     dp: ℝ = 0.0 - q - gamma * p
-    return [[dq], [dp]]
+    return [[dq], [dp]] 
 
 
 def generate_dataset(y0: ℝ[2,1], dt: ℝ, timesteps: R[n]): ℝ[m,2,1]:
@@ -62,7 +62,7 @@ def generate_dataset(y0: ℝ[2,1], dt: ℝ, timesteps: R[n]): ℝ[m,2,1]:
     trajectory[0] = state
     for i: ℕ(1, n_times):
         current_t = timesteps[i-1]
-        state = rk4_step(state, current_t, dt, simple_pendulum)
+        state = rk4_step(state, current_t, dt, damped_oscillator)
         trajectory[i] = state
     return trajectory
 
@@ -124,7 +124,7 @@ model = ODEFunc(W1, B1, W2, B2)
 # ----------------------------------------------------------
 
 
-def compute_vjpss(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): ℝ[m]:
+def compute_vjps(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): ℝ[m]:
     z = detach_grad(z)
     a = detach(a)
     f_val = model(z)
@@ -139,20 +139,6 @@ def compute_vjpss(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): ℝ[m]:
     dW2 = -result[3]
     dB2 = -result[4]
     f_val = detach(f_val)
-    vjps_results: list = [f_val, dadt, dW1, dB1, dW2, dB2]
-    return vjps_results
-
-
-
-
-def compute_vjps(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): ℝ[m]:
-    result = compute_vjp(z, a, model)
-    f_val = result[0]
-    dadt = result[1]
-    dW1 = result[2]
-    dB1 = result[3]
-    dW2 = result[4]
-    dB2 = result[5]
     vjps_results: list = [f_val, dadt, dW1, dB1, dW2, dB2]
     return vjps_results
 
@@ -210,15 +196,15 @@ def rk4_step_adjoint(z: R[2, 1], a: R[2, 1], W1g: R[n_neurons, 2], B1g: R[n_neur
 
 
 def adjoint_solver(pred_traj: R[m, 2, 1], true_trajectory: R[m, 2, 1], dt: R, n_steps: N, model: ODEFunc): R[m]:
-    last_true = true_trajectory[n_steps-1]
-    z = pred_traj[n_steps-1]
-    a = 2.0 * (z - last_true)
+    z = pred_traj[n_steps - 1]
+    scale: R = 1.0 / n_steps
+    a = scale * (pred_traj[n_steps - 1] - true_trajectory[n_steps - 1])
     W1g = zeros(n_neurons, 2)
     B1g = zeros(n_neurons, 1)
     W2g = zeros(2, n_neurons)
     B2g = zeros(2, 1)
-    for i:N(n_steps-1):
-        idx = n_steps - 1 - i 
+    for i:N(n_steps - 1):
+        # RK4 backward one step
         results_adjoint = rk4_step_adjoint(z, a, W1g, B1g, W2g, B2g, dt, model)
         z = results_adjoint[0]
         a = results_adjoint[1]
@@ -226,8 +212,10 @@ def adjoint_solver(pred_traj: R[m, 2, 1], true_trajectory: R[m, 2, 1], dt: R, n_
         B1g = results_adjoint[3]
         W2g = results_adjoint[4]
         B2g = results_adjoint[5]
+        # Checkpoint and jump at the NEXT timestep backward
+        idx = n_steps - 2 - i
         z = pred_traj[idx]
-        a = a + 2.0 * (pred_traj[idx] - true_trajectory[idx])
+        a = a + scale * (pred_traj[idx] - true_trajectory[idx])
     adjoint_results: list = [W1g, B1g, W2g, B2g, z, a]
     return adjoint_results
 
@@ -251,7 +239,7 @@ class AdamOptimizer:
         return step_results
 
 
-lr: R = 0.001
+lr: R = 0.01
 adam_W1 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(n_neurons,2), zeros(n_neurons,2))
 adam_B1 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(n_neurons,1), zeros(n_neurons,1))
 adam_W2 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(2,n_neurons), zeros(2,n_neurons))
@@ -259,10 +247,7 @@ adam_B2 = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(2,1), zeros(2,1))
 
 
 
-epochs: N = 1000
-#lr: R = 0.01
-
-
+epochs: N = 200
 
 
 for i:N(epochs):
