@@ -229,3 +229,8 @@ for i:N(epochs):
     grad = grad(loss, guess_k)
     guess_k = guess_k - lr * grad
     print(guess_k)
+
+
+# https://courses.physics.illinois.edu/bioe210/sp2019/LADS_Part1.pdf?utm_source=chatgpt.com
+# https://arxiv.org/pdf/2404.17039
+# https://kyleniemeyer.github.io/ME373-book/content/bvps/finite-difference.html
