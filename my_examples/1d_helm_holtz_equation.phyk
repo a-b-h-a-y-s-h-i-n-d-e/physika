@@ -1,0 +1,231 @@
+# ---------------------
+# Helper functions
+# ---------------------
+
+def get_1d_array_length(x: ℝ[m]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+def get_2d_array_num_rows(x: ℝ[m, n]): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+
+def get_2d_array_num_cols(x: ℝ[m, n]): ℝ:
+    return get_1d_array_length(x[0])
+
+def arange(n: ℕ): ℝ[n]:
+    arr: ℝ[n] = for i: ℕ(n) → i
+    return arr
+
+
+
+def gaussian_solve(A: ℝ[m, n], b: ℝ[n]): ℝ[m]:
+    a_row: ℝ = get_2d_array_num_rows(A)
+    a_col: ℝ = get_2d_array_num_cols(A)
+    # -------------------------
+    # Create augmented matrix
+    # -------------------------
+    new_col: ℝ = a_col + 1
+    aug: ℝ[a_row, new_col] = zeros(a_row, new_col)
+    for i: ℕ(a_row):
+        for c: ℕ(a_col):
+            aug[i, c] = A[i, c]
+        aug[i, a_col] = b[i]
+    # -------------------------
+    # Forward elimination
+    # -------------------------
+    for i: ℕ(a_row):
+        # -------------------------
+        # Partial pivoting
+        # -------------------------
+        max_row = i
+        for k:ℕ(i + 1, a_row):
+            if abs(aug[k, i]) > abs(aug[max_row, i]):
+                max_row = k
+        # -------------------------
+        # Swap rows using buffer
+        # -------------------------
+        pivot_row = zeros(new_col)
+        displaced_row = zeros(new_col)
+        for c: ℕ(new_col):
+            pivot_row[c] = aug[max_row, c]
+            displaced_row[c] = aug[i, c]
+        # -------------------------
+        # Elimination
+        # -------------------------
+        aug_next = zeros(a_row, new_col)
+        for row_idx: ℕ(a_row):
+            if row_idx < i:
+                for c: ℕ(new_col):
+                    aug_next[row_idx, c] = aug[row_idx, c]
+            else:
+                if row_idx == i:
+                    for c: ℕ(new_col):
+                        aug_next[row_idx, c] = pivot_row[c]
+                else:
+                    source_row = zeros(new_col)
+                    if row_idx == max_row:
+                        for c: ℕ(new_col):
+                            source_row[c] = displaced_row[c]
+                    else:
+                        for c: ℕ(new_col):
+                            source_row[c] = aug[row_idx, c]
+                    factor = source_row[i] / pivot_row[i]
+                    for c: ℕ(new_col):
+                        aug_next[row_idx, c] = source_row[c] - factor * pivot_row[c]
+        aug = aug_next
+    # -------------------------
+    # Back substitution
+    # -------------------------
+    x: ℝ[a_col] = zeros(a_col)
+    for i:ℕ(a_col):
+        idx = a_col - 1 - i
+        total = aug[idx, a_col]
+        for j:ℕ(idx + 1, a_row):
+            total = total - aug[idx, j] * x[j]
+        solved_val = total / aug[idx, idx]
+        x_next = zeros(a_col)
+        for c: ℕ(a_col):
+            if c == idx:
+                x_next[c] = solved_val
+            else:
+                x_next[c] = x[c]
+        x = x_next
+    return x
+
+
+
+
+def zero_1d_array(len: ℝ): ℝ[m]:
+    results: ℝ[len] = for i: ℕ(len) -> i*0
+    return results
+
+def zero_2d_array(rows: ℝ, cols: ℝ): ℝ[m, n]:
+    results: ℝ[rows, cols] = for i:ℕ(rows) -> for j:ℕ(cols) -> j*0
+    return results
+
+def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+    x: ℝ[n] = zero_1d_array(n)
+    Δx: ℝ = (end - start) / (n - 1)
+    for i:ℕ(0, n):
+        x[i] = start + i * Δx
+    return x
+
+
+x0: R = 0
+x1: R = 1
+n: R = 4
+Δx: R = (x1 - x0) / n
+k: R = 2
+u_x0: R = 0
+u_x1: R = 1
+
+X = linspace(0, 1, n+1)
+
+
+def central_difference(u: R[m], j: N): R:
+    return (u[j-1] - 2 * u[j] + u[j+1]) / (Δx**2)
+
+def helmholtz_equation(u: R[m], j: N, k: R): R:
+    return central_difference(u, j) + k**2 * u[j]
+
+
+def get_row_coefffs(j: N, k: R): R[3]:
+    unit_u: R[m] = zero_1d_array(n+1)
+    unit_u[j-1] = 1
+    a: R = helmholtz_equation(unit_u, j, k)
+    unit_u[j-1] = 0
+    unit_u[j] = 1
+    b: R = helmholtz_equation(unit_u, j, k)
+    unit_u[j] = 0
+    unit_u[j+1] = 1
+    c: R = helmholtz_equation(unit_u, j, k)
+    unit_u[j+1] = 0
+    return [a, b, c]
+
+
+def get_row_coeffs(j: N, k: R): R[3]:
+    e_left: R[m] = zero_1d_array(n+1)
+    e_left[j-1] = 1
+    a: R = helmholtz_equation(e_left, j, k)
+    e_center: R[m] = zero_1d_array(n+1)
+    e_center[j] = 1
+    b: R = helmholtz_equation(e_center, j, k)
+    e_right: R[m] = zero_1d_array(n+1)
+    e_right[j+1] = 1
+    c: R = helmholtz_equation(e_right, j, k)
+    return [a, b, c]
+
+
+def assemble_matrix(k: R, n: N): list:
+    n_size = n + 1
+    #n: R = n
+    A = zero_2d_array(n_size, n_size)
+    b = zero_1d_array(n_size)
+    for j:N(1, n):
+        c1, c2, c3 = get_row_coeffs(j, k)
+        if j-1 == 0:
+            b[j] = b[j] - c1 * u_x0
+        else:
+            A[j, j-1] = c1
+        A[j, j] = c2
+        if j+1 == n + 0:
+            b[j] = b[j] - c3 * u_x1
+        else:
+            A[j, j+1] = c3
+    # --------------------------------
+    # Apply boundary conditions
+    # --------------------------------
+    A[0, 0] = 1
+    b[0] = u_x0
+    A[n, n] = 1
+    b[n] = u_x1
+    results: list = [A, b]
+    return results
+
+
+
+
+def solver(k: R, n: N): R[n]:
+    results = assemble_matrix(k, n)
+    A = results[0]
+    b = results[1]
+    u: R[n] = gaussian_solve(A, b)
+    #u: R[n] = linear_solve(A, b)
+    return u
+
+
+true_u = solver(k, n)
+
+
+def mse_loss(true_u: R[m], pred_u: R[m]): R:
+    total_len = get_1d_array_length(pred_u)
+    square_diff = (true_u - pred_u) ** 2
+    total = 0
+    for i:N(total_len):
+        total = total + square_diff[i]
+    return total / total_len
+
+
+guess_k: R = 2.6
+#guess_u = solver(guess_k)
+
+epochs: N = 300
+lr: R = 0.01
+
+for i:N(epochs):
+    print(i)
+    pred_u = solver(guess_k, n)
+    loss = mse_loss(true_u, pred_u)
+    grad = grad(loss, guess_k)
+    guess_k = guess_k - lr * grad
+    print(guess_k)
