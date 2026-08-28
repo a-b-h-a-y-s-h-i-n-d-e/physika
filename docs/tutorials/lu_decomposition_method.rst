@@ -1,19 +1,19 @@
 LU Decomposition method in Physika
 ===================================
 
-In this tutorial we will implelment the LU decomposition method in Physika. If you are not familiar
-with Linear solve methods I will recommend to first read the Gaussian elimination tutorial. I have also explained
-the concepts of Pivot, row operations in that tutorial which will help to understand this method more easily.
+In this tutorial we will implement the LU decomposition method in Physika. It is also recommended to read the :doc:`Gaussian elimination tutorial <linear_solve_gaussian_elimination>`,
+as the concepts of pivoting and row operations explained in that tutorial will help make the LU decomposition method easier to understand.
 
 
 What is LU decomposition?
 ---------------------------
 
 
-LU decomposition, also known as LU factorization [WikipediaLU]_ method factors a square matrix :math:`A` just like the Gaussian method.
-For this tutorial we are using Doolittle algorithm [GraphoeLU]_ which is a method for performing LU Decomposition, This method provides alternative way to factor A into 
-LU decomposition withouth going through the cumbersome of gaussian elimination (explained in detail in below sections), where given matrix :math:`A` gets decomposed 
-into a lower triangular matrix :math:`L` and upper triangular matrix :math:`U`, together this matrices form an equation as:
+LU decomposition, also known as LU factorization method which factors a square matrix :math:`A` into the product of two simpler matrices,
+a lower triangular matrix :math:`L` and  and an upper triangular matrix :math:`U`. [WikipediaLU]_
+For this tutorial, the Doolittle algorithm will be used to perform LU decomposition. This method provides an alternative way to factor :math:A without
+going through the cumbersome steps of Gaussian elimination, which will be explained in the sections below.
+The matrix :math:`A` is decomposed into a lower triangular matrix :math:L and an upper triangular matrix :math:`U`. Together, these matrices give the following equation: [GraphoeLU]_
 
 .. math::
 
@@ -22,21 +22,21 @@ into a lower triangular matrix :math:`L` and upper triangular matrix :math:`U`, 
 
 where,
 
-- ``L`` is Lower triangular matrix where diagonal entries are 1.
-- ``U`` is Upper triangular matrix contains the pivot rows after elimination.
-- ``P`` is Permutation matrix (initialized as an identity matrix,which will record row swaps performed for partial pivoting)
+- ``L`` is lower triangular matrix where diagonal entries are 1.
+- ``U`` is upper triangular matrix contains the pivot rows after elimination.
+- ``P`` is permutation matrix (initialized as an identity matrix,which will record row swaps performed for partial pivoting)
 - ``A`` is the square matrix which we are going to solve to find ``L`` and ``U``.
 
 
-This tutorial further gets divided into 2 main sections, In first section we will solve example matrix :math:`A` numerically to learn how 
-LU decomposition method works. In second section we will implement the method in Physika.
+This tutorial further gets divided into two main sections. In first section we will solve example matrix :math:`A` numerically to learn how 
+LU decomposition method works and in second section we will implement the method in Physika.
 
 
 Section 1: Solve numerically
 -----------------------------
 
 
-Iin this section we will solve numerically to understand the concept of LU decomposition, Lets consider the following matrix :math:`A` as:
+In this section we will solve numerically to understand the concept of LU decomposition, Lets consider the following matrix :math:`A` as:
 
 .. math::
 
@@ -45,6 +45,16 @@ Iin this section we will solve numerically to understand the concept of LU decom
    2.0 & 1.0 & 3.0 \\
    1.0 & 1.0 & 2.0
    \end{bmatrix}
+
+In Physika we can define this matrix as:
+
+.. code-block:: text
+
+    A: ℝ[3, 3] = [
+        [-1.0, 0.0, 3.0],
+        [2.0, 1.0, 3.0],
+        [1.0, 1.0, 2.0]
+    ]
 
 now lets put :math:`A` in equation :math:`\eqref{lu_equation}` which gives us:
 
@@ -101,7 +111,7 @@ We start with column 0, particularly from values under pivot value of that colum
     1.0
     \end{bmatrix}
 
-Here you can see that absolute value of ``A[0, 1]`` which is `2` is higher than absolute value of ``A[0, 0]`` which is `-1.0` (pivot value), we have to swap First row with second row which
+Here you can see that absolute value of ``A[0, 1]`` which is `2` is higher than absolute value of ``A[0, 0]`` which is `-1.0` (pivot value), we have to swap f  irst row with second row which
 will give us:
 
 .. math::
@@ -123,13 +133,13 @@ Also remember to do the same row swapping in matrix :math:`P`, which will gives 
     0 & 0 & 1
     \end{bmatrix}
     \begin{bmatrix}
-    2.0 & 1.0 & 3.0 \\
+    \bbox[2pt, border: 1.5pt solid red]{2.0} & 1.0 & 3.0 \\
     -1.0 & 0.0 & 3.0 \\
     1.0 & 1.0 & 2.0
     \end{bmatrix}
 
 
-Now, lets make values under pivot value in column 1 zeros, for that we have to perform row operations on Row-2 and Row-3
+Now, lets make values under pivot value (marked as red box) in column 1 zeros, for that we have to perform row operations on Row-2 and Row-3
 
 .. math::
 
