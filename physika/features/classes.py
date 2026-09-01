@@ -707,15 +707,16 @@ def make_parser_rules():
         p[0] = ("body_field_assign", p[1], p[3], p[5])
 
     def p_for_statement_field_assign(p):
-        """for_statement : factor EQUALS expr NEWLINE"""
+        """for_statement : factor DOT ID EQUALS expr NEWLINE"""
         # Field assignment inside a for loop
         # Example:
         #   for i:ℕ(epochs):
         #       model.W1 = optimizer.step(model.W1, dW1)
         # Parameters:
         #   p[1] - object expression ("var", "this")
-        #   p[3] - expression
-        p[0] = ("for_field_assign", p[1], p[3])
+        #   p[3] - name of field/var being assigned
+        #   p[5] - rhs expression
+        p[0] = ("for_field_assign", p[1], p[3], p[5])
 
     def p_member_expr_base(p):
         """member_expr : ID"""
@@ -1540,8 +1541,7 @@ class ClassFeature(ELF):
             >>> "model.W1.copy_(new_W1)" in code
             True
             """
-            _, target, expr = node
-            _, obj_expr, field_name = target
+            _, obj_expr, field_name, expr = node
             raw = to_expr(obj_expr)
             if raw == "this":
                 obj_code = "self"

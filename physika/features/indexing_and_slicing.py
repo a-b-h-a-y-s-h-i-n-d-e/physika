@@ -118,7 +118,7 @@ def make_parser_rules():
         p[0] = ("indexN", p[1], p[3])
 
     def p_for_statement_index_assign_nd(p):
-        """for_statement : ID LBRACKET loop_index_list RBRACKET EQUALS func_expr NEWLINE"""  # noqa
+        """for_statement : ID LBRACKET multi_index_list RBRACKET EQUALS func_expr NEWLINE"""  # noqa
         # nd Indexed assignment inside top-level for-body
         # Example:
         # # 1d array
