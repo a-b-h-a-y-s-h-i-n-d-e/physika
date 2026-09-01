@@ -681,7 +681,8 @@ class TestClassForwardRules:
         emit = rules["for_field_assign"]
         node = (
             "for_field_assign",
-            ("field_access", ("var", "model"), "W1"),
+            ("var", "model"),
+            "W1",
             ("var", "new_W1"),
         )
         code = emit(node, ast_to_torch_expr)
