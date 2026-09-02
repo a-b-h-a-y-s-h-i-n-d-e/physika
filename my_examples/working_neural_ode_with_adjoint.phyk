@@ -8,6 +8,7 @@ def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
 def tanh(x: ℝ): ℝ:
     return (exp(x) - exp(0.0 - x)) / (exp(x) + exp(0.0 - x))
 
+
 # ------------------------------------------------------------
 # 
 # ------------------------------------------------------------
@@ -36,9 +37,11 @@ def odesolver(ode_func: ODEFunc, y0: ℝ[2, 1], Δt: ℝ, timesteps: ℝ[n]): �
         trajectory[i] = state
     return trajectory
 
+
 # ------------------------------------------------------------
 # 
 # ------------------------------------------------------------
+
 
 def simple_pendulum(state: ℝ[2,1]): ℝ[2,1]:
     q: ℝ = state[0,0]
@@ -117,9 +120,8 @@ def compute_vjps(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): list:
     z: ℝ[2, 1] = detach_grad(z)
     a: ℝ[2, 1] = detach(a)
     f_val: ℝ[2, 1] = model(z)
-    model_params = model.learnable_params
     scalar: ℝ = sum(a * f_val)
-    parameter_list: list = [z, model_params[0], model_params[1], model_params[2], model_params[3]]
+    parameter_list: list = [z, model.W1, model.B1, model.W2, model.B2]
     result: list = grad(scalar, parameter_list)
     dadt: ℝ[2, 1] = -result[0]
     dW1: ℝ[n_neurons, 2] = -result[1]
@@ -132,28 +134,41 @@ def compute_vjps(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): list:
 
 
 
-def rk4_step_adjoint(z: ℝ[2, 1], a: ℝ[2, 1], W1g: ℝ[n_neurons, 2], B1g: ℝ[n_neurons, 1], W2g: ℝ[2, n_neurons], B2g: ℝ[2, 1], dt: ℝ, model: ODEFunc): list:
+def rk4_step_adjoint(aug_state: list, dt: ℝ, model: ODEFunc): list:
+    z, a, W1g, B1g, W2g, B2g = aug_state
     # k1
     dz1, da1, dW1_1, dB1_1, dW2_1, dB2_1 = compute_vjps(z, a, model)
     # k2
-    z2: ℝ[2, 1] = z + 0.5 * (-Δt) * dz1
-    a2: ℝ[2, 1] = a + 0.5 * (-Δt) * da1
+    z2 = z + 0.5 * dt * dz1
+    a2 = a + 0.5 * dt * da1
+    W1g2 = W1g + 0.5 * dt * dW1_1
+    B1g2 = B1g + 0.5 * dt * dB1_1
+    W2g2 = W2g + 0.5 * dt * dW2_1
+    B2g2 = B2g + 0.5 * dt * dB2_1
     dz2, da2, dW1_2, dB1_2, dW2_2, dB2_2 = compute_vjps(z2, a2, model)
     # k3
-    z3: ℝ[2, 1] = z + 0.5 * (-Δt) * dz2
-    a3: ℝ[2, 1] = a + 0.5 * (-Δt) * da2
-    dz3, da3, dW1_3, dB1_3, dW2_3, dB2_3 = compute_vjps(z2, a2, model)
+    z3 = z + 0.5 * dt * dz2
+    a3 = a + 0.5 * dt * da2
+    W1g3 = W1g + 0.5 * dt * dW1_2
+    B1g3 = B1g + 0.5 * dt * dB1_2
+    W2g3 = W2g + 0.5 * dt * dW2_2
+    B2g3 = B2g + 0.5 * dt * dB2_2
+    dz3, da3, dW1_3, dB1_3, dW2_3, dB2_3 = compute_vjps(z3, a3, model)
     # k4
-    z4: ℝ[2, 1] = z + (-Δt) * dz3
-    a4: ℝ[2, 1] = a + (-Δt) * da3
-    dz4, da4, dW1_4, dB1_4, dW2_4, dB2_4 = compute_vjps(z2, a2, model)
+    z4 = z + dt * dz3
+    a4 = a + dt * da3
+    W1g4 = W1g + dt * dW1_3
+    B1g4 = B1g + dt * dB1_3
+    W2g4 = W2g + dt * dW2_3
+    B2g4 = B2g + dt * dB2_3
+    dz4, da4, dW1_4, dB1_4, dW2_4, dB2_4 = compute_vjps(z4, a4, model)
     # update
-    new_z: ℝ[2, 1] = z + (-Δt / 6.0)* (dz1 + 2.0 * dz2 + 2.0 * dz3 + dz4)
-    new_a: ℝ[2, 1] = a + (-Δt / 6.0) * (da1 + 2.0*da2 + 2.0*da3 + da4)
-    new_W1g: ℝ[n_neurons, 2] = W1g + (-Δt / 6.0) * (dW1_1 + 2.0*dW1_2 + 2.0*dW1_3 + dW1_4)
-    new_B1g: ℝ[n_neurons, 1] = B1g + (-Δt / 6.0) * (dB1_1 + 2.0*dB1_2 + 2.0*dB1_3 + dB1_4)
-    new_W2g: ℝ[2, n_neurons] = W2g + (-Δt / 6.0) * (dW2_1 + 2.0*dW2_2 + 2.0*dW2_3 + dW2_4)
-    new_B2g: ℝ[2, 1] = B2g + (-Δt / 6.0) * (dB2_1 + 2.0*dB2_2 + 2.0*dB2_3 + dB2_4)
+    new_z = z + (dt / 6.0) * (dz1 + 2*dz2 + 2*dz3 + dz4)
+    new_a = a + (dt / 6.0) * (da1 + 2*da2 + 2*da3 + da4)
+    new_W1g = W1g + (dt / 6.0) * (dW1_1 + 2*dW1_2 + 2*dW1_3 + dW1_4)
+    new_B1g = B1g + (dt / 6.0) * (dB1_1 + 2*dB1_2 + 2*dB1_3 + dB1_4)
+    new_W2g = W2g + (dt / 6.0) * (dW2_1 + 2*dW2_2 + 2*dW2_3 + dW2_4)
+    new_B2g = B2g + (dt / 6.0) * (dB2_1 + 2*dB2_2 + 2*dB2_3 + dB2_4)
     rk4_results: list = [new_z, new_a, new_W1g, new_B1g, new_W2g, new_B2g]
     return rk4_results
 
@@ -161,27 +176,20 @@ def rk4_step_adjoint(z: ℝ[2, 1], a: ℝ[2, 1], W1g: ℝ[n_neurons, 2], B1g: �
 
 def adjoint_solver(pred_traj: ℝ[m, 2, 1], true_trajectory: ℝ[m, 2, 1], Δt: ℝ, n_steps: ℕ, model: ODEFunc): list:
     z: ℝ[2, 1] = pred_traj[n_steps - 1]
-    scale: ℝ = 1.0 / n_steps
-    a: ℝ[2, 1] = scale * (pred_traj[n_steps - 1] - true_trajectory[n_steps - 1])
+    a: ℝ[2, 1] = 2 * (pred_traj[n_steps - 1] - true_trajectory[n_steps - 1])
     W1g: ℝ[n_neurons, 2] = zeros(n_neurons, 2)
     B1g: ℝ[n_neurons, 1] = zeros(n_neurons, 1)
     W2g: ℝ[2, n_neurons] = zeros(2, n_neurons)
     B2g: ℝ[2, 1] = zeros(2, 1)
+    aug_state: list = [z, a, W1g, B1g, W2g, B2g]
     for i:N(n_steps - 1):
         # RK4 backward one step
-        results_adjoint = rk4_step_adjoint(z, a, W1g, B1g, W2g, B2g, Δt, model)
-        z = results_adjoint[0]
-        a = results_adjoint[1]
-        W1g = results_adjoint[2]
-        B1g = results_adjoint[3]
-        W2g = results_adjoint[4]
-        B2g = results_adjoint[5]
-        # Checkpoint and jump at the NEXT timestep backward
+        aug_state = rk4_step_adjoint(aug_state, -Δt, model)
         idx = n_steps - 2 - i
-        z = pred_traj[idx]
-        a = a + scale * (pred_traj[idx] - true_trajectory[idx])
-    adjoint_results: list = [W1g, B1g, W2g, B2g]
-    return adjoint_results
+        aug_state[1] = aug_state[1] + 2 * (pred_traj[idx] - true_trajectory[idx])
+    a_t0, W1g, B1g, W2g, B2g = aug_state[1], aug_state[2], aug_state[3], aug_state[4], aug_state[5]
+    results: list = [W1g, B1g, W2g, B2g]
+    return results
 
 
 class AdamOptimizer:
@@ -208,7 +216,7 @@ adam_B2: AdamOptimizer = AdamOptimizer(lr, 0.9, 0.999, 1e-8, 0.0, zeros(2,1), ze
 
 
 
-epochs: ℕ = 10
+epochs: ℕ = 200
 
 
 
@@ -237,7 +245,9 @@ for i:ℕ(epochs):
 
 
 predicted_trajectory: ℝ[m, 2, 1] = odesolver(model, y0, Δt, timesteps)
-#plot_phase_space(true_trajectory, predicted_trajectory)
+plot_phase_space(true_trajectory, predicted_trajectory)
+
+
 
 
 
