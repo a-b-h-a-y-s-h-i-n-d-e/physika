@@ -7,7 +7,7 @@ In this tutorial, we will solve one-dimensional Helmholtz equation, which is def
 
     \frac{d^2 u}{dx^2} + k^2 u = 0
 
-We are going to solve this using Boundary value problem method, where we discretize the continuos ODE into discrete space,
+We are going to solve this using boundary value problem method, where we discretize the continuous ODE into discrete space,
 and then define the boundaries of discrete space. [Wikipedia_boundary_value]_  [Jensen_Linear_Algebra]_
 
 We can use central difference formula to discretize :math:`\frac{d^2 u}{dx^2}` into :math:`\frac{u_{j-1} - 2u_j + u_{j+1}}{\Delta x^2}`, 
@@ -18,7 +18,7 @@ so the discretized version of one-dimensional Helmholtz equation becomes: [Nieme
     \frac{u_{j+1} - 2u_j + u_{j-1}}{\Delta x^2} + k^2 u_j = 0 
 
 
-In Physika, we can define this beautifully by:
+In Physika, we can define this by:
 
 .. code-block:: text
 
@@ -207,10 +207,7 @@ Converting this system of linear equations into matrix form gives us:
 
 
 
-Now we can use Gaussian elimination method from Physika to solve this, which gives us:
-
-Now, we can use the Gaussian elimination method from Physika to solve
-this linear system, which gives us:
+Now we can use :doc:`Gaussian elimination <linear_solve_gaussian_elimination>` method from Physika to solve this, which gives us:
 
 .. math::
 
@@ -244,16 +241,40 @@ along with their corresponding :math:`x`-axis values:
 
    Numerical solution of the 1D Helmholtz equation
 
+To visualize this plot, use the below python script:
+
+.. code-block:: python
+
+    import matplotlib.pyplot as plt
+
+    u = [0.0, 0.5378, 0.9412, 1.1092, 1.0]
+    x = [0.0, 0.25, 0.5, 0.75, 1.0]
+
+    plt.plot(x, u, marker="o")
+    plt.title("1D Helmholtz Equation")
+    plt.xlabel("x")
+    plt.ylabel("u")
+    plt.grid(True)
+
+    plt.show()
 
 
 Section 2: learn parameter :math:`k`
 -------------------------------------
 
-In this sub-section we are going to learn parameter :math:`k` from the Helmholtz_equation equation using differentiable
+In this sub-section we are going to learn parameter :math:`k` from the Helmholtz equation equation using differentiable
 Gaussian solver and SGD (Stochastic gradient descent) training loop defined in Physika.
 We are using same setup of parameters used in Section 1 while solving numerically.
 
 .. code-block:: text
+
+    # helper function
+    def linspace(start: ℝ, end: ℝ, n: ℕ): ℝ[n]:
+        x: ℝ[n] = zero_1d_array(n)
+        Δx: ℝ = (end - start) / (n - 1)
+        for i:ℕ(0, n):
+            x[i] = start + i * Δx
+        return x
 
     x0, x1, n: ℝ = 0, 1, 4
     Δx: ℝ = (x1 - x0) / n
