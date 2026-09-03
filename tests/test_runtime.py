@@ -1,8 +1,5 @@
 import torch
-from physika.runtime import (random_complex,
-                            compl_mul1d,
-                            detach,
-                            detach_grad)
+from physika.runtime import (random_complex, compl_mul1d, detach, detach_grad)
 from tests.conftest import type_errors, capture_output
 
 
@@ -110,6 +107,7 @@ class TestPhysikaPrint:
         assert "20" in out
         assert "1" in out
 
+
 class TestDetach:
     """
     Tests for ``detach`` function, which disconnects a tensor from
@@ -140,6 +138,7 @@ class TestDetach:
         assert out.is_leaf
         assert out.grad_fn is None
 
+
 class TestDetachGrad:
     """
     Tests for ``detach_grad`` function, which detaches a tensor and
@@ -154,7 +153,8 @@ class TestDetachGrad:
         assert out.requires_grad
 
     def test_is_leaf(self):
-        # Check that the returned tensor is a new leaf in the computation graph.
+        # Check that the returned tensor is a new leaf in the computation
+        # graph.
         x = torch.tensor([1.0, 2.0], requires_grad=True)
         y = x * 2.0
         out = detach_grad(y)
