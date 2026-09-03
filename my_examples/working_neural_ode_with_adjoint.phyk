@@ -43,14 +43,6 @@ def odesolver(ode_func: ODEFunc, y0: ℝ[2, 1], Δt: ℝ, timesteps: ℝ[n]): �
 # ------------------------------------------------------------
 
 
-def simple_pendulum(state: ℝ[2,1]): ℝ[2,1]:
-    q: ℝ = state[0,0]
-    p: ℝ = state[1,0]
-    dq: ℝ = p
-    dp: ℝ = 0.0 - sin(q)
-    return [[dq], [dp]]
-
-
 def damped_oscillator(state: ℝ[2,1]): ℝ[2,1]:
     q, p: ℝ = state[0,0], state[1,0]
     gamma: ℝ = 0.2
@@ -85,10 +77,6 @@ true_trajectory: ℝ[n_steps, 2, 1] = generate_dataset(y0, Δt, timesteps)
 # ------------------------------------------------------------
 
 
-
-def mse_loss(pred_traj: ℝ[m, 2, 1], true_traj: ℝ[m, 2, 1]): ℝ:
-    diff: ℝ[m, 2, 1] = pred_traj - true_traj
-    return mean(diff**2)
 
 
 class ODEFunc(W1: ℝ[Z, 2], B1: ℝ[Z, 1], W2: ℝ[Z, Z], B2: ℝ[2, 1]):
@@ -134,8 +122,9 @@ def compute_vjps(z: ℝ[2,1], a: ℝ[2,1], model: ODEFunc): list:
 
 
 
-def rk4_step_adjoint(aug_state: list, dt: ℝ, model: ODEFunc): list:
-    z, a, W1g, B1g, W2g, B2g = aug_state
+#def rk4_step_adjoint(aug_state: list, dt: ℝ, model: ODEFunc): list:
+
+def rk4_step_adjoint(z: ℝ[2, 1], a: ℝ[2, 1], W1g: ℝ[n_neurons, 2], B1g: ℝ[n_neurons, 1], W2g: ℝ[2, n_neurons], B2g: ℝ[2, 1], dt: ℝ, model: ODEFunc): list:
     # k1
     dz1, da1, dW1_1, dB1_1, dW2_1, dB2_1 = compute_vjps(z, a, model)
     # k2
@@ -181,14 +170,14 @@ def adjoint_solver(pred_traj: ℝ[m, 2, 1], true_trajectory: ℝ[m, 2, 1], Δt: 
     B1g: ℝ[n_neurons, 1] = zeros(n_neurons, 1)
     W2g: ℝ[2, n_neurons] = zeros(2, n_neurons)
     B2g: ℝ[2, 1] = zeros(2, 1)
-    aug_state: list = [z, a, W1g, B1g, W2g, B2g]
     for i:N(n_steps - 1):
         # RK4 backward one step
-        aug_state = rk4_step_adjoint(aug_state, -Δt, model)
+        aug_state = rk4_step_adjoint(z, a, W1g, B1g, W2g, B2g, -Δt, model)
+        z, a, W1g, B1g, W2g, B2g = aug_state
         idx = n_steps - 2 - i
-        aug_state[1] = aug_state[1] + 2 * (pred_traj[idx] - true_trajectory[idx])
+        a = a + 2 * (pred_traj[idx] - true_trajectory[idx])
     a_t0, W1g, B1g, W2g, B2g = aug_state[1], aug_state[2], aug_state[3], aug_state[4], aug_state[5]
-    results: list = [W1g, B1g, W2g, B2g]
+    results: list = [a_t0, W1g, B1g, W2g, B2g]
     return results
 
 
@@ -231,7 +220,7 @@ for i:ℕ(epochs):
     # -------------------
     # adjoint method
     # -------------------
-    dW1, dB1, dW2, dB2 = adjoint_solver(pred_traj, true_trajectory, Δt, n_steps, model)
+    a_t0, dW1, dB1, dW2, dB2 = adjoint_solver(pred_traj, true_trajectory, Δt, n_steps, model)
     model.W1 = adam_W1.step(model.W1, dW1)
     model.B1 = adam_B1.step(model.B1, dB1)
     model.W2 = adam_W2.step(model.W2, dW2)
@@ -240,13 +229,8 @@ for i:ℕ(epochs):
 
 
 
-
-
-
-
 predicted_trajectory: ℝ[m, 2, 1] = odesolver(model, y0, Δt, timesteps)
 plot_phase_space(true_trajectory, predicted_trajectory)
-
 
 
 
