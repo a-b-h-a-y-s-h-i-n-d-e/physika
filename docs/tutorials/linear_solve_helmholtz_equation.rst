@@ -234,14 +234,14 @@ along with their corresponding :math:`x`-axis values:
 | **value** :math:`u_j`    | 0.0000   | 0.5378   | 0.9412   | 1.1092   | 1.0000   |
 +--------------------------+----------+----------+----------+----------+----------+
 
-.. figure:: /_static/tutorial_files/helmholtz_results.png
+.. figure:: /_static/tutorial_files/helmholtz/helmholtz_results.png
    :alt: Numerical solution of the 1D Helmholtz equation
    :align: center
    :width: 500px
 
    Numerical solution of the 1D Helmholtz equation
 
-To visualize this plot, use the below python script:
+To visualize above plot, use the below python script:
 
 .. code-block:: python
 
@@ -357,6 +357,10 @@ and pass it to ``gaussian_solver`` function which will return all the :math:`u` 
  
 .. code-block:: text
 
+    # importing gaussian_solve function from `tutorials/`, in future gaussian_solve will
+    # get imported from stdlib
+    from tutorials.linear_solve_gaussian_elimination import gaussian_solve, get_2d_array_num_cols, get_2d_array_num_rows, get_1d_array_length
+
     def solver(k: ℝ, n: ℕ): R[n]:
         results: list = assemble_matrix(k, n)
         A = results[0]
@@ -398,7 +402,7 @@ In Physika, we can define this as:
 Training loop
 ^^^^^^^^^^^^^
 
-We start with random guess for parameter :math:`k` as :math:`guess_k = 2.6`:
+We start with random guess for parameter :math:`k` as ``guess_k = 2.6``:
 
 .. code-block:: text
 
@@ -410,6 +414,8 @@ respect to :math:`guess_k`, and update :math:`guess_k`:
 
 .. code-block:: text
 
+    # dummy initial value for losses array
+    losses: ℝ[1] = [100]
     epochs: ℕ = 300
     lr: ℝ = 0.01
 
@@ -417,6 +423,7 @@ respect to :math:`guess_k`, and update :math:`guess_k`:
         print(i)
         pred_u = solver(guess_k, n)
         loss = mse_loss(true_u, pred_u)
+        losses = append(losses, loss)
         grad = grad(loss, guess_k)
         guess_k = guess_k - lr * grad
         print(guess_k)
@@ -424,7 +431,34 @@ respect to :math:`guess_k`, and update :math:`guess_k`:
     print(guess_k)
 
 After training for 300 epochs, the :math:`guess_k` value should be closer to our origina :math:`k` value.
+Here is how the loss curve looks like:
 
+.. code-block:: text
+
+    plot_loss(losses)
+
+
+.. figure:: /_static/tutorial_files/helmholtz/loss_curve.png
+   :alt: 
+   :align: center
+   :width: 500px
+
+   Loss curve after training
+
+.. note::
+        add this ``plot_loss`` function in ``physika/runtime.py`` file.
+
+    .. code-block:: python
+
+        def plot_loss(losses):
+            import matplotlib.pyplot as plt
+            plt.plot(losses.detach().numpy())
+            plt.title("Training Loss")
+            plt.xlabel("Epoch")
+            plt.ylabel("Loss")
+            plt.grid(True)
+
+            plt.show()
 
 
 Full code
@@ -450,6 +484,17 @@ Full code
         for i:ℕ(0, n):
             x[i] = start + i * Δx
         return x
+    
+    def append(x: ℝ[1], var: ℝ): ℝ[n]:
+        new_length: ℝ = len(x) + 1
+        results: ℝ[new_length] = zero_1d_array(new_length)
+        len_x: ℕ = get_1d_array_length(x)
+        for i:ℕ(new_length):
+            if i<len_x:
+                results[i] = x[i]
+            else:
+                results[i] = var
+        return results
 
     # -------------------------------------
     # Define domain
@@ -522,6 +567,9 @@ Full code
     # Define solver
     # -------------------------------------
 
+    # importing gaussian_solve function from `tutorials/`, in future gaussian_solve will
+    # get imported from stdlib
+    from tutorials.linear_solve_gaussian_elimination import gaussian_solve, get_2d_array_num_cols, get_2d_array_num_rows, get_1d_array_length
 
     def solver(k: ℝ, n: ℕ): R[n]:
         results: list = assemble_matrix(k, n)
@@ -549,7 +597,8 @@ Full code
     # Training loop
     # -------------------------------------
 
-
+    # dummy initial value for losses array
+    losses: ℝ[1] = [100]
     guess_k: ℝ = 2.6
 
     epochs: ℕ = 300
@@ -559,17 +608,14 @@ Full code
         print(i)
         pred_u = solver(guess_k, n)
         loss = mse_loss(true_u, pred_u)
+        losses = append(losses, loss)
         grad = grad(loss, guess_k)
         guess_k = guess_k - lr * grad
         print(guess_k)
 
 
     print(guess_k)
-
-
-
-
-
+    plot_loss(losses)
 
 References
 ----------
