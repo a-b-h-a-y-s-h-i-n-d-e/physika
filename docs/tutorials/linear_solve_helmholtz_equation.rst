@@ -276,7 +276,7 @@ We are using same setup of parameters used in Section 1 while solving numericall
             x[i] = start + i * Δx
         return x
 
-    x0, x1, n: ℝ = 0, 1, 4
+    x0, x1, n: ℝ = 0, 1, 10
     Δx: ℝ = (x1 - x0) / n
     u_x0, u_x1: ℝ = 0, 1
 
@@ -284,7 +284,11 @@ We are using same setup of parameters used in Section 1 while solving numericall
 
     X = linspace(0, 1, n+1)
 
-and the helmholtz_equation is:
+In first section, where we solve helmholtz equation numerically we used ``n=4`` for simplicity, But here we are using ``n=10``
+We can also use ``n=20`` or ``n=50`` to get a smoother curve on predicted trajectory, but currenly Physika dont have support to detach tensors
+which is required in training loop. Therefore, we are using ``n=4`` which also gives expected results.
+
+The helmholtz_equation is:
 
 .. code-block:: text
 
@@ -435,7 +439,9 @@ Here is how the loss curve looks like:
 
 .. code-block:: text
 
+    pred_traj = solver(guess_k, n)
     plot_loss(losses)
+    plot_results(X, pred_traj)    
 
 
 .. figure:: /_static/tutorial_files/helmholtz/loss_curve.png
@@ -445,8 +451,15 @@ Here is how the loss curve looks like:
 
    Loss curve after training
 
+.. figure:: /_static/tutorial_files/helmholtz/pred_traj.png
+   :alt: 
+   :align: center
+   :width: 500px
+
+   Predicted trajectory after training
+
 .. note::
-        add this ``plot_loss`` function in ``physika/runtime.py`` file.
+        add ``plot_loss`` and ``plot_results`` function in ``physika/runtime.py`` file.
 
     .. code-block:: python
 
@@ -458,6 +471,15 @@ Here is how the loss curve looks like:
             plt.ylabel("Loss")
             plt.grid(True)
 
+            plt.show()
+        
+        def plot_results(X, pred_traj):
+            plt.plot(X, pred_traj.detach().numpy())
+            import matplotlib.pyplot as plt
+            plt.grid(True)
+            plt.xlabel("x")
+            plt.ylabel("y")
+            plt.title("1D Helmholtz Equation")
             plt.show()
 
 
