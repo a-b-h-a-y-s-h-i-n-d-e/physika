@@ -430,7 +430,7 @@ respect to :math:`guess_k`, and update :math:`guess_k`:
 
     print(guess_k)
 
-After training for 300 epochs, the :math:`guess_k` value should be closer to our origina :math:`k` value.
+After training for 300 epochs, the :math:`guess_k` value should be closer to our original :math:`k` value.
 Here is how the loss curve looks like:
 
 .. code-block:: text
@@ -452,7 +452,7 @@ Here is how the loss curve looks like:
 
         def plot_loss(losses):
             import matplotlib.pyplot as plt
-            plt.plot(losses.detach().numpy())
+            plt.plot(losses[1:].detach().numpy())
             plt.title("Training Loss")
             plt.xlabel("Epoch")
             plt.ylabel("Loss")
