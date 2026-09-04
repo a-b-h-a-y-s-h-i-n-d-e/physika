@@ -89,7 +89,7 @@ def mse_loss(true_u, pred_u):
     return (total / total_len)
 
 # === Program ===
-x0, x1, n = 0, 1, 4
+x0, x1, n = 0, 1, 10
 Δx = ((x1 - x0) / n)
 u_x0, u_x1 = 0, 1
 k = 2
@@ -109,3 +109,4 @@ for i in range(int(0), int(epochs)):
     guess_k = (guess_k - (lr * grad))
     print(guess_k)
 print(print(guess_k))
+pred_traj = solver(guess_k, n)

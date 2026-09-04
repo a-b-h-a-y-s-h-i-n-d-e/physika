@@ -33,7 +33,7 @@ def append(x: ℝ[1], var: ℝ): ℝ[n]:
 # -------------------------------------
 
 
-x0, x1, n: ℝ = 0, 1, 4
+x0, x1, n: ℝ = 0, 1, 10
 Δx: ℝ = (x1 - x0) / n
 u_x0, u_x1: ℝ = 0, 1
 
@@ -151,4 +151,7 @@ for i:ℕ(epochs):
 
 
 print(guess_k)
+pred_traj = solver(guess_k, n)
+
 #plot_loss(losses)
+#plot_results(X, pred_traj)
