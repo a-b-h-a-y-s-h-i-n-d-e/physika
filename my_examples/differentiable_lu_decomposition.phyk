@@ -1,0 +1,146 @@
+def get_2d_array_num_rows(x: ℝ[m, n]): ℕ:
+    total: ℕ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+
+def lu_decomposition(A: ℝ[n, n], b: ℝ[n]): ℝ[n]:
+    n_size: ℕ = get_2d_array_num_rows(A)
+    
+    # Create P as Identity matrix
+    P: ℝ[n_size, n_size] = zeros(n_size, n_size)
+    for i:ℕ(n_size):
+        P[i, i] = 1.0
+    L: ℝ[n_size, n_size] = zeros(n_size, n_size)
+    U: ℝ[n_size, n_size] = zeros(n_size, n_size)
+    # Buffers for each matrix used in row swapping
+    buf_a: ℝ[n_size] = zeros(n_size)
+    buf_l: ℝ[n_size] = zeros(n_size)
+    buf_p: ℝ[n_size] = zeros(n_size)
+    
+    
+    for j:ℕ(n_size):
+        # Find pivot 
+        max_row = j
+        for i:ℕ(j+1, n_size):
+            if abs(A[i, j]) > abs(A[max_row, j]):
+                max_row = i
+        # ------------------------------------
+        # swap row if max_row got changed
+        # ------------------------------------
+        A_next = zeros(n_size, n_size)
+        L_next = zeros(n_size, n_size)
+        P_next = zeros(n_size, n_size)
+        for r: ℕ(n_size):
+            source = r
+            if r == j:
+                source = max_row
+            else:
+                if r == max_row:
+                    source = j  
+            for c: ℕ(n_size):
+                A_next[r, c] = A[source, c]
+                L_next[r, c] = L[source, c]
+                P_next[r, c] = P[source, c]
+        A = A_next
+        L = L_next
+        P = P_next
+        # Compute column `j` of U
+        u_col = zeros(n_size)
+        for i: ℕ(j + 1):
+            partial = 0.0
+            for k: ℕ(i):
+                partial = partial + u_col[k] * L[i, k]
+            new_val = A[i, j] - partial
+            u_col_next = zeros(n_size)
+            for c: ℕ(n_size):
+                if c == i:
+                    u_col_next[c] = new_val
+                else:
+                    u_col_next[c] = u_col[c]
+            u_col = u_col_next
+        # Compute column `j` of L in same way
+        l_col = zeros(n_size)
+        for i: ℕ(j, n_size):
+            partial = 0.0
+            for k: ℕ(j):
+                partial = partial + u_col[k] * L[i, k]
+            new_val = (A[i, j] - partial) / u_col[j]
+            l_col_next = zeros(n_size)
+            for c: ℕ(n_size):
+                if c == i:
+                    l_col_next[c] = new_val
+                else:
+                    l_col_next[c] = l_col[c]
+            l_col = l_col_next
+        # Merge finished columns of U and L
+        U_next = zeros(n_size, n_size)
+        L_next2 = zeros(n_size, n_size)
+        for r: ℕ(n_size):
+            for c: ℕ(n_size):
+                if c == j:
+                    U_next[r, c] = u_col[r]
+                    L_next2[r, c] = l_col[r]
+                else:
+                    U_next[r, c] = U[r, c]
+                    L_next2[r, c] = L[r, c]
+        U = U_next
+        L = L_next2
+    # -----------------------
+    # P @ b
+    # -----------------------
+    Pb: ℝ[n_size] = zeros(n_size)
+    for i:ℕ(n_size):
+        sum_val = 0.0
+        for j:ℕ(n_size):
+            sum_val = sum_val + P[i, j] * b[j]
+        Pb[i] = sum_val
+    
+    # Forward substitution
+    y: ℝ[n_size] = zeros(n_size)
+    for i: ℕ(n_size):
+        total = Pb[i]
+        for j: ℕ(i):
+            total = total - L[i, j] * y[j]
+        solved_val = total / L[i, i]
+        y_next = zeros(n_size)
+        for c: ℕ(n_size):
+            if c == i:
+                y_next[c] = solved_val
+            else:
+                y_next[c] = y[c]
+        y = y_next
+    
+    # Back substitution
+    results: ℝ[n_size] = zeros(n_size)
+    for i: ℕ(n_size):
+        idx = n_size - 1 - i
+        total = y[idx]
+        for j: ℕ(idx + 1, n_size):
+            total = total - U[idx, j] * results[j]
+        solved_val = total / U[idx, idx]
+        results_next = zeros(n_size)
+        for c: ℕ(n_size):
+            if c == idx:
+                results_next[c] = solved_val
+            else:
+                results_next[c] = results[c]
+        results = results_next
+    return results
+
+
+A: ℝ[4, 4] = [
+    [4, 1, 2, 0],
+    [1, 5, 0, 1],
+    [2, 0, 6, 2],
+    [0, 1, 2, 3]
+]
+
+b: ℝ[4] = [9, 6, 10, 6]
+
+
+lu_decomposition(A, b)
+
