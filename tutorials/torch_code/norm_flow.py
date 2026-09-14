@@ -130,8 +130,8 @@ class RealNVP(nn.Module):
         for epoch in range(int(0), int(epochs)):
             for i in range(int(0), int(len_train)):
                 L = self.loss(X[int(i)])
-                grads = compute_grad(L, self.learnable_params)
-                self.update_params(lr, grads)
+                learnable_grads = compute_grad(L, self.learnable_params)
+                self.update_params(lr, learnable_grads)
             total = 0
             for i in range(int(0), int(len_train)):
                 total = total + self.loss(X[int(i)])
