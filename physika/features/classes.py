@@ -531,20 +531,6 @@ def generate_class(
                                   resolved_names=resolved_names)
         class_lines.extend(m_lines)
 
-    # params property and gradient descent update helper
-    class_lines += [
-        "",
-        "    @property",
-        "    def params(self):",
-        "        return list(self.parameters())",
-        "",
-        "    def update(self, lr, grads):",
-        "        with torch.no_grad():",
-        "            for p, g in zip(self.parameters(), grads):",
-        "                if g is not None:",
-        "                    p -= lr * g",
-    ]
-
     return "\n".join(class_lines)
 
 
@@ -1238,7 +1224,7 @@ class ClassFeature(ELF):
                     if field_name in all_fields:
                         return from_typespec(all_fields[field_name]), s
                     # params and update are defined nn.Module methods
-                    if field_name in ("params", "update", "learnable_params"):
+                    if field_name in ("learnable_params"):
                         return None, s
                     add_error(
                         f"Class '{obj_type.class_name}' has no field '{field_name}'"
