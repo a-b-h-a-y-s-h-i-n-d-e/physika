@@ -233,6 +233,12 @@ We can implement this function as:
 
 since :math:`\theta` represents model parameters, for our ``ODEFunc`` this are :math:`[W1, B1, W2, B2]`
 
+.. note::
+
+    ``detach()`` and ``detach_grad()`` are helper functions which are in ``physika/runtime.py`` file. ``detach()`` is used
+    to detach a tensor from current computation graph and ``detach_grad()`` is used to detach a tensor from computation graph
+    and enable gradient computation on new tensor.
+
 lets map our Physika code with the actual function, 
 
 
