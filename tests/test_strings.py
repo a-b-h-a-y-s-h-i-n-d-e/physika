@@ -52,3 +52,9 @@ class TestStrings:
 
         last_part = strings_ns["last_part"]
         assert last_part == "Language"
+
+        full_slice = strings_ns["full_slice"]
+        assert full_slice == "Physika Language"
+
+        neg_slize = strings_ns["neg_slice"]
+        assert neg_slize == "e"
