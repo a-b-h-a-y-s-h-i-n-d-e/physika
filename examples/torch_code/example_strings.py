@@ -22,5 +22,9 @@ print(print(first_character))
 print(print(third_character))
 first_part = full_name[:int(7)]
 last_part = full_name[int(8):]
+full_slice = full_name[:]
+neg_slice = full_name[int((-1))]
 print(print(first_part))
 print(print(last_part))
+print(print(full_slice))
+print(print(neg_slice))
