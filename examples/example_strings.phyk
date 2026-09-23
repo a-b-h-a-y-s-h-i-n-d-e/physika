@@ -57,6 +57,12 @@ print(third_character)
 
 first_part: String = full_name[:7]
 last_part: String = full_name[8:]
+full_slice: String = full_name[:]
+neg_slice: String = full_name[-1]
+
+
 
 print(first_part)
 print(last_part)
+print(full_slice)
+print(neg_slice)
