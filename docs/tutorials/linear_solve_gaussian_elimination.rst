@@ -133,9 +133,10 @@ that performs Forward elimination:
 .. code-block:: text
 
     # -------------------------
+    # -------------------------
     # Forward elimination
     # -------------------------
-    for i: ℕ(a_row):
+    for i:ℕ(a_row):
         # -------------------------
         # Partial pivoting
         # -------------------------
@@ -143,38 +144,33 @@ that performs Forward elimination:
         for k:ℕ(i + 1, a_row):
             if abs(aug[k, i]) > abs(aug[max_row, i]):
                 max_row = k
+        # ----------------------------------------
+        # Swap max_row with the current i-th row
+        # ----------------------------------------
+        if max_row != i:
+            lo = min(i, max_row)
+            hi = max(i, max_row)
+            rows_above = aug[:lo, :]
+            pivot_row = aug[hi:hi+1, :]
+            rows_between = aug[lo+1:hi, :]
+            current_row = aug[lo:lo+1, :]
+            rows_below = aug[hi+1:, :]
+            aug = concat(
+                rows_above,
+                pivot_row,
+                rows_between,
+                current_row,
+                rows_below,
+            )
         # -------------------------
-        # Swap rows into buffers
+        # Forward elimination
         # -------------------------
-        pivot_row = zero_1d_array(new_col)
-        displaced_row = zero_1d_array(new_col)
-        for c: ℕ(new_col):
-            pivot_row[c] = aug[max_row, c]
-            displaced_row[c] = aug[i, c]
-        # -------------------------
-        # Elimination
-        # -------------------------
-        aug_next = zero_2d_array(a_row, new_col)
-        for row_idx: ℕ(a_row):
-            if row_idx < i:
-                for c: ℕ(new_col):
-                    aug_next[row_idx, c] = aug[row_idx, c]
-            else:
-                if row_idx == i:
-                    for c: ℕ(new_col):
-                        aug_next[row_idx, c] = pivot_row[c]
-                else:
-                    source_row = zero_1d_array(new_col)
-                    if row_idx == max_row:
-                        for c: ℕ(new_col):
-                            source_row[c] = displaced_row[c]
-                    else:
-                        for c: ℕ(new_col):
-                            source_row[c] = aug[row_idx, c]
-                    factor = source_row[i] / pivot_row[i]
-                    for c: ℕ(new_col):
-                        aug_next[row_idx, c] = source_row[c] - factor * pivot_row[c]
-        aug = aug_next
+        pivot_row = aug[i:i+1, :]
+        pivot_value = aug[i, i]
+        rows_below = aug[i+1:, :]
+        elimination_factors = rows_below[:, i:i+1] / pivot_value
+        eliminated_rows = rows_below - elimination_factors * pivot_row
+        aug = concat(aug[:i+1, :], eliminated_rows)
 
 The outer for loop will loop through each row of the augmented matrix ``a_row`` which value is 3.
 
