@@ -152,6 +152,18 @@ def get_1d_array_length(x):
         total = total + 1
     return total
 
+def min(x, y):
+    if x < y:
+        return x
+    else:
+        return y
+
+def max(x, y):
+    if x > y:
+        return x
+    else:
+        return y
+
 # === Program ===
 x0, x1, n = 0, 1, 10
 Δx = ((x1 - x0) / n)
