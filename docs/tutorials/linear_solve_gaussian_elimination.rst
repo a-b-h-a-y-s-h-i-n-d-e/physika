@@ -133,7 +133,6 @@ that performs Forward elimination:
 .. code-block:: text
 
     # -------------------------
-    # -------------------------
     # Forward elimination
     # -------------------------
     for i:ℕ(a_row):
