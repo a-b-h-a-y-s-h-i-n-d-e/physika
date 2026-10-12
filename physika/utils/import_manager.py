@@ -105,53 +105,6 @@ def collect_func_dependencies(func_name: str, module_symbols: dict,
     return visited
 
 
-# def collect_func_dependencies(
-#     func_name: str,
-#     module_symbols: dict,
-#     visited: set,
-# ) -> set:
-#     """Recursively collect a function and its dependencies."""
-#     if func_name in visited:
-#         return visited
-
-#     info = module_symbols.get(func_name)
-
-#     # Only traverse actual functions.
-#     if info is None or info.get("type") != "function":
-#         return visited
-
-#     visited.add(func_name)
-#     func_def = info["value"]
-
-#     nodes_to_check = [
-#         func_def.get("body"),
-#         func_def.get("statements", []),
-#     ]
-
-#     while nodes_to_check:
-#         node = nodes_to_check.pop()
-
-#         if isinstance(node, tuple):
-#             if node and node[0] == "call":
-#                 called_name = node[1]
-#                 called_info = module_symbols.get(called_name)
-
-#                 if (
-#                     called_info is not None
-#                     and called_info.get("type") == "function"
-#                 ):
-#                     collect_func_dependencies(
-#                         called_name, module_symbols, visited
-#                     )
-
-#             nodes_to_check.extend(node[1:])
-
-#         elif isinstance(node, list):
-#             nodes_to_check.extend(node)
-
-#     return visited
-
-
 def resolve_imports(local_program_ast: list, source_file_path: Path) -> list:
     """
     Resolve imported Physika symbols from external ``.phyk`` modules.
