@@ -105,6 +105,53 @@ def collect_func_dependencies(func_name: str, module_symbols: dict,
     return visited
 
 
+# def collect_func_dependencies(
+#     func_name: str,
+#     module_symbols: dict,
+#     visited: set,
+# ) -> set:
+#     """Recursively collect a function and its dependencies."""
+#     if func_name in visited:
+#         return visited
+
+#     info = module_symbols.get(func_name)
+
+#     # Only traverse actual functions.
+#     if info is None or info.get("type") != "function":
+#         return visited
+
+#     visited.add(func_name)
+#     func_def = info["value"]
+
+#     nodes_to_check = [
+#         func_def.get("body"),
+#         func_def.get("statements", []),
+#     ]
+
+#     while nodes_to_check:
+#         node = nodes_to_check.pop()
+
+#         if isinstance(node, tuple):
+#             if node and node[0] == "call":
+#                 called_name = node[1]
+#                 called_info = module_symbols.get(called_name)
+
+#                 if (
+#                     called_info is not None
+#                     and called_info.get("type") == "function"
+#                 ):
+#                     collect_func_dependencies(
+#                         called_name, module_symbols, visited
+#                     )
+
+#             nodes_to_check.extend(node[1:])
+
+#         elif isinstance(node, list):
+#             nodes_to_check.extend(node)
+
+#     return visited
+
+
 def resolve_imports(local_program_ast: list, source_file_path: Path) -> list:
     """
     Resolve imported Physika symbols from external ``.phyk`` modules.
@@ -167,11 +214,22 @@ def resolve_imports(local_program_ast: list, source_file_path: Path) -> list:
                             and isinstance(module_node[1], str) and
                         (module_node[1] == symbol or module_node[1] in deps)
                             and module_node not in extra_nodes):
-                        extra_nodes.append(module_node)
-                        if module_node[1] in module_symbols:
-                            symbol_table[module_node[1]] = module_symbols[
-                                module_node[1]]
-                        if module_node[1] == symbol:
+                        name = module_node[1]
+
+                        # Replace an earlier declaration of the same name.
+                        existing_index = next(
+                            (i for i, node in enumerate(extra_nodes)
+                             if isinstance(node, tuple) and len(node) > 1
+                             and node[1] == name), None)
+                        if existing_index is None:
+                            extra_nodes.append(module_node)
+                        else:
+                            extra_nodes[existing_index] = module_node
+
+                        if name in module_symbols:
+                            symbol_table[name] = module_symbols[name]
+
+                        if name == symbol:
                             found = True
 
                 if not found:
