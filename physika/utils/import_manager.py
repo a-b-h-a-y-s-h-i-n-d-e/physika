@@ -188,7 +188,7 @@ def resolve_imports(local_program_ast: list, source_file_path: Path) -> list:
     >>> resolved[0][1]
     'fact'
     """
-    extra_nodes = []
+    extra_nodes: list[tuple] = []
     for node in local_program_ast:
         if isinstance(node, tuple) and node[0] == "import":
             module_name = node[1]
