@@ -66,6 +66,7 @@ def collect_func_dependencies(func_name: str, module_symbols: dict,
 
     Examples
     --------
+    >>> from physika.utils.import_manager import collect_func_dependencies
     >>> module_symbols = {
     ...     "dependent_f": {
     ...         "type": "function",
