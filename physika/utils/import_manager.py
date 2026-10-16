@@ -66,28 +66,36 @@ def collect_func_dependencies(func_name: str, module_symbols: dict,
 
     Examples
     --------
-    >>> from pathlib import Path
-    >>> from physika.utils.import_manager import resolve_imports
-    >>> local_program_ast = [
-    ...     ('import', 'factorial', ['fact']),
-    ...     ('expr', ('call', 'fact', [('num', 1.0)]), 0)
-    ... ]
-    >>> source_file_path = Path(
-    ...     "examples/example_import_statement.phyk"
-    ... )
-    >>> resolved = resolve_imports(
-    ...     local_program_ast,
-    ...     source_file_path
-    ... )
-    >>> resolved[0][0]
-    'func_def'
-    >>> resolved[0][1]
-    'fact'
+    >>> module_symbols = {
+    ...     "dependent_f": {
+    ...         "type": "function",
+    ...         "value": {
+    ...             "params": [("x", "ℝ")],
+    ...             "return_type": "ℝ",
+    ...             "body": ("pow", ("var", "x"), ("num", 2)),
+    ...             "has_loop": False,
+    ...             "statements": []
+    ...         }
+    ...     },
+    ...     "square_f": {
+    ...         "type": "function",
+    ...         "value": {
+    ...             "params": [("x", "ℝ")],
+    ...             "return_type": "ℝ",
+    ...             "body": ("call", "dependent_f", [("var", "x")]),
+    ...             "has_loop": False,
+    ...             "statements": []
+    ...         }
+    ...     }
+    ... }
+    >>> collect_func_dependencies("square_f", module_symbols, set()) == {
+    ...     "square_f", "dependent_f"
+    ... }
+    True
     """
     if func_name in visited or func_name not in module_symbols:
         return visited
     visited.add(func_name)
-
     # AST node of function
     func_def = module_symbols[func_name]["value"]
     nodes_to_check = [func_def.get("body")] + func_def.get("statements", [])
