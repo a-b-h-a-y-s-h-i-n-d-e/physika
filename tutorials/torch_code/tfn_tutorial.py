@@ -1,3 +1,56 @@
+(CIC: 49 construct(s) not fully verified yet; switching to HM type checking and standard codegen for those)
+    - In function 'zero_1d': kernel check failed against declared return type ℝ[?]: inferred type does not match declared type
+    - In function 'zero_2d': kernel check failed against declared return type ℝ[?, ?]: inferred type does not match declared type
+    - In function 'zero_3d': kernel check failed against declared return type ℝ[?, ?, ?]: inferred type does not match declared type
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In function 'difference_matrix': kernel check failed against declared return type ℝ[num_points, num_points, 3]: Unresolved MVar '_unelaborated_results.8'term must be fully elaborated before kernel checking
+    - In call to 'zero_2d': expected ℝ but got ℕ
+    - In call to 'zero_2d': expected ℝ but got ℕ
+    - In function 'distance_matrix': kernel check failed against declared return type ℝ[num_points, num_points]: Unresolved MVar '_unelaborated_results.9'term must be fully elaborated before kernel checking
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In function 'Y0': kernel check failed against declared return type ℝ[num_points, num_points, 1]: Unresolved MVar '_unelaborated_results.10'term must be fully elaborated before kernel checking
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In function 'Y1': kernel check failed against declared return type ℝ[num_points, num_points, 3]: Unresolved MVar '_unelaborated_results.11'term must be fully elaborated before kernel checking
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In function 'Y2': kernel check failed against declared return type ℝ[num_points, num_points, 5]: Unresolved MVar '_unelaborated_results.12'term must be fully elaborated before kernel checking
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In function 'gaussian_rbf': kernel check failed against declared return type ℝ[num_points, num_points, rbf_count]: Unresolved MVar '_unelaborated_results.13'term must be fully elaborated before kernel checking
+    - In function 'to_column': variable 'n_x' declared ℝ but assigned value of type ℕ
+    - In function 'to_column': variable 'results' declared ℝ[n_x, 1] but assigned value of type ℝ[?, ?]
+    - In function 'to_column': kernel check failed against declared return type ℝ[n, 1]: Unresolved MVar '_unelaborated_results.14'term must be fully elaborated before kernel checking
+    - In call to 'exp': expected ℝ but got ℝ[m, 1]
+    - In function 'ssp_col': kernel check failed against declared return type ℝ[m, 1]: Unresolved MVar '_add.16'term must be fully elaborated before kernel checking
+    - In call to 'zero_2d': expected ℝ but got ℕ
+    - In call to 'zero_2d': expected ℝ but got ℕ
+    - In function 'radial_field': kernel check failed against declared return type ℝ[num_points, num_points]: Unresolved MVar '_unelaborated_results.19'term must be fully elaborated before kernel checking
+    - In function 'tensor_product_reduce': variable 'results' declared ℝ[dim3] but assigned value of type ℝ[?]
+    - In function 'tensor_product_reduce': kernel check failed against declared return type ℝ[d3]: Unresolved MVar '_unelaborated_results.20'term must be fully elaborated before kernel checking
+    - In call to 'zero_1d': expected ℝ but got ℕ
+    - In function 'filter_00': kernel check failed against declared return type ℝ[num_points]: Unresolved MVar '_unelaborated_results.21'term must be fully elaborated before kernel checking
+    - In call to 'zero_2d': expected ℝ but got ℕ
+    - In function 'filter_22': kernel check failed against declared return type ℝ[num_points, 5]: Unresolved MVar '_unelaborated_results.22'term must be fully elaborated before kernel checking
+    - In call to 'zero_3d': expected ℝ but got ℕ
+    - In function 'matrix_from_0_2': kernel check failed against declared return type ℝ[num_points, 3, 3]: Unresolved MVar '_unelaborated_results.23'term must be fully elaborated before kernel checking
+    - In function 'random_points': kernel check failed against declared return type ℝ[?, 3]: inferred type does not match declared type
+    - In function 'random_masses': kernel check failed against declared return type ℝ[?]: Unresolved MVar 'masses.63'term must be fully elaborated before kernel checking
+    - In function 'max_abs_diff': an earlier error left unresolved placeholder(s) for _unelaborated_worst
+    - In method 'MOIModel.λ': variable 'rbf' declared ℝ[num_points, num_points, rbf_count] but assigned value of type ℝ[num_points, num_points, rbf_count]
+    - In call to 'radial_field': expected ℝ[?, rbf_count] but got ℝ[hidden, rbf_count]
+    - In call to 'radial_field': expected ℝ[?, rbf_count] but got ℝ[hidden, rbf_count]
+    - In method 'MOIModel.train': kernel check failed against declared return type ℝ: Unresolved MVar '_unelaborated_last_loss.93'term must be fully elaborated before kernel checking
+    - At top level ('b1_0'): inferred type does not match declared type
+    - At top level ('b2_0'): inferred type does not match declared type
+    - At top level ('b1_2'): inferred type does not match declared type
+    - At top level ('b2_2'): inferred type does not match declared type
+✓ No type errors found
+
+=== Physika generated Pytorch code ===
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -238,7 +291,7 @@ class MOIModel(nn.Module):
         self.b1_2 = nn.Parameter(torch.as_tensor(b1_2))
         self.w2_2 = nn.Parameter(torch.as_tensor(w2_2))
         self.b2_2 = nn.Parameter(torch.as_tensor(b2_2))
-        self.learnable_params = [self.w1_0, self.b1_0, self.w2_0, self.b2_0, self.w1_2, self.b1_2, self.w2_2, self.b2_2]
+        self.learnable_params = list(self.parameters())
 
     def forward(self, points, masses, centers, gamma):
         this = self
@@ -356,3 +409,9 @@ pred_rot = pred_rot_full[int(center_idx)]
 expected_rot = rotate_matrix(pred_orig, Rmat)
 diff = max_abs_diff(pred_rot, expected_rot)
 print(print(diff))
+=== End Pytorch code ===
+
+13.325457572937012 ∈ ℝ
+16.668302536010742 ∈ ℝ
+5.986117362976074 ∈ ℝ
+4.76837158203125e-07 ∈ ℝ
