@@ -1216,3 +1216,7 @@ def to_tensor(tokens: list) -> torch.Tensor:
     """Convert token IDs into a PyTorch integer tensor."""
     return torch.tensor(tokens, dtype=torch.long)
 
+
+
+def shape(x):
+    return x.shape

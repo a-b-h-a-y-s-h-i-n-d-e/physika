@@ -253,7 +253,7 @@ class TinyTransformer:
 # --------------------------------------------------
 
 d_model: N = 128
-nhead: N = 2
+nhead: N = 8
 d_k: N = d_model / nhead
 
 max_len: N = 9
@@ -404,7 +404,7 @@ Y = dataset[1]
 
 
 
-epochs: N = 200
+epochs: N = 50
 model.train(X, Y, epochs)
 
 
