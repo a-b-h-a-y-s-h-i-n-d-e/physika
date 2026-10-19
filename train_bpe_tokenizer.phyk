@@ -1,9 +1,9 @@
 
 
-def rand_3d_array(m: R, n: R, o: R, μ:ℝ): ℝ[m, n, o]:
+def rand_3d_array(m: N, n: N, o: N, μ:ℝ): ℝ[m, n, o]:
     return for i:ℕ(m) → for j:ℕ(n) → for k:N(o) → μ * eps ~ 𝒩(0.0, 1.0)
 
-def rand_2d_array(n:ℝ, m:ℝ, μ:ℝ): ℝ[n, m]:
+def rand_2d_array(n:N, m:N, μ:ℝ): ℝ[n, m]:
         return for i:ℕ(n) → for j:ℕ(m) → μ * eps ~ 𝒩(0.0, 1.0)
 
 def get_1d_array_length(x: ℝ[m]): ℝ:
@@ -130,6 +130,11 @@ class MultiHeadAttention:
         context: R[b, n, nhead, d_k] = transpose(context, 1, 2)
         context: R[b, n, d_model] = reshape(context, batch_size, seq_len, d_model)
         return W_o(context)
+    def update_params(learnable_grads: R[m]):
+        this.W_q.update_params(learnable_grads[0])
+        this.W_k.update_params(learnable_grads[1])
+        this.W_v.update_params(learnable_grads[2])
+        this.W_o.update_params(learnable_grads[3])
 
 
 class LayerNorm:
@@ -191,6 +196,29 @@ class Embedding:
     def update_params(learnable_grads: R[m, n]):
         this.weight = this.opt_weight.step(this.weight,learnable_grads[0])
 
+def get_list_length(x: list): ℝ:
+    total: ℝ = 0
+    temp: ℝ = 0
+    for i:
+        temp = x[i]
+        total += 1
+    return total
+
+def zero_1d_array(len: ℝ): list:
+    results: list = for i: ℕ(len) -> i*0
+    return results
+
+def append(x: list, var: ℝ): list:
+    new_length: ℝ = get_list_length(x) + 1
+    results: list = zero_1d_array(new_length)
+    len_x: ℕ = get_list_length(x)
+    for i:ℕ(new_length):
+        if i<len_x:
+            results[i] = x[i]
+        else:
+            results[i] = var
+    return results
+
 
 class TinyTransformer:
     embed: Embedding
@@ -212,10 +240,15 @@ class TinyTransformer:
         this.pos_embed = this.opt_pos_embed.step(
             this.pos_embed, learnable_grads[0]
         )
-        #this.layers[0].attention.W_q.update_params([learnable_grads[2]])
-        #this.layers[0].attention.W_k.update_params([learnable_grads[3]])
-        #this.layers[0].attention.W_v.update_params([learnable_grads[4]])
-        #this.layers[0].attention.W_o.update_params([learnable_grads[5]])
+        block_grads_size: N = 12
+        for idx:N(len(this.layers)):
+            start = 2 + idx * block_grads_size
+            end = start + block_grads_size
+            grads = learnable_grads[start:end]
+            layer = layers[idx]
+            layer.update_params(grads)
+        fc_start = 2 + len(layers) * block_grads_size
+        this.fc.update_params(learnable_grads[fc_start:fc_start + 2])
     def train(X: N[b, n], Y: N[b, n], epochs: N):
         for epoch:N(epochs):
             logits = this(X)
@@ -224,14 +257,7 @@ class TinyTransformer:
             this.update_params(learnable_grads)
             print(epoch)
             print(loss)
-    def predict(prompt: String): String:
-        tokens = encode_text(prompt)
-        x = reshape(to_tensor(tokens), 1, len(tokens))
-        logits = this(x)
-        seq_len: N = size(logits, 1)
-        last_logits = logits[0, seq_len - 1]
-        next_token_id: N = argmax(last_logits)
-        return decode_token(next_token_id)
+
 
 
 # embedding - (146, 128)
@@ -247,8 +273,14 @@ d_model: N = 128
 nhead: N = 8
 d_k: N = d_model / nhead
 
-max_len: N = 9
-vocab_size: N = 146
+vocab_size: N = get_vocab_size()
+max_len: N = get_max_len()
+
+
+dataset = create_dataset()
+X = dataset[0]
+Y = dataset[1]
+
 
 
 # --------------------------------------------------
@@ -593,14 +625,6 @@ model: TinyTransformer = TinyTransformer(
 )
 
 
-vocab_size: N = get_vocab_size()
-max_len: N = get_max_len()
-
-
-dataset = create_dataset()
-X = dataset[0]
-Y = dataset[1]
-
 
 
 
@@ -610,11 +634,10 @@ epochs: N = 1
 model.train(X, Y, epochs)
 
 
-model.predict("I like")
-model.predict("birds fly")
-model.predict("we see")
-model.predict("bees make")
+
+save_model(model, "tiny_transformer_bpe")
+new_model = load_model(model, "tiny_transformer_bpe")
 
 
 
-
+model_predict_tokens(new_model, "To be", 10)

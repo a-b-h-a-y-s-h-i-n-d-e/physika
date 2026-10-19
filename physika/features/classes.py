@@ -437,6 +437,8 @@ def generate_class(
                     f"        self.{pname} = torch.as_tensor({pname}).float()")
         elif ptype == "ℕ":
             class_lines.append(f"        self.{pname} = int({pname})")
+        elif ptype == "list":
+            class_lines.append(f"        self.{pname} = nn.ModuleList({pname})")
         else:
             class_lines.append(
                 f"        self.{pname} = torch.as_tensor({pname}).float() "
