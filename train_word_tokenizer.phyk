@@ -634,7 +634,7 @@ model: TinyTransformer = TinyTransformer(
 
 
 
-epochs: N = 500
+epochs: N = 1
 model.train(X, Y, epochs)
 
 

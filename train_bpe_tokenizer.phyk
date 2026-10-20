@@ -630,7 +630,7 @@ model: TinyTransformer = TinyTransformer(
 
 
 
-epochs: N = 1
+epochs: N = 5
 model.train(X, Y, epochs)
 
 
@@ -641,3 +641,4 @@ new_model = load_model(model, "tiny_transformer_bpe")
 
 
 model_predict_tokens(new_model, "To be", 10)
+model_predict_tokens(new_model, "i like", 10)
