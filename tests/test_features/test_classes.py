@@ -791,7 +791,10 @@ class TestnnModuleList:
         ast = parse_source_to_ast(nn_modulelist_src)
         pytorch_code = from_ast_to_torch(ast)
 
-        expected = ("self.layers = nn.ModuleList(layers) "
-                    "if any(isinstance(i, nn.Module) for i in layers) "
-                    "else list(layers)")
+        expected = (
+            "self.layers = nn.ModuleList(layers) "
+            "if any(isinstance(i, nn.Module) for i in layers) "
+            "else torch.as_tensor(layers).float() "
+            "if all(isinstance(i, (int, float, torch.Tensor)) for i in layers) "  # noqa
+            "else list(layers)")
         assert expected in pytorch_code
