@@ -16,12 +16,12 @@ Two things make this tutorial different from its systems-biology siblings
 (:doc:`/tutorials/repressilator`, :doc:`/tutorials/central_dogma`,
 :doc:`/tutorials/chemostat_monod`). First, the model is **stiff**. Its fastest
 and slowest timescales differ by a factor of almost four million, so the
-explicit RK4 stepper used everywhere else would need millions of steps per
-simulation. We instead write an **implicit backward-Euler integrator** whose
+explicit RK4 stepper of the other ODE tutorials would need millions of steps
+per simulation. We instead write an **implicit backward-Euler integrator** whose
 Newton iterations call the differentiable ``gaussian_solve`` from
 :doc:`/tutorials/linear_solve_gaussian_elimination`, and we differentiate
 straight through every Newton iteration and every linear solve. Second, it is
-the largest model in the series, and it carries the same identifiability lesson
+the largest of the systems-biology models, and it carries the same identifiability lesson
 as :doc:`/tutorials/goldbeter_koshland` and :doc:`/tutorials/michaelis_menten`:
 growth measured at a single nutrient level cannot separate the two transporter
 parameters, while a growth curve across nutrient levels recovers both.
@@ -96,7 +96,7 @@ At the growing steady state the eigenvalues of the Jacobian span
 :math:`8.9\times10^{4}` :math:`\mathrm{min}^{-1}` (the fastest ribosome-mRNA exchange) down
 to 0.0241 :math:`\mathrm{min}^{-1}` (dilution by growth): a **stiffness
 ratio of** :math:`3.7\times10^{6}`. Explicit RK4 is stable only for
-:math:`|\lambda_{\max}|\,\Delta t \lesssim 2.785`, i.e. :math:`\Delta t
+:math:`\rho\,\Delta t \lesssim 2.785`, where :math:`\rho` is the fastest decay rate, i.e. :math:`\Delta t
 \lesssim` :math:`3.1\times10^{-5}` minutes, so reaching a steady state that takes many hours of
 biological time would require millions of RK4 steps for every simulation, and
 every evaluation of the loss needs five of them.
@@ -219,7 +219,7 @@ Step 2: An implicit solver built on ``gaussian_solve``
 
 The Newton iterations work on :math:`z = \log y`. Every species is a molecule
 count, so this keeps the state positive by construction, and Newton cannot jump
-to a root with negative concentrations, which plain Newton on :math:`y` does for
+to a root with negative molecule counts, which plain Newton on :math:`y` does for
 this model when the steps get large. The linear system is the same; only the
 update changes, to the damped log-space step :math:`d / (1 + |d|)` with
 :math:`d = w / y`. The Jacobian comes from ``grad`` and the solve from
@@ -389,8 +389,8 @@ through the single combination :math:`v_t/(K_t + s)`. Every pair on that curve
 produces exactly the same cell. For example, at :math:`s = 500` the pairs
 :math:`(1210, 2000)` and :math:`(2178, 4000)` give the same growth rate as the
 truth to ten digits, yet they overpredict growth at :math:`s = 10^5` by 37% and
-83%. Only measurements on both sides of :math:`K_t` separate the transporter's
-capacity from its affinity, which is the same lesson as the single-dose fit of
+83%. Measurements at two or more nutrient levels, ideally on both sides of
+:math:`K_t`, separate the transporter's capacity from its affinity, which is the same lesson as the single-dose fit of
 :doc:`/tutorials/goldbeter_koshland` and the low-substrate fit of
 :doc:`/tutorials/michaelis_menten`.
 
