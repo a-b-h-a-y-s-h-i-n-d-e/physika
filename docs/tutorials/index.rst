@@ -32,6 +32,7 @@ Tutorials
    selkov_glycolysis
    michaelis_menten
    goldbeter_koshland
+   weisse_host_model
 
 .. toctree::
    :maxdepth: 1
