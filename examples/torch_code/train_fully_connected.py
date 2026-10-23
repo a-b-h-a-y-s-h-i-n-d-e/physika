@@ -96,8 +96,7 @@ class FullyConnectedNetwork(nn.Module):
     def update_params(self, lr, learnable_grads):
         this = self
         lr = torch.as_tensor(lr, device=DEVICE).float()
-        len_learnable_params = get_1d_array_length(self.learnable_params)
-        for idx in range(int(0), int(len_learnable_params)):
+        for idx in range(len(learnable_grads)):
             self.learnable_params[int(idx)] = (self.learnable_params[int(idx)] - (lr * learnable_grads[int(idx)]))
 
 # === Program ===
