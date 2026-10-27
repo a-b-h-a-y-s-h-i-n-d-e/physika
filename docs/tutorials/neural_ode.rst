@@ -83,9 +83,9 @@ We can represent this equation in physika as:
 
     def damped_oscillator(state: ℝ[2,1]): ℝ[2,1]:
         q, p: ℝ = state[0,0], state[1,0]
-        α: ℝ = 0.2
+        γ: ℝ = 0.2
         dq: ℝ = p
-        dp: ℝ = q - α * p
+        dp: ℝ = -q - γ * p
         return [[dq], [dp]] 
 
 To generate the dataset, we need to numerically integrate the damped oscillator equation. In this tutorial, we will use the classical
@@ -364,7 +364,6 @@ and here is the main outer loop which we are defining as ``adjoint_solver`` :
             z, a, W1g, B1g, W2g, B2g = aug_state
             idx = n_steps - 2 - i
             a = a + 2 * (pred_traj[idx] - true_trajectory[idx])
-        a_t0, W1g, B1g, W2g, B2g = aug_state[1], aug_state[2], aug_state[3], aug_state[4], aug_state[5]
         results: list = [a_t0, W1g, B1g, W2g, B2g]
         return results
 
@@ -586,9 +585,9 @@ Full code
 
     def damped_oscillator(state: ℝ[2,1]): ℝ[2,1]:
         q, p: ℝ = state[0,0], state[1,0]
-        gamma: ℝ = 0.2
+        γ: ℝ = 0.2
         dq: ℝ = p
-        dp: ℝ = q - gamma * p
+        dp: ℝ = -q - γ * p
         return [[dq], [dp]] 
 
 
@@ -713,7 +712,6 @@ Full code
             z, a, W1g, B1g, W2g, B2g = aug_state
             idx = n_steps - 2 - i
             a = a + 2 * (pred_traj[idx] - true_trajectory[idx])
-        a_t0, W1g, B1g, W2g, B2g = aug_state[1], aug_state[2], aug_state[3], aug_state[4], aug_state[5]
         results: list = [a_t0, W1g, B1g, W2g, B2g]
         return results
 
