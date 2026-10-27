@@ -43,9 +43,9 @@ def odesolver(ode_func, y0, Δt, timesteps):
 
 def damped_oscillator(state):
     q, p = state[int(0), int(0)], state[int(1), int(0)]
-    gamma = 0.2
+    γ = 0.2
     dq = p
-    dp = (q - (gamma * p))
+    dp = ((-q) - (γ * p))
     return torch.tensor([[dq], [dp]], device=DEVICE)
 
 def generate_dataset(y0, Δt, timesteps):
@@ -119,8 +119,7 @@ def adjoint_solver(pred_traj, true_trajectory, Δt, n_steps, model):
         z, a, W1g, B1g, W2g, B2g = aug_state
         idx = ((n_steps - 2) - i)
         a = (a + (2 * (pred_traj[int(idx)] - true_trajectory[int(idx)])))
-    a_t0, W1g, B1g, W2g, B2g = aug_state[int(1)], aug_state[int(2)], aug_state[int(3)], aug_state[int(4)], aug_state[int(5)]
-    results = [a_t0, W1g, B1g, W2g, B2g]
+    results = [a, W1g, B1g, W2g, B2g]
     return results
 
 # === Classes ===
