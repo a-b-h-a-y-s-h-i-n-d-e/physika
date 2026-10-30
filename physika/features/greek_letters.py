@@ -24,14 +24,16 @@ class GreekLetters(ELF):
 
         def t_TRANSPOSE(t):
             r"ᵀ"
-            return t
+            return t        
 
         return {
             "reserved": {
                 "physika": "PHYSIKA"
             },
-            "tokens": ["TRANSPOSE"],
-            "token_funcs": [t_TRANSPOSE]
+            "tokens": ["TRANSPOSE", "PARTIAL"],
+            "token_funcs": [
+                t_TRANSPOSE
+                ]
         }
 
     def parser_rules(self) -> list:
