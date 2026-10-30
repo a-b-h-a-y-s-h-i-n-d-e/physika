@@ -34,7 +34,7 @@
 
 # importing gaussian_solve function from `tutorials/`, in future gaussian_solve will
 # get imported from stdlib
-from tutorials.linear_solve_gaussian_elimination import gaussian_solve, get_2d_array_num_cols, get_2d_array_num_rows, get_1d_array_length, min, max
+from tutorials.linear_solve_gaussian_elimination import gaussian_solve
 
 # ---- model parameters (Weisse et al. 2015, values from the authors' SBML
 # model, BioModels MODEL1502270000); vt and Kt are learned ----
