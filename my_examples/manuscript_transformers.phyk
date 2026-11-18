@@ -1,0 +1,135 @@
+def rand_3d_array(m: N, n: N, o: N, μ:ℝ): ℝ[m, n, o]:
+    return for i:ℕ(m) → for j:ℕ(n) → for k:N(o) → μ * eps ~ 𝒩(0.0, 1.0)
+
+def rand_2d_array(n:N, m:N, μ:ℝ): ℝ[n, m]:
+    return for i:ℕ(n) → for j:ℕ(m) → μ * eps ~ 𝒩(0.0, 1.0)
+
+def softmax(x: R[m, n]): R[m, n]:
+    results: R[m, n] = zeros(m, n)
+    for i: N(m):
+        denominator: R = 0.0
+        for j: N(n):
+            denominator += exp(x[i, j])
+        for j: N(n):
+            results[i, j] = exp(x[i, j]) / denominator
+    return results
+
+
+
+class Attention(m: N, n: N, p: N):
+    def λ(query: R[m, p], key: R[n, p], value: R[n, p]) -> R[m, p]:
+        return softmax(query @ keyᵀ / sqrt(p)) @ value
+
+
+
+#m: N = 2
+#p: N = 12
+#n: N = 2
+
+
+#query: R[m, p] = rand_2d_array(m, p, 0.1)
+#key: R[n, p] = rand_2d_array(n, p, 0.1)
+#value: R[n, p] = rand_2d_array(n, p, 0.1)
+
+
+#obj: Attention = Attention(m, n, p)
+
+#obj(query, key, value)
+
+
+
+
+class Linear(D: N, Q: N, weight: R[Q, D], bias: R[Q]):
+    def λ(x: R[m, D]) -> R[m, Q]:   
+        return x @ weightᵀ
+
+
+D: N = 4
+Q: N = 8
+m: N = 2
+
+weight: R[Q, D] = rand_2d_array(Q, D, 0.1)
+bias: R[Q] = zeros(Q)
+
+x: R[m, D] = rand_2d_array(m, D, 0.1)
+linear: Linear = Linear(D, Q, weight, bias)
+
+#linear(x)
+
+
+
+
+
+D: N = 2
+Q: N = 8
+K: N = 8
+
+m: N = 2
+n: N = 2
+
+
+query: R[m, D] = rand_2d_array(m, D, 0.1)
+key: R[n, D] = rand_2d_array(n, D, 0.1)
+value: R[n, D] = rand_2d_array(n, D, 0.1)
+
+q: Linear = Linear(D, Q, rand_2d_array(Q, D, 0.1), zeros(Q))
+k: Linear = Linear(D, K, rand_2d_array(Q, D, 0.1), zeros(Q))
+v: Linear = Linear(D, K, rand_2d_array(Q, D, 0.1), zeros(Q))
+
+
+class AttentionHead(D: N, Q: N, K: N, q: Linear, k: Linear, v: Linear):
+    def λ(query: R[m, p], key: R[n, p], value: R[n, p]) -> Attention:
+        attention: Attention = Attention(m, n, K)
+        return attention(q(query), k(key), v(value))
+
+head1: AttentionHead = AttentionHead(D, Q, K, q, k, v)
+head2: AttentionHead = AttentionHead(D, Q, K, q, k, v)
+head3: AttentionHead = AttentionHead(D, Q, K, q, k, v)
+
+heads: list = [head1, head2, head3]
+#head1(query, key, value)
+
+
+H: N = 3
+
+linear: Linear = Linear(
+    H * K, D,
+    rand_2d_array(D, H * K, 0.1),
+    zeros(D)
+)
+
+
+class MultiHeadAttention(H: N, D: N, Q: N, K: N, heads: list, linear: Linear):
+    def λ(query: R[m, D], key: R[n, D], value: R[n, D]) -> R[m, D]:
+        results: R[m, H * K] = zeros(m, H * K)
+        zero: N = 0
+        for i: N(H):
+            head = heads[i]
+            output: R[m, K] = head(query, key, value)
+            if i == zero:
+                results = output
+            else:
+                results = concat(results, output, 1)
+        return linear(results)
+
+
+
+multi_head: MultiHeadAttention = MultiHeadAttention(H, D, Q, K, heads, linear)
+#multi_head(query, key, value)
+
+
+class PositionEncoding(L: N, M: N, ell: R):
+    def λ() -> R[L, M]:
+        results: R[L, M] = zeros(L, M)
+        for pos: N(L):
+            for dim: N(M):
+                denominator: R = ell ** ((dim - (dim % 2)) / M)
+                phase: R = pos / denominator
+                if dim % 2 == 0:
+                    results[pos, dim] = sin(phase)
+                else:
+                    results[pos, dim] = cos(phase)
+        return results
+
+encoding: PositionEncoding = PositionEncoding(10, 6, 10000.0)
+encoding()
