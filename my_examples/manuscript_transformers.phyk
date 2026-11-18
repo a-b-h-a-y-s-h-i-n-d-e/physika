@@ -133,3 +133,15 @@ class PositionEncoding(L: N, M: N, ell: R):
 
 encoding: PositionEncoding = PositionEncoding(10, 6, 10000.0)
 encoding()
+
+
+
+elif func_name == "concat":
+            last_arg = arg_strs[-1]
+
+            if last_arg.isdigit():
+                tensors = ", ".join(arg_strs[:-1])
+                return f"torch.cat([{tensors}], dim={last_arg})"
+
+            tensors = ", ".join(arg_strs)
+            return f"torch.cat([{tensors}])"
