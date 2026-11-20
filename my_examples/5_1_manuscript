@@ -4,20 +4,22 @@ def rand_array(n: N, μ:ℝ): R[n]:
 def rand_2d_array(n:N, m:N, μ:ℝ): ℝ[n, m]:
     return for i:ℕ(n) → for j:ℕ(m) → μ * eps ~ 𝒩(0.0, 1.0)
 
+def rand_3d_array(m: N, n: N, o: N, μ:ℝ): ℝ[m, n, o]:
+    return for i:ℕ(m) → for j:ℕ(n) → for k:N(o) → μ * eps ~ 𝒩(0.0, 1.0)
 
 def L(g: Linear, X: ℝ[n,M], y: ℝ[n]): ℝ:
-    loss: R = 0.0
-    for i: ℕ(n):
-        loss += (g(X[i]) - y[i])**2
-    return loss
+    ∑(for i:N(n) -> (g(X[i]) - y[i])**2)
+
 
 
 class Linear(w: R[M], b: R):
     def λ(x: R[M]) -> R:
-        return w @ x + b
+        w @ x + b
     def update_params(lr: R, learnable_grads: list):
         for idx:
             this.learnable_params[idx] = this.learnable_params[idx] - lr * learnable_grads[idx]
+
+
 
 n: R = 2
 M: R = 8
@@ -54,60 +56,63 @@ train(g, lr, epochs, X, y)
 
 
 
-# ---------------------------------------------------------------------
-
-def rand_array(n: N, μ:ℝ): R[n]:
-    return for i:ℕ(n) → μ * eps ~ 𝒩(0.0, 1.0)
-
-def rand_2d_array(n:N, m:N, μ:ℝ): ℝ[n, m]:
-    return for i:ℕ(n) → for j:ℕ(m) → μ * eps ~ 𝒩(0.0, 1.0)
-
-def rand_3d_array(m: N, n: N, o: N, μ:ℝ): ℝ[m, n, o]:
-    return for i:ℕ(m) → for j:ℕ(n) → for k:N(o) → μ * eps ~ 𝒩(0.0, 1.0)
 
 
-def L(pred: R[n], y: R[n]): R:
-    e = pred - y
-    return sum(e**2)
+
+
+
+
+
+
+
+
+
+
+
+# -----------------------------------------------
+# batched version 
+# -----------------------------------------------
+
+
+def L(g: Linear, X: ℝ[n,M], y: ℝ[n]): ℝ:
+    ∑((g(X) - y)**2)
 
 
 class Linear(w: R[M], b: R):
-    def λ(X: R[n, M]) -> R[n]:
-        return X @ w + b
-    def train(X: R[B, n, M], y: R[B, n], lr: R, epochs: N) -> R:
-        loss: R = 0.0
-        for epoch: N(epochs):
-            for i:N(B):
-                pred: R[n] = this(X[i])
-                loss: R = L(pred, y[i])
-                grads: list = grad(loss, this.learnable_params)
-                this.update_params(lr, grads)
-        return loss
+    def λ(x: R[n, M]) -> R[n]:
+        x @ w + b
     def update_params(lr: R, learnable_grads: list):
         for idx:
-            this.learnable_params[idx] = (this.learnable_params[idx] - 
-                                lr * learnable_grads[idx])
+            this.learnable_params[idx] = this.learnable_params[idx] - lr * learnable_grads[idx]
 
-
-
-n: N = 3
 B: N = 4
+n: N = 2
 M: N = 8
 
 w: R[M] = rand_array(M, 0.1)
-b: R = 0.1
+b: R = 0.0
+g: Linear = Linear(w, b)
 
 
 X: R[B, n, M] = rand_3d_array(B, n, M, 0.1)
 y: R[B, n] = rand_2d_array(B, n, 0.1)
 
-g: Linear = Linear(w, b)
 
-
-#g(X[0])
-
-
-lr: R = 0.1
 epochs: N = 10
+lr: R = 0.01
 
-g.train(X, y, lr, epochs)
+
+def train(g: Linear, lr: R, epochs: N, X: R[B, n, M], y: R[B, n]): Linear:
+    for epoch: N(epochs):
+        for b: N(B):
+            loss = L(g, X, y)
+            dg = grad(loss, g.learnable_params)
+            g.update_params(lr, dg)
+            print(loss)
+    return g
+
+
+train(g, lr, epochs, X, y)
+
+
+
