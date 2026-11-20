@@ -75,7 +75,7 @@ train(g, lr, epochs, X, y)
 
 
 def L(g: Linear, X: ℝ[n,M], y: ℝ[n]): ℝ:
-    ∑((g(X) - y)**2)
+    ∑(g(X) - y)**2
 
 
 class Linear(w: R[M], b: R):
